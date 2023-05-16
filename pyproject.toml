@@ -14,24 +14,30 @@ deltalake = "^0.9.0"
 pyyaml = "^6.0"
 aiocache = "^0.12.1"
 pypika = "^0.48.9"
-python2jsonschema = "^0.8"
+
+# schema stuff
+jsonschema = {version = "^4.17.3", optional=true}
+python2jsonschema = { version ="^0.8", optional=true}
+duckdb = "^0.7.1"
+polars = "^0.17.13"
+
+# polars stuff
+xlsx2csv = { version ="^0.8.1", optional = true }
+
+# auth
+argon2-cffi = {version = "^21.3.0", optional=true}
+
+# datafusion
+datafusion = {version = "^24.0.0", optional = true }
+xlsxwriter = "^3.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.308"
 black = "^23.3.0"
 
 
-[tool.poetry.group.duckdb.dependencies]
-duckdb = "^0.7.1"
 
 
-[tool.poetry.group.polars.dependencies]
-polars = "^0.17.13"
-xlsx2csv = "^0.8.1"
-
-
-[tool.poetry.group.datafusion.dependencies]
-datafusion = "^24.0.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -44,8 +50,6 @@ pytest-benchmark = "^4.0.0"
 pandas = "^2.0.1"
 
 
-[tool.poetry.group.auth.dependencies]
-argon2-cffi = "^21.3.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -65,3 +69,12 @@ env = [
     "CONFIG_PATH=config_test.yml",
     "DATA_PATH=tests/data",
 ]
+
+[tool.poetry.extras]
+schema = ["jsonschema", "python2jsonschema"]
+polars = ["polars", "xlsx2csv"]
+auth = ["argon2-cffi"]
+datafusion= ["datafusion"]
+
+[tool.poetry.scripts]
+validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli", extras = ["schema"] }

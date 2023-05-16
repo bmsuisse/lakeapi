@@ -1,0 +1,523 @@
+{
+    "type": "object",
+    "properties": {
+        "tables": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/Config"
+            }
+        },
+        "http": {
+            "$ref": "#/$defs/HttpConfig"
+        },
+        "users": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/UserConfig"
+            }
+        },
+        "app": {
+            "$ref": "#/$defs/AppConfig"
+        }
+    },
+    "required": [
+        "http",
+        "users",
+        "app",
+        "tables"
+    ],
+    "$defs": {
+        "Config": {
+            "type": "object",
+            "required": [
+                "name",
+                "tag",
+                "dataframe"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                },
+                "dataframe": {
+                    "$ref": "#/$defs/DataframeConfig"
+                },
+                "route": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "version": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "api_method": {
+                    "oneOf": [
+                        {
+                            "enum": [
+                                "get",
+                                "post"
+                            ]
+                        },
+                        {
+                            "type": "array",
+                            "items": {
+                                "enum": [
+                                    "get",
+                                    "post"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/Param"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ]
+                    }
+                },
+                "engine": {
+                    "enum": [
+                        "duckdb",
+                        "polars",
+                        "datafusion"
+                    ]
+                },
+                "timestamp": {
+                    "type": [
+                        "string",
+                        "null"
+                    ],
+                    "format": "date-time"
+                },
+                "cache_expiration_time_seconds": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                },
+                "options": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/Option"
+                        }
+                    ]
+                },
+                "allow_get_all_pages": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "search": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/SearchConfig"
+                    }
+                }
+            }
+        },
+        "DataframeConfig": {
+            "type": "object",
+            "required": [
+                "uri"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "uri": {
+                    "type": "string"
+                },
+                "file_type": {
+                    "enum": [
+                        "delta",
+                        "parquet",
+                        "arrow",
+                        "arrow-stream",
+                        "avro",
+                        "csv",
+                        "json",
+                        "ndjson",
+                        "parquet_withdecimal"
+                    ]
+                },
+                "select": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Column"
+                    }
+                },
+                "exclude": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "groupby": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/GroupByConfig"
+                        }
+                    ]
+                },
+                "sortby": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/SortBy"
+                    }
+                },
+                "joins": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Join"
+                    }
+                },
+                "filters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/Filter"
+                    }
+                },
+                "cache_expiration_time_seconds": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "Column": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "alias": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "GroupByConfig": {
+            "type": "object",
+            "required": [
+                "by",
+                "expressions"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "by": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "expressions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/GroupByExpConfig"
+                    }
+                }
+            }
+        },
+        "GroupByExpConfig": {
+            "type": "object",
+            "required": [],
+            "additionalProperties": false,
+            "properties": {
+                "col": {
+                    "type": "string"
+                },
+                "func": {
+                    "enum": [
+                        "sum",
+                        "count",
+                        "mean",
+                        "median",
+                        "min",
+                        "max",
+                        "first",
+                        "std",
+                        "n_unique",
+                        "distinct",
+                        "mode",
+                        "null_count"
+                    ]
+                },
+                "alias": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "SortBy": {
+            "type": "object",
+            "required": [
+                "by"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "by": {
+                    "type": "string"
+                },
+                "direction": {
+                    "enum": [
+                        "asc",
+                        "desc"
+                    ]
+                }
+            }
+        },
+        "Join": {
+            "type": "object",
+            "required": [
+                "uri",
+                "left_on",
+                "right_on"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "uri": {
+                    "type": "string"
+                },
+                "left_on": {
+                    "type": "string"
+                },
+                "right_on": {
+                    "type": "string"
+                },
+                "file_type": {
+                    "enum": [
+                        "delta",
+                        "parquet",
+                        "arrow",
+                        "arrow-stream",
+                        "avro",
+                        "csv",
+                        "json",
+                        "ndjson",
+                        "parquet_withdecimal"
+                    ]
+                },
+                "how": {
+                    "enum": [
+                        "inner",
+                        "left",
+                        "outer",
+                        "semi",
+                        "anti",
+                        "cross"
+                    ]
+                },
+                "suffix": {
+                    "type": "string"
+                }
+            }
+        },
+        "Filter": {
+            "type": "object",
+            "required": [
+                "key",
+                "operator",
+                "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "operator": {
+                    "enum": [
+                        "=",
+                        ">",
+                        "<",
+                        ">=",
+                        "<=",
+                        "<>",
+                        "!=",
+                        "==",
+                        "between",
+                        "not between",
+                        "in",
+                        "not in"
+                    ]
+                },
+                "value": {
+                    "oneOf": [
+                        {},
+                        {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "additionalItems": false,
+                            "prefixItems": [
+                                {},
+                                {}
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "Param": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "combi": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "default": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "required": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
+                "operators": {
+                    "type": "array",
+                    "items": {
+                        "enum": [
+                            "<",
+                            "=",
+                            ">",
+                            ">=",
+                            "<=",
+                            "<>",
+                            "contains",
+                            "in",
+                            "not contains",
+                            "not in",
+                            "not null",
+                            "null",
+                            "between",
+                            "not between"
+                        ]
+                    }
+                },
+                "colname": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "Option": {
+            "type": "object",
+            "required": [],
+            "additionalProperties": false,
+            "properties": {}
+        },
+        "SearchConfig": {
+            "type": "object",
+            "required": [
+                "name",
+                "columns"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "HttpConfig": {
+            "type": "object",
+            "properties": {
+                "bind": {
+                    "type": "string"
+                },
+                "max_requests": {
+                    "type": "integer"
+                },
+                "max_requests_jitter": {
+                    "type": "integer"
+                },
+                "timeout": {
+                    "type": "integer"
+                },
+                "graceful_timeout": {
+                    "type": "integer"
+                }
+            }
+        },
+        "UserConfig": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "passwordhash": {
+                    "type": "string"
+                }
+            }
+        },
+        "AppConfig": {
+            "type": "object",
+            "properties": {
+                "tile": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                },
+                "static_file_path": {
+                    "type": "string"
+                },
+                "logo_path": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
