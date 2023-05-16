@@ -5,7 +5,7 @@ from bmsdna.lakeapi.core.yaml import get_yaml
 import inspect
 from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH,DISABLE_BASIC_AUTH
 
 
 cache = cached(
@@ -18,6 +18,8 @@ security = HTTPBasic()
 
 
 def _readdb():
+    if DISABLE_BASIC_AUTH:
+        return
     users = get_yaml(CONFIG_PATH).get("users")
     for user in users:
         yield user
@@ -35,7 +37,7 @@ async def is_correct(hash: str, pwd_str: str):
 
 
 async def get_current_username(req: Request):
-    if req.query_params.get("token"):
+    if req.query_params.get("token") and env.JWT_SECRET is not None:
         import jwt
         import env
 
@@ -43,7 +45,8 @@ async def get_current_username(req: Request):
         dt = jwt.decode(token, env.JWT_SECRET, algorithms=["HS256"])
         if dt["path"] == req.url.path or dt["host"] == req.url.hostname:
             return dt["username"]
-
+    if DISABLE_BASIC_AUTH:
+        return None
     credentials = await HTTPBasic(auto_error=True)(req)
     assert credentials is not None
     if not credentials.username.casefold() in userhashmap.keys():
