@@ -28,7 +28,7 @@ jobs:
         poetry install --all-extras
     - name: Pyright
       run: |
-        pyright .
+        poetry run pyright .
     - name: Test with pytest
       run: |
-        pytest tests
+        poetry run pytest tests
