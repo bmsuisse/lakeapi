@@ -4,7 +4,7 @@ import os
 
 
 def get_app():
-    import lakeapi.core.route
+    import bmsdna.lakeapi.core.route
     from lakeapi.core.config import Configs
 
     configs: Configs = Configs.from_yamls(os.getenv("CONFIG_PATH", "config.yml"))

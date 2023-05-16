@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from bmsdna.lakeapi.core.config import *
 from bmsdna.lakeapi.core.dataframe import *
 from bmsdna.lakeapi.core.endpoint import *
-from env import CONFIG_PATH
+from bmsdna.lakeapi.core.env import CONFIG_PATH
 
 logger = get_logger(__name__)
 

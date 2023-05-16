@@ -11,6 +11,8 @@ packages = [{include = "bmsdna"}]
 python = "^3.11"
 fastapi = "^0.95.1"
 deltalake = "^0.9.0"
+pyyaml = "^6.0"
+aiocache = "^0.12.1"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.308"
@@ -32,6 +34,16 @@ datafusion = "^24.0.0"
 
 [tool.poetry.group.test.dependencies]
 faker = "^18.7.0"
+pytest = "^7.3.1"
+httpx = "^0.24.0"
+pytest-env = "^0.8.1"
+pytest-cov = "^4.0.0"
+pytest-benchmark = "^4.0.0"
+pandas = "^2.0.1"
+
+
+[tool.poetry.group.auth.dependencies]
+argon2-cffi = "^21.3.0"
 
 [build-system]
 requires = ["poetry-core"]

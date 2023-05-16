@@ -22,7 +22,7 @@ from polars.type_aliases import JoinStrategy
 
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType, PolaryTypeFunction, Engines
-from env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 
 logger = get_logger(__name__)
 

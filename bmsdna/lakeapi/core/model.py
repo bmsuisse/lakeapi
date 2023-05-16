@@ -9,7 +9,7 @@ from pydantic import BaseModel, create_model
 from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig
 from bmsdna.lakeapi.core.types import OperatorType
-from env import CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 
 cache = cached(

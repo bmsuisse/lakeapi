@@ -5,7 +5,7 @@ from bmsdna.lakeapi.core.yaml import get_yaml
 import inspect
 from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
-from env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH
 
 
 cache = cached(

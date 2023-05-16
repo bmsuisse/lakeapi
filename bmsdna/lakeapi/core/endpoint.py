@@ -38,7 +38,7 @@ from bmsdna.lakeapi.core.model import (
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import OutputFileType, Engines
 from bmsdna.lakeapi.core.uservalidation import get_current_username
-from env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 
 cache = cached(
     ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer()

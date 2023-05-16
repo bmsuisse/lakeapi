@@ -25,7 +25,7 @@ from bmsdna.lakeapi.core.config import DataframeConfig, GroupByConfig, GroupByEx
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
-from env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 from bmsdna.lakeapi.context.df_base import ResultData, ExecutionContext
 import pypika
 from pypika.queries import QueryBuilder
