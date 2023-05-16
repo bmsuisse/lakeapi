@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "bmsdna-lakeapi"
+version = "0.1.0"
+description = ""
+authors = ["DWH Team <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "bmsdna"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.1"
+deltalake = "^0.9.0"
+
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.308"
+black = "^23.3.0"
+
+
+[tool.poetry.group.duckdb.dependencies]
+duckdb = "^0.7.1"
+
+
+[tool.poetry.group.polars.dependencies]
+polars = "^0.17.13"
+xlsx2csv = "^0.8.1"
+
+
+[tool.poetry.group.datafusion.dependencies]
+datafusion = "^24.0.0"
+
+
+[tool.poetry.group.test.dependencies]
+faker = "^18.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+venv = ".venv"
+venvPath = "."
+pythonVersion = "3.11"
+typeCheckingMode = "basic"
+
+[tool.black]
+line-length = 119
