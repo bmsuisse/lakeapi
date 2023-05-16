@@ -13,6 +13,8 @@ fastapi = "^0.95.1"
 deltalake = "^0.9.0"
 pyyaml = "^6.0"
 aiocache = "^0.12.1"
+pypika = "^0.48.9"
+python2jsonschema = "^0.8"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.308"
@@ -57,3 +59,9 @@ typeCheckingMode = "basic"
 
 [tool.black]
 line-length = 119
+
+[tool.pytest.ini_options]
+env = [
+    "CONFIG_PATH=config_test.yml",
+    "DATA_PATH=tests/data",
+]

@@ -5,14 +5,14 @@ import os
 
 def get_app():
     import bmsdna.lakeapi.core.route
-    from lakeapi.core.config import Configs
+    from bmsdna.lakeapi.core.config import Configs
 
     configs: Configs = Configs.from_yamls(os.getenv("CONFIG_PATH", "config.yml"))
-    router = lakeapi.core.route.init_routes(configs)
+    router = bmsdna.lakeapi.core.route.init_routes(configs)
     app = FastAPI()
     app.include_router(router)
 
-    from lakeapi.core.uservalidation import get_current_username
+    from bmsdna.lakeapi.core.uservalidation import get_current_username
 
     @app.get("/")
     async def root(username: str = Depends(get_current_username)):

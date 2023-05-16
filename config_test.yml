@@ -1,0 +1,251 @@
+# yaml-language-server: $schema=config_schema.json
+
+http:
+  bind: 0.0.0.0:8000
+  max_requests: 1000
+  max_requests_jitter: 50
+  workers: 3
+
+app:
+  title: LakeAPI
+  description: Test
+  version: "0.1"
+  static_file_path: assets
+  logo_path: assets/logo-color.png
+
+tables:
+  - name: fruits
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    params:
+      - name: cars
+        operators:
+          - "="
+          - in
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: pk
+        combi:
+          - fruits
+          - cars
+      - name: combi
+        combi:
+          - fruits
+          - cars
+    dataframe:
+      uri: delta/fruits
+      file_type: delta
+
+  - name: fruits_partition
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    params:
+      - name: cars
+        operators:
+          - "="
+          - in
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: pk
+        combi:
+          - fruits
+          - cars
+      - name: combi
+        combi:
+          - fruits
+          - cars
+    dataframe:
+      uri: delta/fruits_partition
+      file_type: delta
+      select:
+        - name: A
+        - name: fruits
+        - name: B
+        - name: cars
+
+  - name: fake_delta
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: name
+        operators:
+          - "="
+      - name: name1
+        operators:
+          - "="
+    dataframe:
+      uri: delta/fake
+      file_type: delta
+
+  - name: fake_delta_partition
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: name
+        operators:
+          - "="
+      - name: name1
+        operators:
+          - "="
+    dataframe:
+      uri: delta/fake
+      file_type: delta
+
+  - name: fruits_csv
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: fruits
+        operators:
+          - "="
+      - name: cars
+        operators:
+          - "="
+    dataframe:
+      uri: csv/fruits.csv
+      file_type: csv
+
+  - name: fake_arrow
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: name
+        operators:
+          - "="
+      - name: name1
+        operators:
+          - "="
+    dataframe:
+      uri: arrow/fake.arrow
+      file_type: arrow
+
+  - name: fake_parquet
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    dataframe:
+      uri: parquet/fake.parquet
+      file_type: parquet
+
+  - name: fake_duckdb
+    tag: test
+    version: 1
+    engine: duckdb
+    api_method:
+      - get
+      - post
+    params:
+      - name: abc
+        operators:
+          - "="
+          - in
+    dataframe:
+      uri: delta/fake
+      file_type: delta
+
+  - name: fake_datafusion
+    tag: test
+    version: 1
+    engine: datafusion
+    api_method:
+      - get
+      - post
+    params:
+      - name: abc
+        operators:
+          - "="
+          - in
+    dataframe:
+      uri: delta/fake
+      file_type: delta
+
+  - name: fake_polars
+    tag: test
+    version: 1
+    engine: polars
+    api_method:
+      - get
+      - post
+    params:
+      - name: abc
+        operators:
+          - "="
+          - in
+    dataframe:
+      uri: delta/fake
+      file_type: delta
+
+  - name: fruits_select
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    dataframe:
+      uri: delta/fruits
+      file_type: delta
+      select:
+        - name: fruits
+          alias: fruits_new
+
+  - name: search_sample
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    dataframe:
+      uri: parquet/search.parquet
+      file_type: parquet
+    search:
+      - name: search
+        columns:
+          - "email"
+          - "name"
+          - "address"
+
+  - name: not_existing
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    dataframe:
+      uri: b/not_existing.parquet
+      file_type: parquet
+
+# --------------------------------
+# User / Password
+# --------------------------------
+
+users:
+  - name: test
+    passwordhash: $argon2id$v=19$m=65536,t=3,p=4$Ak+KC+inscKVIsyIcbg3Fg$xpM+5evoHbkxsKAW5mCPrFg71H5TcBgOFkiumF3tT/Q

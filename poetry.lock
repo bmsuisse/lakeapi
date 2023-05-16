@@ -876,6 +876,17 @@ dotenv = ["python-dotenv (>=0.10.4)"]
 email = ["email-validator (>=1.0.3)"]
 
 [[package]]
+name = "pypika"
+version = "0.48.9"
+description = "A SQL query builder API for Python"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyPika-0.48.9.tar.gz", hash = "sha256:838836a61747e7c8380cd1b7ff638694b7a7335345d0f559b04b2cd832ad5378"},
+]
+
+[[package]]
 name = "pyright"
 version = "1.1.308"
 description = "Command line wrapper for pyright"
@@ -987,6 +998,18 @@ files = [
 
 [package.dependencies]
 six = ">=1.5"
+
+[[package]]
+name = "python2jsonschema"
+version = "0.8"
+description = "Creates a Json Schema File based on Python Types"
+category = "main"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "python2jsonschema-0.8-py3-none-any.whl", hash = "sha256:19f73564626a6980eebb156479447926bd6194681c6deaaa87172db7cf7f321a"},
+    {file = "python2jsonschema-0.8.tar.gz", hash = "sha256:f8234f556a7526f36c9295fc689a2ac0ccf571f2f1d1a49109cd5947e53697ee"},
+]
 
 [[package]]
 name = "pytz"
@@ -1148,4 +1171,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "ab092f473d9666d2e1193e03e4e4968ad2a01c2a716f2371a9032fb3f416b3cb"
+content-hash = "98414283c4b7ff5399252cadc4de3962cca4ca2939a9e8887f8d7b1fffff05c2"
