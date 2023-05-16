@@ -14,6 +14,6 @@ IS_CACHING_ENABLED_GLOBALLY: Final[bool] = CACHE_EXPIRATION_TIME_SECONDS > 0
 IS_FILE_CACHE: Final[bool] = False
 
 
-JWT_SECRET = os.getenv("JWT_SECRET", None) # None disables the token feature
+JWT_SECRET = os.getenv("JWT_SECRET", None)  # None disables the token feature
 
 DISABLE_BASIC_AUTH = os.getenv("DISABLE_LAKEAPI_BASIC_AUTH", "0") == "1"

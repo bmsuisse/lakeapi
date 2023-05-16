@@ -18,7 +18,7 @@ from bmsdna.lakeapi.core.config import SearchConfig
 class DuckDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: pypika.queries.QueryBuilder | str,
+        original_sql: pypika.queries.Union[QueryBuilder ,  str,]
         con: duckdb.DuckDBPyConnection,
     ) -> None:
         super().__init__()
@@ -47,11 +47,7 @@ class DuckDBResultData(ResultData):
     @property
     def df(self):
         if self._df is None:
-            query = (
-                self.original_sql
-                if isinstance(self.original_sql, str)
-                else self.original_sql.get_sql()
-            )
+            query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
             self._df = self.con.execute(query)
         return self._df
 
@@ -66,26 +62,33 @@ class DuckDBResultData(ResultData):
 
 
 class Match25Term(pypika.terms.Term):
-    def __init__(self, source_view: str, field: pypika.terms.Term, search_text: str, fields: Optional[str], alias: Optional[str]=None):
+    def __init__(
+        self,
+        source_view: str,
+        field: pypika.terms.Term,
+        search_text: str,
+        fields: Optional[str],
+        alias: Optional[str] = None,
+    ):
         super().__init__()
-        self.source_view=source_view
-        self.field=field
-        self.search_text=search_text
-        self.fields=fields
-        self.alias=alias
-
+        self.source_view = source_view
+        self.field = field
+        self.search_text = search_text
+        self.fields = fields
+        self.alias = alias
 
     def get_sql(self, **kwargs):
         search_text_const = pypika.terms.Term.wrap_constant(self.search_text)
         assert isinstance(search_text_const, pypika.terms.Term)
         search_txt = search_text_const.get_sql()
-        fields_const =  pypika.terms.Term.wrap_constant(self.fields or "")
+        fields_const = pypika.terms.Term.wrap_constant(self.fields or "")
         assert isinstance(fields_const, pypika.terms.Term)
         field_or_not = ", fields := " + fields_const.get_sql() if self.fields is not None else ""
         sql = f"fts_main_{self.source_view}.match_bm25({self.field.get_sql()}, {search_txt}{field_or_not})"
         if self.alias is not None:
             sql += " AS " + self.alias
         return sql
+
 
 class DuckDbExecutionContextBase(ExecutionContext):
     def __init__(self, con: duckdb.DuckDBPyConnection):
@@ -94,7 +97,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.res_con = None
         self.persistance_file_name = None
 
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Dataset | pyarrow.Table):
+    def register_arrow(self, name: str, ds: pyarrow.dataset.Union[Dataset ,  pyarrow].Table):
         self.con.from_arrow(ds).create_view(name, replace=True)
 
     def close(self):
@@ -102,7 +105,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.QueryBuilder | str,
+        sql: pypika.queries.Union[QueryBuilder ,  str,]
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
             self.res_con = duckdb.connect(self.persistance_file_name, read_only=True)
@@ -134,9 +137,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         real_query = f"CREATE TABLE search_con.{persistence_name} AS SELECT ROW_NUMBER() OVER () AS __search_id, * FROM {source_view} s"
         persitance_path = os.getenv("TEMP", "/tmp/")
 
-        persistance_file_name = os.path.join(
-            persitance_path, persistence_name + ".duckdb"
-        )
+        persistance_file_name = os.path.join(persitance_path, persistence_name + ".duckdb")
 
         if not os.path.exists(persistance_file_name) or datetime.fromtimestamp(
             os.path.getmtime(persistance_file_name), tz=timezone.utc
@@ -152,9 +153,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             self.con.execute("DETACH search_con")
             search_con = duckdb.connect(persistance_file_name_temp, read_only=False)
             scc = ", ".join([f"'{sc}'" for sc in search_columns])
-            search_con.execute(
-                f"PRAGMA create_fts_index('{persistence_name}', '{pk_name}', {scc})"
-            )
+            search_con.execute(f"PRAGMA create_fts_index('{persistence_name}', '{pk_name}', {scc})")
             search_con.close()
             if os.path.exists(persistance_file_name):
                 os.remove(persistance_file_name)

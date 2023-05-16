@@ -40,9 +40,7 @@ from bmsdna.lakeapi.core.types import OutputFileType, Engines
 from bmsdna.lakeapi.core.uservalidation import get_current_username
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 
-cache = cached(
-    ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer()
-)
+cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 logger = get_logger(__name__)
 
@@ -62,9 +60,7 @@ def register_duckdb_views(con: duckdb.DuckDBPyConnection, paths: dict[str, Path]
             pass
 
 
-async def get_partitions(
-    dataframe: Dataframe, params: BaseModel, config: Config
-) -> list | None:
+async def get_partitions(dataframe: Dataframe, params: BaseModel, config: Config) -> Optional[list]:
     parts = (
         await filter_partitions_based_on_params(
             DeltaTable(dataframe.uri).metadata(),
@@ -78,14 +74,13 @@ async def get_partitions(
 
 
 def remove_search(prm_dict: dict, config: Config):
-    if not config.search or len(prm_dict)==0:
+    if not config.search or len(prm_dict) == 0:
         return prm_dict
     search_cols = [s.name.lower() for s in config.search]
-    return {k:v for k,v in prm_dict.items() if k.lower() not in search_cols}
+    return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
-async def get_expr(
-    columns: List[str], config: Config, params: BaseModel
-) -> pypika.Criterion | None:
+
+async def get_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.dict(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
@@ -94,12 +89,10 @@ async def get_expr(
     return expr
 
 
-def get_response_model(config: Config, metamodel: ResultData) -> Type[BaseModel] | None:
-    response_model: type[BaseModel] | None = None
+def get_response_model(config: Config, metamodel: ResultData) -> Optional[Type[BaseModel]]:
+    response_model: Optional[type[BaseModel]] = None
     try:
-        response_model = create_response_model(
-            config.tag + "_" + config.name, metamodel
-        )
+        response_model = create_response_model(config.tag + "_" + config.name, metamodel)
     except Exception as err:
         logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
         response_model = None
@@ -118,7 +111,7 @@ def _to_dict(tblmeta: Optional[Metadata]):
 
 
 def create_detailed_meta_endpoint(
-    metamodel: ResultData | None,
+    metamodel: Optional[ResultData],
     config: Config,
     router: APIRouter,
 ):
@@ -136,7 +129,9 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
         with DuckDbExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name,
+            realdataframe = Dataframe(
+                config.tag,
+                config.name,
                 config.dataframe,
                 context,
             )
@@ -149,27 +144,16 @@ def create_detailed_meta_endpoint(
                 partition_columns = delta_tbl.metadata().partition_columns
                 if len(partition_columns) > 0:
                     qb: QueryBuilder = (
-                        df.query_builder()
-                        .select(*[pypika.Field(c) for c in partition_columns])
-                        .distinct()
+                        df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
                     )
-                    partition_values = (
-                        context.execute_sql(qb).to_arrow_table().to_pylist()
-                    )
+                    partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
             schema = df.arrow_schema()
-            str_cols = [
-                name
-                for name in schema.names
-                if pa.types.is_string(schema.field(name).type)
-            ]
+            str_cols = [name for name in schema.names if pa.types.is_string(schema.field(name).type)]
 
             str_lengths_df = (
                 context.execute_sql(
                     df.query_builder().select(
-                        *[
-                            fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc)
-                            for sc in str_cols
-                        ]
+                        *[fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
                     )
                 )
                 .to_arrow_table()
@@ -185,16 +169,11 @@ def create_detailed_meta_endpoint(
                     "base_type": str(t),  # legacy
                     "fields": [
                         {"name": f.name, "type": _recursive_get_type(f.type)}
-                        for f in [
-                            t.field(find)
-                            for find in range(0, cast(pa.StructType, t).num_fields)
-                        ]
+                        for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
                     ]
                     if pa.types.is_struct(t)
                     else None,
-                    "inner": _recursive_get_type(t.value_type)
-                    if pa.types.is_list(t)
-                    else None,
+                    "inner": _recursive_get_type(t.value_type) if pa.types.is_list(t) else None,
                 }
 
             schema = df.arrow_schema()
@@ -202,14 +181,9 @@ def create_detailed_meta_endpoint(
                 "partition_values": partition_values,
                 "partition_columns": partition_columns,
                 "max_string_lengths": str_lengths,
-                "schema": [
-                    {"name": n, "type": _recursive_get_type(schema.field(n).type)}
-                    for n in schema.names
-                ],
+                "schema": [{"name": n, "type": _recursive_get_type(schema.field(n).type)} for n in schema.names],
                 "delta_meta": _to_dict(delta_tbl.metadata() if delta_tbl else None),
-                "delta_schema": json.loads(delta_tbl.schema().to_json())
-                if delta_tbl
-                else None,
+                "delta_schema": json.loads(delta_tbl.schema().to_json()) if delta_tbl else None,
                 "parameters": config.params,
                 "search": config.search,
             }
@@ -221,7 +195,7 @@ def exclude_cols(columns: List[str]) -> List[str]:
 
 
 def create_config_endpoint(
-    metamodel: ResultData | None,
+    metamodel: Optional[ResultData],
     apimethod: Literal["get", "post"],
     config: Config,
     router: APIRouter,
@@ -257,23 +231,15 @@ def create_config_endpoint(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore
         Accept: Union[str, None] = Header(default=None),
-        limit: int | None = 100,
-        offset: int | None = 0,
-        select: Union[str, None] = Query(
-            title="$select", alias="$select", default=None, include_in_schema=False
-        ),
-        distinct: bool = Query(
-            title="$distinct", alias="$distinct", default=False, include_in_schema=False
-        ),
-        engine: Engines = Query(
-            title="$engine", alias="$engine", default="duckdb", include_in_schema=False
-        ),
-        format: OutputFileType | None = "json",
+        limit: Optional[int] = 100,
+        offset: Optional[int] = 0,
+        select: Union[str, None] = Query(title="$select", alias="$select", default=None, include_in_schema=False),
+        distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
+        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        format: Optional[OutputFileType] = "json",
         username=Depends(get_current_username),
     ):  # type: ignore
-        logger.info(
-            f"{params.dict(exclude_unset=True) if params else None} | {request.url.path}"
-        )
+        logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
         engine = engine or config.engine
 
@@ -282,7 +248,9 @@ def create_config_endpoint(
         ExecutionContext = get_context_by_engine(engine)
 
         with ExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name,
+            realdataframe = Dataframe(
+                config.tag,
+                config.name,
                 config.dataframe,
                 context,
             )
@@ -301,9 +269,8 @@ def create_config_endpoint(
                 new_query = new_query.select(*columns)
             if select:
                 import pypika
-                new_query = new_query.select(
-                    *[pypika.Field(s) for s in select.split(",")]
-                )
+
+                new_query = new_query.select(*[pypika.Field(s) for s in select.split(",")])
             if distinct:
                 new_query = new_query.distinct()
 
@@ -312,25 +279,31 @@ def create_config_endpoint(
                 new_query = new_query.offset(offset or 0).limit(limit)
 
             if config.search is not None and params is not None:
-                search_dict = { c.name.lower():c for c in config.search }
-                searches = {k:(v, search_dict[k.lower()]) for k,v in params.dict(exclude_unset=True).items() if k.lower() in search_dict}
+                search_dict = {c.name.lower(): c for c in config.search}
+                searches = {
+                    k: (v, search_dict[k.lower()])
+                    for k, v in params.dict(exclude_unset=True).items()
+                    if k.lower() in search_dict
+                }
                 if len(searches) > 0:
-                    import  pypika.queries
-                    import  pypika.terms
+                    import pypika.queries
+                    import pypika.terms
+
                     source_view = realdataframe.tablename
                     context.init_search(source_view, config.search)
                     score_sum = None
                     for search_key, (search_val, search_cfg) in searches.items():
-                        score_sum = context.search_score_function(source_view, search_val, search_cfg, alias=None) if score_sum is None else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                        score_sum = (
+                            context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                            if score_sum is None
+                            else score_sum
+                            + context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                        )
                     assert score_sum is not None
                     new_query = new_query.select(score_sum.as_("search_score"))
-                    new_query = new_query.where(
-                        pypika.terms.NotNullCriterion(pypika.queries.Field("search_score"))
-                    )
-                    new_query = new_query.orderby(
-                        pypika.queries.Field("search_score"), order=pypika.Order.desc
-                    )
-            
+                    new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
+                    new_query = new_query.orderby(pypika.queries.Field("search_score"), order=pypika.Order.desc)
+
             logger.info(f"Query: {new_query.get_sql()}")
             df2 = context.execute_sql(new_query)
 
@@ -343,15 +316,11 @@ def create_config_endpoint(
                     context,
                 )
             except Exception as err:
-                import sys
-                import traceback
-
-                _, _, tb = sys.exc_info()
-                tb_info = traceback.format_exception(err)
-                raise HTTPException(status_code=500, detail=str(tb_info))
+                logger.error("Error in creating response", exc_info=err)
+                raise HTTPException(status_code=500)
 
 
-duckcon: duckdb.DuckDBPyConnection | None = None
+duckcon: Optional[duckdb.DuckDBPyConnection] = None
 
 
 def create_sql_endpoint(router: APIRouter):
@@ -368,7 +337,7 @@ def create_sql_endpoint(router: APIRouter):
         request: Request,
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
-        format: OutputFileType | None = "json",
+        format: Optional[OutputFileType] = "json",
         username=Depends(get_current_username),
     ):
         try:
@@ -385,7 +354,7 @@ def create_sql_endpoint(router: APIRouter):
         request: Request,
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
-        format: OutputFileType | None = "json",
+        format: Optional[OutputFileType] = "json",
         username=Depends(get_current_username),
     ):
         try:
@@ -399,9 +368,7 @@ def create_sql_endpoint(router: APIRouter):
             context = DuckDbExecutionContextBase(duckcon)
             df = context.execute_sql(body.decode("utf-8"))
 
-            return await create_response(
-                username, request.url, format or request.headers["Accept"], df, context
-            )
+            return await create_response(username, request.url, format or request.headers["Accept"], df, context)
         except Exception as err:
             logger.error(err)
             raise HTTPException(status_code=500, detail=str(err))
@@ -416,7 +383,7 @@ def create_sql_endpoint(router: APIRouter):
         background_tasks: BackgroundTasks,
         sql: str,
         Accept: Union[str, None] = Header(default=None),
-        format: OutputFileType | None = "json",
+        format: Optional[OutputFileType] = "json",
         username=Depends(get_current_username),
     ):
         try:
@@ -429,9 +396,7 @@ def create_sql_endpoint(router: APIRouter):
             context = DuckDbExecutionContextBase(duckcon)
 
             df = context.execute_sql(sql)
-            return await create_response(
-                username, request.url, format or request.headers["Accept"], df, context
-            )
+            return await create_response(username, request.url, format or request.headers["Accept"], df, context)
         except Exception as err:
             logger.error(err)
             raise HTTPException(status_code=500, detail=str(err))

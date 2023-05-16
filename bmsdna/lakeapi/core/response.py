@@ -5,7 +5,7 @@ import os
 import tempfile
 import typing
 from enum import Enum
-from typing import Iterable
+from typing import Iterable, Union
 from uuid import uuid4
 
 import anyio
@@ -40,7 +40,7 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
-def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
+def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":
         return (OutputFormats.AVRO, ".avro")
@@ -61,10 +61,7 @@ def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
     elif realaccept == "x-application/iqy" or realaccept == "iqy":
         return (OutputFormats.IQY, ".iqy")
 
-    elif (
-        realaccept == "application/vnd.apache.arrow.stream"
-        or realaccept == "arrow-stream"
-    ):
+    elif realaccept == "application/vnd.apache.arrow.stream" or realaccept == "arrow-stream":
         return (OutputFormats.ARROW_STREAM, "")
 
     elif (
@@ -76,11 +73,7 @@ def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
         or realaccept == "ipc"
     ):
         return (OutputFormats.ARROW_IPC, ".arrow")
-    elif (
-        realaccept == "application/json+newline"
-        or realaccept == "application/jsonl"
-        or realaccept == "ndjson"
-    ):
+    elif realaccept == "application/json+newline" or realaccept == "application/jsonl" or realaccept == "ndjson":
         return (OutputFormats.ND_JSON, ".ndjson")
     elif realaccept == "application/parquet" or realaccept == "parquet":
         return (OutputFormats.PARQUET, ".parquet")
@@ -108,9 +101,7 @@ def write_frame(
             algorithm="HS256",
         )
         query += f"&token={token}"
-        host_and_port = (url.hostname or "localhost") + (
-            ":" + str(url.port) if url.port and url.port != 443 else ""
-        )
+        host_and_port = (url.hostname or "localhost") + (":" + str(url.port) if url.port and url.port != 443 else "")
         strdt = f"""WEB
 1
 {url.scheme}://{host_and_port}{url.path}?{query}

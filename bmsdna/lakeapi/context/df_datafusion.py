@@ -13,7 +13,7 @@ import pypika
 class DatafusionDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: pypika.queries.QueryBuilder | str,
+        original_sql: pypika.queries.Union[QueryBuilder ,  str,]
         session: datafusion.SessionContext,
     ) -> None:
         super().__init__()
@@ -43,9 +43,7 @@ class DatafusionDBResultData(ResultData):
     def df(self):
         if self._df is None:
             self._df = self.session.sql(
-                self.original_sql
-                if isinstance(self.original_sql, str)
-                else self.original_sql.get_sql()
+                self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
             )
         return self._df
 
@@ -67,7 +65,7 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
     def register_arrow(
         self,
         name: str,
-        ds: pyarrow.dataset.Dataset | pyarrow.Table | pyarrow.dataset.FileSystemDataset,
+        ds: pyarrow.dataset.Union[Dataset ,  pyarrow].Union[Table ,  pyarrow].dataset.FileSystemDataset,
     ):
         if isinstance(ds, pyarrow.dataset.Dataset):
             self.session.deregister_table(name)
@@ -86,14 +84,13 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.QueryBuilder | str,
+        sql: pypika.queries.Union[QueryBuilder ,  str,]
     ) -> DatafusionDBResultData:
         return DatafusionDBResultData(sql, session=self.session)
 
 
 class DatafusionDbExecutionContext(DatafusionDbExecutionContextBase):
     def __init__(self):
-
         runtime = datafusion.RuntimeConfig().with_disk_manager_os()
         config = (
             datafusion.SessionConfig()

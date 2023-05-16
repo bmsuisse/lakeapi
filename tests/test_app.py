@@ -33,9 +33,7 @@ def test_authentication():
 
 def test_fruits_limit_1():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -48,7 +46,7 @@ def test_fruits_limit_1():
 
 
 def test_fruits_offset_1():
-    for e in ("duckdb", "datafusion"): # polars does not support offset
+    for e in ("duckdb", "datafusion"):  # polars does not support offset
         response = client.get(
             f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={e}",
             auth=auth,
@@ -66,9 +64,7 @@ def test_fruits_offset_1():
 
 def test_data_limit():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 1000
 
@@ -105,9 +101,7 @@ def test_data_filter():
 
 def test_data_csv():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}", auth=auth)
         assert response.status_code == 200
         txt = response.text
         assert txt.splitlines()[1] == '2,"banana",4,"audi"'
@@ -126,9 +120,7 @@ def test_data_scsv():
 
 def test_data_minus_1():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 100_011
 
@@ -139,9 +131,7 @@ def test_data_minus_1_csv():
     for f in ("csv", "scsv"):
         separator = ";" if f == "scsv" else ","
         for e in engines:
-            response = client.get(
-                f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}", auth=auth
-            )
+            response = client.get(f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}", auth=auth)
             assert response.status_code == 200
             csv_file = StringIO(response.text)
             assert len(pd.read_csv(csv_file, sep=separator)) == 100_011
@@ -149,9 +139,7 @@ def test_data_minus_1_csv():
 
 def test_data_default_limit():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 100
 
@@ -202,7 +190,6 @@ def test_get_ndjson_data():
 
 
 def test_get_excel_data():
-
     for e in engines:
         response = client.get(
             f"/api/v1/test/fruits?limit=1000&format=xlsx&%24engine={e}",
@@ -304,36 +291,28 @@ def test_fruits_combi_multi():
 
 def test_fruits_select():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert response.json() == [{"fruits_new": "banana"}]
 
 
 def test_fake_parquet():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 10
 
 
 def test_fake_csv():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 3
 
 
 def test_fake_arrow():
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth
-        )
+        response = client.get(f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 10
 
@@ -376,7 +355,6 @@ def test_data_partition():
 
 
 def test_sql_endoint_post():
-
     # better naming needed in the future
 
     query = """select * 
@@ -403,7 +381,6 @@ def test_sql_endoint_post():
 
 
 def test_sql_endoint_get():
-
     # better naming needed in the future
 
     query = """select * 

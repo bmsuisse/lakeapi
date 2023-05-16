@@ -10,7 +10,6 @@ auth = get_auth()
 
 
 def test_openid():
-
     response = client.get("/openapi.json", auth=auth)
     assert response.status_code == 200
     jsd = response.json()

@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 class PolarsResultData(ResultData):
-    def __init__(self, df: pl.DataFrame | pl.LazyFrame, sql_context: pl.SQLContext):
+    def __init__(self, df: pl.Union[DataFrame, pl].LazyFrame, sql_context: pl.SQLContext):
         self.df = df
         self.random_name = "tbl_" + str(uuid4())
         self.registred_df = False
@@ -25,7 +25,6 @@ class PolarsResultData(ResultData):
 
     def query_builder(self) -> pypika.queries.QueryBuilder:
         if not self.registred_df:
-
             if isinstance(self.df, pl.DataFrame):
                 self.df = self.df.lazy()
 
@@ -44,9 +43,7 @@ class PolarsResultData(ResultData):
 
     def arrow_schema(self) -> pa.Schema:
         if isinstance(self.df, pl.LazyFrame):
-            return pa.Schema(
-                [pa.field(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()]
-            )
+            return pa.Schema([pa.field(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
         else:
             return self.df.limit(0).to_arrow().schema
 
@@ -85,16 +82,12 @@ class PolarsResultData(ResultData):
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(self, sql_context: pl.SQLContext | None = None):
+    def __init__(self, sql_context: pl.Optional[SQLContext] = None):
         super().__init__()
         self.sql_context = sql_context or pl.SQLContext()
 
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Dataset | pyarrow.Table):
-        ds = (
-            pl.scan_pyarrow_dataset(ds)
-            if isinstance(ds, pyarrow.dataset.Dataset)
-            else pl.from_arrow(ds)
-        )
+    def register_arrow(self, name: str, ds: pyarrow.dataset.Union[Dataset, pyarrow].Table):
+        ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
 
         if isinstance(ds, pl.DataFrame):
             ds = ds.lazy()
@@ -139,11 +132,12 @@ class PolarsExecutionContext(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.QueryBuilder | str,
+        sql: pypika.queries.Union[
+            QueryBuilder,
+            str,
+        ],
     ) -> PolarsResultData:
-        df = self.sql_context.execute(
-            sql.get_sql() if not isinstance(sql, str) else sql
-        )
+        df = self.sql_context.execute(sql.get_sql() if not isinstance(sql, str) else sql)
         if isinstance(df, pl.LazyFrame):
             df = df.collect()
         return PolarsResultData(df, self.sql_context)

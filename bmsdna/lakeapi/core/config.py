@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 @dataclass
 class Param:
     name: str
-    combi: Optional[List[str] | None] = None
+    combi: Optional[Optional[List[str]]] = None
     default: Optional[str] = None
     required: Optional[bool] = False
     operators: Optional[list[OperatorType]] = None
@@ -81,14 +81,12 @@ class Column:
 class GroupByExpConfig:
     # expression: str
     col: str = ""
-    func: PolaryTypeFunction | None = None
-    alias: str | None = None
+    func: Optional[PolaryTypeFunction] = None
+    alias: Optional[str] = None
 
     @classmethod
     def from_dict(cls, config: Dict):
-        return cls(
-            col=config["col"], func=config.get("func"), alias=config.get("alias")
-        )
+        return cls(col=config["col"], func=config.get("func"), alias=config.get("alias"))
 
 
 @dataclass
@@ -138,8 +136,8 @@ class Config:
     dataframe: DataframeConfig
     route: Optional[str] = None
     version: Optional[int] = 1
-    api_method: Literal["get", "post"] | List[Literal["get", "post"]] = "get"
-    params: Optional[List[Param | str]] = None
+    api_method: Literal["get", "post"Union[] ,  List[Literal[]"get", "post"]] = "get"
+    params:Union[ Optional[List[Param ,  str]] ]= None
     engine: Engines = "duckdb"
     timestamp: Optional[datetime] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
@@ -148,19 +146,11 @@ class Config:
     search: Optional[List[SearchConfig]] = None
 
     def __post_init__(self):
-        self.version_str = (
-            self.version
-            if str(self.version or 1).startswith("v")
-            else "v" + str(self.version or 1)
-        )
+        self.version_str = self.version if str(self.version or 1).startswith("v") else "v" + str(self.version or 1)
 
     @property
     def real_route(self) -> str:
-        self.route = (
-            self.route
-            if self.route
-            else self.create_route(self.tag, self.name, self.version_str)
-        )
+        self.route = self.route if self.route else self.create_route(self.tag, self.name, self.version_str)
         return self.route
 
     def __repr__(self) -> str:
@@ -186,20 +176,14 @@ class Config:
         dataframe = config["dataframe"]
         uri = dataframe["uri"]
         assert isinstance(uri, str)
-        file_type = cast(
-            FileTypes, dataframe.get("file_type", "delta") if dataframe else "delta"
-        )
+        file_type = cast(FileTypes, dataframe.get("file_type", "delta") if dataframe else "delta")
         columns = dataframe.get("columns") if dataframe else None
         select = dataframe.get("select") if dataframe else None
         exclude = dataframe.get("exclude") if dataframe else None
         groupby = dataframe.get("groupby") if dataframe else None
         sortby = dataframe.get("sortby") if dataframe else None
         cache_expiration_time_seconds = (
-            dataframe.get(
-                "cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS
-            )
-            if dataframe
-            else None
+            dataframe.get("cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS) if dataframe else None
         )
         orderby = dataframe.get("orderby") if dataframe else None
         joins = dataframe.get("joins") if dataframe else None
@@ -210,10 +194,7 @@ class Config:
         if params:
             logger.debug(f"Parameter: {name} -> {params}")
 
-            _params += [
-                Param(name=param) if isinstance(param, str) else Param(**param)
-                for param in params
-            ]
+            _params += [Param(name=param) if isinstance(param, str) else Param(**param) for param in params]
 
         if joins:
             logger.debug(f"Joins: {name} -> {joins}")
@@ -221,17 +202,13 @@ class Config:
 
         if groupby:
             logger.debug(f"Groupby: {name} -> {groupby}")
-            expressions = [
-                GroupByExpConfig.from_dict(e) for e in groupby.get("expressions")
-            ]
+            expressions = [GroupByExpConfig.from_dict(e) for e in groupby.get("expressions")]
             groupby = GroupByConfig(by=groupby.get("by"), expressions=expressions)
 
         sortby = orderby if orderby else sortby
         if sortby:
             logger.debug(f"SortBy: {name} -> {sortby}")
-            sortby = [
-                SortBy(by=s.get("by"), direction=s.get("direction")) for s in sortby
-            ]
+            sortby = [SortBy(by=s.get("by"), direction=s.get("direction")) for s in sortby]
 
         select = columns if columns else select
 
@@ -274,9 +251,7 @@ class Config:
                                 api_method=api_method,
                                 search=search_config,
                                 params=_params,  # type: ignore
-                                allow_get_all_pages=config.get(
-                                    "allow_get_all_pages", False
-                                ),
+                                allow_get_all_pages=config.get("allow_get_all_pages", False),
                                 dataframe=dataframe,
                                 cache_expiration_time_seconds=cache_expiration_time_seconds,
                             )

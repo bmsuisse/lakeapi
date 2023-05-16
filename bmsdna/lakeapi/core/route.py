@@ -41,26 +41,16 @@ def init_routes(configs: Configs):
                         "file_type": config.dataframe.file_type,
                         "uri": config.dataframe.uri,
                         "version": config.version,
-                        "schema": {n: str(schema.field(n).type) for n in schema.names}
-                        if schema
-                        else None,
+                        "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
                     }
                 )
 
             except Exception as err:
-                logger.warning(
-                    f"Could not get response type for f{config.route}. Error:{err}"
-                )
+                logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
                 metamodel = None
 
-            response_model = (
-                get_response_model(config=config, metamodel=metamodel)
-                if metamodel is not None
-                else None
-            )
-            create_detailed_meta_endpoint(
-                metamodel=metamodel, config=config, router=router
-            )
+            response_model = get_response_model(config=config, metamodel=metamodel) if metamodel is not None else None
+            create_detailed_meta_endpoint(metamodel=metamodel, config=config, router=router)
             for am in methods:
                 create_config_endpoint(
                     apimethod=am,
