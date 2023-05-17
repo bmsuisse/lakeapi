@@ -21,11 +21,11 @@ import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 
-from bmsdna.lakeapi.core.config import DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.config import BasicConfig, DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 from bmsdna.lakeapi.context.df_base import ResultData, ExecutionContext
 import pypika
 from pypika.queries import QueryBuilder
@@ -37,9 +37,7 @@ logger = get_logger(__name__)
 endpoints = Literal["query", "meta", "request", "sql"]
 
 
-cache = cached(
-    ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer()
-)
+cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 
 def get_table_name_from_uri(uri: str):
@@ -57,27 +55,27 @@ class Dataframe:
         name: str,
         config: DataframeConfig,
         sql_context: ExecutionContext,
-        df: ResultData | None = None,
+        basic_config: BasicConfig,
+        df: Optional[ResultData] = None,
     ) -> None:
         self.config = config
         self.tag = tag
         self.name = name
         self.df = df
         self.sql_context = sql_context
+        self.basic_config = basic_config
 
     @property
     def uri(self):
         return os.path.join(
-            DATA_PATH,
-            self.config.uri if "data_test" not in self.config.uri else self.config.uri,
+            self.basic_config.data_path,
+            self.config.uri,
         )
 
     def file_exists(self):
         if not os.path.exists(self.uri):
             return False
-        if self.config.file_type == "delta" and not os.path.exists(
-            os.path.join(self.uri, "_delta_log")
-        ):
+        if self.config.file_type == "delta" and not os.path.exists(os.path.join(self.uri, "_delta_log")):
             return False
         return True
 
@@ -103,9 +101,7 @@ class Dataframe:
             for s in self.config.sortby:
                 df = df.orderby(
                     s.by,
-                    ord=pypika.Order.desc
-                    if s.direction and s.direction.lower() == "desc"
-                    else pypika.Order.asc,
+                    ord=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
                 )
         return df
 
@@ -140,7 +136,7 @@ class Dataframe:
 
     @property
     def tablename(self):
-        return self.tag + "_" + self.name + "_" +  get_table_name_from_uri(self.config.uri)
+        return self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
 
     def get_df(
         self,
@@ -199,7 +195,7 @@ async def get_partition_filter(param, deltaMeta, param_def):
     colname = prmdef.colname or prmdef.name
 
     value_for_partitioning = value
-    col_for_partitioning: str | None = None
+    col_for_partitioning: Optional[str] = None
     for partcol in deltaMeta.partition_columns:
         if partcol == colname:
             col_for_partitioning = partcol
@@ -246,9 +242,7 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
         return None
 
     partition_filters = []
-    tasks = [
-        get_partition_filter(param, deltaMeta, param_def) for param in params.items()
-    ]
+    tasks = [get_partition_filter(param, deltaMeta, param_def) for param in params.items()]
     results = await asyncio.gather(*tasks)
     partition_filters = [result for result in results if result is not None]
 
@@ -257,9 +251,9 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
 
 @cache
 async def concat_expr(
-    exprs: list[pypika.Criterion] | list[pa.compute.Expression],
-) -> pypika.Criterion | pa.compute.Expression:
-    expr: pypika.Criterion | None = None
+    exprs: Union[list[pypika.Criterion], list[pa.compute.Expression]],
+) -> Union[pypika.Criterion, pa.compute.Expression]:
+    expr: Optional[pypika.Criterion] = None
     for e in exprs:
         if expr is None:
             expr = e
@@ -269,8 +263,8 @@ async def concat_expr(
 
 
 @cache
-async def _create_inner_expr(columns: List[str] | None, prmdef, e):
-    inner_expr: pypika.Criterion | None = None
+async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
+    inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
         if (columns and not ck in columns) and not ck in prmdef.combi:
             pass
@@ -278,19 +272,17 @@ async def _create_inner_expr(columns: List[str] | None, prmdef, e):
             if inner_expr is None:
                 inner_expr = pypika.Field(ck) == cv if cv else pypika.Field(ck).isnull()
             else:
-                inner_expr = inner_expr & (
-                    pypika.Field(ck) == cv if cv else pypika.Field(ck).isnull()
-                )
+                inner_expr = inner_expr & (pypika.Field(ck) == cv if cv else pypika.Field(ck).isnull())
     return inner_expr
 
 
 @cache
 async def filter_df_based_on_params(
     params: dict[str, Any],
-    param_def: list[Param | str],
-    columns: list[str] | None,
-) -> pypika.Criterion | None:
-    expr: pypika.Criterion | None = None
+    param_def: list[Union[Param, str]],
+    columns: Optional[list[str]],
+) -> Optional[pypika.Criterion]:
+    expr: Optional[pypika.Criterion] = None
     exprs: list[pypika.Criterion] = []
 
     for key, value in params.items():
@@ -303,7 +295,7 @@ async def filter_df_based_on_params(
         colname = prmdef.colname or prmdef.name
 
         if prmdef.combi:
-            outer_expr: pypika.Criterion | None = None
+            outer_expr: Optional[pypika.Criterion] = None
             tasks = []
             for e in value:
                 task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
@@ -332,23 +324,11 @@ async def filter_df_based_on_params(
                 case "<=":
                     exprs.append(fn.Field(colname) <= value)
                 case "<>":
-                    exprs.append(
-                        fn.Field(colname) != value
-                        if value is not None
-                        else fn.Field(colname).isnotnull()
-                    )
+                    exprs.append(fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull())
                 case "==":
-                    exprs.append(
-                        fn.Field(colname) == value
-                        if value is not None
-                        else fn.Field(colname).isnull()
-                    )
+                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
                 case "=":
-                    exprs.append(
-                        fn.Field(colname) == value
-                        if value is not None
-                        else fn.Field(colname).isnull()
-                    )
+                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
                 case "not contains":
                     exprs.append(fn.Field(colname).not_like.contains("%" + value + "%"))
                 case "contains":

@@ -1,6 +1,5 @@
 import datetime
-from types import UnionType
-from typing import Any, Dict, List, Literal, Union, cast
+from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
 from bmsdna.lakeapi.context.df_base import ResultData
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
@@ -12,9 +11,7 @@ from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 
-cache = cached(
-    ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer()
-)
+cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 
 def _make_model(v, name):
@@ -48,9 +45,7 @@ _operator_postfix_map: dict[OperatorType, str] = {
 
 
 @cache
-async def get_param_def(
-    queryname: str, paramdef: list[Param | str]
-) -> tuple[Param, OperatorType] | None:
+async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold()
     for param in paramdef:
         param = Param(name=param) if isinstance(param, str) else param
@@ -62,7 +57,7 @@ async def get_param_def(
     return None
 
 
-def get_schema_for(model_ns: str, field: pa.Field) -> tuple[type | UnionType, Any]:
+def get_schema_for(model_ns: str, field: pa.Field) -> tuple[Union[type, Any], Any]:
     if pa.types.is_timestamp(field.type):
         return (Union[datetime.datetime, None], None)
     if pa.types.is_duration(field.type):
@@ -76,17 +71,10 @@ def get_schema_for(model_ns: str, field: pa.Field) -> tuple[type | UnionType, An
     if pa.types.is_struct(field.type):
         st = field.type
         assert isinstance(st, pa.StructType)
-        res = {
-            st.field(ind).name: get_schema_for(model_ns, st.field(ind))
-            for ind in range(0, st.num_fields)
-        }
+        res = {st.field(ind).name: get_schema_for(model_ns, st.field(ind)) for ind in range(0, st.num_fields)}
         return (
             Union[
-                create_model(
-                    model_ns + ("_" + field.name if field.name else ""),
-                    **res,
-                    __base__=TypeBaseModel
-                ),
+                create_model(model_ns + ("_" + field.name if field.name else ""), **res, __base__=TypeBaseModel),
                 None,
             ],
             None,
@@ -106,16 +94,13 @@ def get_schema_for(model_ns: str, field: pa.Field) -> tuple[type | UnionType, An
     if pa.types.is_string(field.type) or pa.types.is_large_string(field.type):
         return (Union[str, None], None)
     if pa.types.is_union(field.type):
-        types = [
-            get_schema_for(model_ns, field.type.field(ind))
-            for ind in range(0, field.type.num_fields)
-        ]
+        types = [get_schema_for(model_ns, field.type.field(ind)) for ind in range(0, field.type.num_fields)]
         types.append(None)  # type: ignore
         return Union.__call__(*types)
     raise ValueError("Not supported")
 
 
-def _get_datatype(schema: pa.Schema | None, name: str):
+def _get_datatype(schema: Optional[pa.Schema], name: str):
     if schema is None:
         return str
     try:
@@ -126,15 +111,15 @@ def _get_datatype(schema: pa.Schema | None, name: str):
 
 
 def create_parameter_model(
-    df: ResultData | None,
+    df: Optional[ResultData],
     name: str,
-    params: list[Param | str] | None,
-    search: list[SearchConfig] | None,
+    params: Optional[Iterable[Union[Param, str]]],
+    search: Optional[Iterable[SearchConfig]],
     apimethod: Literal["get", "post"],
 ):
     query_params = {}
     if params or search:
-        for param in (params or []):
+        for param in params or []:
             param = Param(name=param) if isinstance(param, str) else param
             operators = param.operators or ["="]
             schema = df.arrow_schema() if df else None
@@ -142,9 +127,7 @@ def create_parameter_model(
                 if apimethod == "post":  # Only supported in POST Requets for now
                     query_params[param.name] = (
                         Union[List[dict[str, Any]], None],  # type: ignore
-                        Query(
-                            default=param.real_default if not param.required else ...
-                        ),
+                        Query(default=param.real_default if not param.required else ...),
                     )
             else:
                 realtype = (
@@ -154,16 +137,10 @@ def create_parameter_model(
                     postfix = _operator_postfix_map[operator]
 
                     if operator in ["in", "not in", "between", "not between"]:
-                        if (
-                            apimethod == "post"
-                        ):  # Only supported in POST Requets for now
+                        if apimethod == "post":  # Only supported in POST Requets for now
                             query_params[param.name + postfix] = (
                                 Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
-                                Query(
-                                    default=param.real_default
-                                    if not param.required
-                                    else ...
-                                ),
+                                Query(default=param.real_default if not param.required else ...),
                             )
 
                     else:
@@ -171,10 +148,10 @@ def create_parameter_model(
                             realtype,
                             param.real_default if not param.required else ...,
                         )
-        for sc in (search or []):
+        for sc in search or []:
             query_params[sc.name] = (
-                            str | None,
-                            None,
+                Optional[str],
+                None,
             )
         query_model = create_model(name + "Parameter", **query_params)
         return query_model
@@ -192,10 +169,6 @@ def should_hide_colname(name: str):
 
 def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:
     schema = frame.arrow_schema()
-    props = {
-        k: get_schema_for(name, schema.field(k))
-        for k in schema.names
-        if not should_hide_colname(k)
-    }
+    props = {k: get_schema_for(name, schema.field(k)) for k in schema.names if not should_hide_colname(k)}
 
     return create_model(name, **props, __base__=TypeBaseModel)

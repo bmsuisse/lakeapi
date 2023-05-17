@@ -1,20 +1,37 @@
-from typing import Literal, cast
+import inspect
+from typing import Literal, Tuple, cast
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 
-from bmsdna.lakeapi.core.config import *
-from bmsdna.lakeapi.core.dataframe import *
-from bmsdna.lakeapi.core.endpoint import *
-from bmsdna.lakeapi.core.env import CONFIG_PATH
+from bmsdna.lakeapi.core.config import BasicConfig, Configs
+from bmsdna.lakeapi.core.log import get_logger
+
 
 logger = get_logger(__name__)
 
+all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
-def init_routes(configs: Configs):
+
+def init_routes(configs: Configs, basic_config: BasicConfig):
     from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
+    from bmsdna.lakeapi.core.endpoint import (
+        get_response_model,
+        create_detailed_meta_endpoint,
+        create_config_endpoint,
+        create_sql_endpoint,
+    )
+
+    async def get_username(req: Request):
+        res = basic_config.username_retriever(req, basic_config, configs.users)
+        if inspect.isawaitable(res):
+            res = await res
+        return res
+
+    all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
+
     with DuckDbExecutionContext() as context:
         for config in configs:
             methods = (
@@ -23,7 +40,9 @@ def init_routes(configs: Configs):
                 else config.api_method
             )
             try:
-                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context)
+                from bmsdna.lakeapi.core.dataframe import Dataframe
+
+                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config)
                 if not realdataframe.file_exists():
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
@@ -41,26 +60,16 @@ def init_routes(configs: Configs):
                         "file_type": config.dataframe.file_type,
                         "uri": config.dataframe.uri,
                         "version": config.version,
-                        "schema": {n: str(schema.field(n).type) for n in schema.names}
-                        if schema
-                        else None,
+                        "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
                     }
                 )
 
             except Exception as err:
-                logger.warning(
-                    f"Could not get response type for f{config.route}. Error:{err}"
-                )
+                logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
                 metamodel = None
 
-            response_model = (
-                get_response_model(config=config, metamodel=metamodel)
-                if metamodel is not None
-                else None
-            )
-            create_detailed_meta_endpoint(
-                metamodel=metamodel, config=config, router=router
-            )
+            response_model = get_response_model(config=config, metamodel=metamodel) if metamodel is not None else None
+            create_detailed_meta_endpoint(metamodel=metamodel, config=config, router=router, basic_config=basic_config)
             for am in methods:
                 create_config_endpoint(
                     apimethod=am,
@@ -68,15 +77,22 @@ def init_routes(configs: Configs):
                     router=router,
                     response_model=response_model,
                     metamodel=metamodel,
+                    basic_config=basic_config,
+                    configs=configs,
                 )
 
         @router.get(
             "/metadata",
             name="metadata",
         )
-        async def get_metadata(username: str = Depends(get_current_username)):
+        async def get_metadata(username: str = Depends(get_username)):
             return metadata
 
-        create_sql_endpoint(router=router)
+        if basic_config.enable_sql_endpoint:
+            create_sql_endpoint(
+                router=router,
+                basic_config=basic_config,
+                configs=configs,
+            )
 
-        return router
+        return router, get_username

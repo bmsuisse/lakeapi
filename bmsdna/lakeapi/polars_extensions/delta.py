@@ -3,18 +3,17 @@ from deltalake import write_deltalake, DeltaTable
 import os
 import pyarrow as pa
 from polars import LazyFrame, DataFrame
-from typing import cast, Any
+from typing import cast, Any, Optional
 from functools import partial
 import pickle
 
 
 def _scan_pyarrow_dataset_impl(
     ds: pa.dataset.Dataset,
-    with_columns: list[str] | None,
-    predicate: str | None,
-    n_rows: int | None,
+    with_columns: Optional[list[str]],
+    predicate: Optional[str],
+    n_rows: Optional[int],
 ) -> DataFrame:
-
     _filter = None
     if predicate:
         # imports are used by inline python evaluated by `eval`
@@ -33,25 +32,19 @@ def _scan_pyarrow_dataset_impl(
     return cast(DataFrame, pl.from_arrow(ds.to_table()))
 
 
-def _scan_pyarrow_dataset(
-    ds: pa.dataset.Dataset, allow_pyarrow_filter: bool = True
-) -> LazyFrame:
-
+def _scan_pyarrow_dataset(ds: pa.dataset.Dataset, allow_pyarrow_filter: bool = True) -> LazyFrame:
     func = partial(_scan_pyarrow_dataset_impl, ds)
     func_serialized = pickle.dumps(func)
-    return LazyFrame._scan_python_function(
-        ds.schema, func_serialized, allow_pyarrow_filter
-    )
+    return LazyFrame._scan_python_function(ds.schema, func_serialized, allow_pyarrow_filter)
 
 
 def scan_delta2(
     table_uri: str,
-    version: int | None = None,
-    storage_options: dict[str, Any] | None = None,
-    delta_table_options: dict[str, Any] | None = None,
-    pyarrow_options: dict[str, Any] | None = None,
+    version: Optional[int] = None,
+    storage_options: Optional[dict[str, Any]] = None,
+    delta_table_options: Optional[dict[str, Any]] = None,
+    pyarrow_options: Optional[dict[str, Any]] = None,
 ) -> LazyFrame:
-
     dt = DeltaTable(
         table_uri,
         version=version,

@@ -1,11 +1,5 @@
 # yaml-language-server: $schema=config_schema.json
 
-http:
-  bind: 0.0.0.0:8000
-  max_requests: 1000
-  max_requests_jitter: 50
-  workers: 3
-
 app:
   title: LakeAPI
   description: Test

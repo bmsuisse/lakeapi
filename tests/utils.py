@@ -1,21 +1,18 @@
 from fastapi import Depends, FastAPI
-
+import dataclasses
 import os
 
 
 def get_app():
-    import bmsdna.lakeapi.core.route
-    from bmsdna.lakeapi.core.config import Configs
+    import bmsdna.lakeapi
 
-    configs: Configs = Configs.from_yamls(os.getenv("CONFIG_PATH", "config.yml"))
-    router = bmsdna.lakeapi.core.route.init_routes(configs)
     app = FastAPI()
-    app.include_router(router)
-
-    from bmsdna.lakeapi.core.uservalidation import get_current_username
+    def_cfg = bmsdna.lakeapi.get_default_config()
+    cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data")
+    sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml")
 
     @app.get("/")
-    async def root(username: str = Depends(get_current_username)):
+    async def root(username: str = Depends(sti.get_username)):
         return {"User": username}
 
     return app

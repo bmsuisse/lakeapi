@@ -52,9 +52,7 @@ def create_rows_faker(num=1):
 if __name__ == "__main__":
     if not os.path.exists("tests/data/parquet/search.parquet"):
         os.makedirs("tests/data/parquet", exist_ok=True)
-        pl.DataFrame(create_rows_faker(1000)).write_parquet(
-            "tests/data/parquet/search.parquet"
-        )
+        pl.DataFrame(create_rows_faker(1000)).write_parquet("tests/data/parquet/search.parquet")
 
     df = pl.DataFrame(
         {
@@ -74,16 +72,12 @@ if __name__ == "__main__":
     delta_path = "tests/data/delta/fruits_partition"
 
     df["fruits_partition"] = df["fruits"]
-    df["cars_md5_prefix_2"] = [
-        md5(val.encode("UTF-8")).hexdigest()[:2] for val in df["cars"]
-    ]
+    df["cars_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:2] for val in df["cars"]]
 
     print(df)
 
     delete_folder(delta_path)
-    write_deltalake(
-        delta_path, df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"]
-    )
+    write_deltalake(delta_path, df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
 
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
@@ -95,17 +89,13 @@ if __name__ == "__main__":
 
     df = pl.DataFrame(create_rows_faker(100_011)).to_pandas()
 
-    df["name_md5_prefix_2"] = [
-        md5(val.encode("UTF-8")).hexdigest()[:1] for val in df["name"]
-    ]
+    df["name_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:1] for val in df["name"]]
 
     df["name1"] = df["name"]
 
     print(df)
 
-    write_deltalake(
-        delta_path, df, mode="overwrite"  # , partition_by=["name_md5_prefix_2", "abc"]
-    )
+    write_deltalake(delta_path, df, mode="overwrite")  # , partition_by=["name_md5_prefix_2", "abc"]
 
     write_deltalake(
         delta_path + "_partition",

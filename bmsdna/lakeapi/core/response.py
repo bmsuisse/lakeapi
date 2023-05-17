@@ -5,7 +5,7 @@ import os
 import tempfile
 import typing
 from enum import Enum
-from typing import Iterable
+from typing import Iterable, Union
 from uuid import uuid4
 
 import anyio
@@ -17,6 +17,7 @@ from starlette.datastructures import URL
 from starlette.responses import FileResponse, StreamingResponse
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 
@@ -40,7 +41,7 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
-def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
+def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":
         return (OutputFormats.AVRO, ".avro")
@@ -61,10 +62,7 @@ def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
     elif realaccept == "x-application/iqy" or realaccept == "iqy":
         return (OutputFormats.IQY, ".iqy")
 
-    elif (
-        realaccept == "application/vnd.apache.arrow.stream"
-        or realaccept == "arrow-stream"
-    ):
+    elif realaccept == "application/vnd.apache.arrow.stream" or realaccept == "arrow-stream":
         return (OutputFormats.ARROW_STREAM, "")
 
     elif (
@@ -76,11 +74,7 @@ def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
         or realaccept == "ipc"
     ):
         return (OutputFormats.ARROW_IPC, ".arrow")
-    elif (
-        realaccept == "application/json+newline"
-        or realaccept == "application/jsonl"
-        or realaccept == "ndjson"
-    ):
+    elif realaccept == "application/json+newline" or realaccept == "application/jsonl" or realaccept == "ndjson":
         return (OutputFormats.ND_JSON, ".ndjson")
     elif realaccept == "application/parquet" or realaccept == "parquet":
         return (OutputFormats.PARQUET, ".parquet")
@@ -89,11 +83,7 @@ def parse_format(accept: str | OutputFileType) -> tuple[OutputFormats, str]:
 
 
 def write_frame(
-    url: URL,
-    current_user: str,
-    content: ResultData,
-    format: OutputFormats,
-    out: str,
+    url: URL, current_user: str, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
 ):
     if format == OutputFormats.IQY:
         import jwt
@@ -104,13 +94,11 @@ def write_frame(
         query = query + ("?" if not query else "&") + "format=json"
         token = jwt.encode(
             {"host": url.hostname, "path": url.path, "username": current_user},
-            env.JWT_SECRET,
+            basic_config.token_jwt_secret,
             algorithm="HS256",
         )
         query += f"&token={token}"
-        host_and_port = (url.hostname or "localhost") + (
-            ":" + str(url.port) if url.port and url.port != 443 else ""
-        )
+        host_and_port = (url.hostname or "localhost") + (":" + str(url.port) if url.port and url.port != 443 else "")
         strdt = f"""WEB
 1
 {url.scheme}://{host_and_port}{url.path}?{query}
@@ -194,6 +182,7 @@ async def create_response(
     accept: str,
     content: ResultData,
     context: ExecutionContext,
+    basic_config: BasicConfig,
 ):
     headers = {}
 
@@ -214,11 +203,7 @@ async def create_response(
     path = os.getenv("TEMP", "/tmp") + "/" + str(uuid4()) + extension
     media_type = mimetypes.guess_type("file" + extension)[0]
     write_frame(
-        current_user=current_user_name,
-        url=url,
-        content=content,
-        format=format,
-        out=path,
+        current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
     )
 
     if media_type is not None and format in [

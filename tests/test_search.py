@@ -32,4 +32,7 @@ def test_search():
         assert jsd[0]["search_score"] >= jsd[1]["search_score"]
         assert jsd[1]["search_score"] >= jsd[2]["search_score"]
         for item in jsd:
-            assert "karen" in (item["email"] + " " + item["name"]+ " " + item["address"]).lower() or "example" in (item["email"] + " " + item["name"]+ " " + item["address"]).lower()
+            assert (
+                "karen" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
+                or "example" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
+            )

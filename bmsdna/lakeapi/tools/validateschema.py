@@ -8,6 +8,7 @@ import os
 
 def validate_schema_cli():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--yaml-file", default="config.yml")
     parser.add_argument("--schema-file", default="config_schema.json")

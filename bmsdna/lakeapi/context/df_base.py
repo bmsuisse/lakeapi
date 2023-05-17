@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC, abstractproperty
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
-from typing import Optional, List, Tuple, Any, TYPE_CHECKING
+from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 import pyarrow.dataset
@@ -95,8 +95,8 @@ class ExecutionContext(ABC):
         self,
         uri: str,
         file_type: FileTypes,
-        partitions: List[Tuple[str, str, Any]] | None,
-    ) -> pa.dataset.Dataset | None:
+        partitions: Optional[List[Tuple[str, str, Any]]],
+    ) -> Optional[pa.dataset.Dataset]:
         if file_type in ["parquet", "ipc", "arrow", "feather", "csv", "orc"]:
             ds = pa.dataset.dataset(uri, format=file_type)
         elif file_type == "delta":
@@ -110,7 +110,7 @@ class ExecutionContext(ABC):
         return ds
 
     @abstractmethod
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Dataset | pyarrow.Table):
+    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         ...
 
     @abstractmethod
@@ -133,31 +133,29 @@ class ExecutionContext(ABC):
     ) -> pypika.terms.Term:
         import pypika.terms
         import pypika.functions
-        assert len(search_text)>2
-        parts = search_text.split(' ')
-        
+
+        assert len(search_text) > 2
+        parts = search_text.split(" ")
+
         cases = []
         summ = None
         for part in parts:
             case = pypika.Case()
-            cond = pypika.functions.Concat(*[pypika.Field(c) for c in search_config.columns]).like('%'+ part + '%')
+            cond = pypika.functions.Concat(*[pypika.Field(c) for c in search_config.columns]).like("%" + part + "%")
             case.when(cond, pypika.terms.Term.wrap_constant(1))
             case.else_(pypika.terms.Term.wrap_constant(0))
             cases.append(case)
             summ = case if summ is None else summ + case
         assert summ is not None
-        
-        return pypika.functions.NullIf(summ, pypika.terms.Term.wrap_constant(0)).as_(alias)
 
+        return pypika.functions.NullIf(summ, pypika.terms.Term.wrap_constant(0)).as_(alias)
 
     def get_modified_date(self, uri: str, file_type: FileTypes) -> datetime:
         if file_type == "delta":
             dt = DeltaTable(
                 uri,
             )
-            return datetime.fromtimestamp(
-                dt.history(1)[-1]["timestamp"] / 1000.0, tz=timezone.utc
-            )
+            return datetime.fromtimestamp(dt.history(1)[-1]["timestamp"] / 1000.0, tz=timezone.utc)
         import os
 
         return datetime.fromtimestamp(os.path.getmtime(uri), tz=timezone.utc)
@@ -174,5 +172,5 @@ class ExecutionContext(ABC):
         self.register_arrow(name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: pypika.queries.QueryBuilder | str) -> ResultData:
+    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
         ...
