@@ -2,7 +2,7 @@ from datetime import datetime
 from deltalake import DeltaTable
 
 import pyarrow as pa
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 import duckdb
@@ -18,7 +18,7 @@ from bmsdna.lakeapi.core.config import SearchConfig
 class DuckDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: pypika.queries.Union[QueryBuilder ,  str,]
+        original_sql: Union[pypika.queries.QueryBuilder, str],
         con: duckdb.DuckDBPyConnection,
     ) -> None:
         super().__init__()
@@ -97,7 +97,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.res_con = None
         self.persistance_file_name = None
 
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Union[Dataset ,  pyarrow].Table):
+    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         self.con.from_arrow(ds).create_view(name, replace=True)
 
     def close(self):
@@ -105,7 +105,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.Union[QueryBuilder ,  str,]
+        sql: Union[
+            pypika.queries.QueryBuilder,
+            str,
+        ],
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
             self.res_con = duckdb.connect(self.persistance_file_name, read_only=True)

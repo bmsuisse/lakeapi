@@ -5,7 +5,7 @@ from bmsdna.lakeapi.core.yaml import get_yaml
 import inspect
 from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH, DISABLE_BASIC_AUTH, JWT_SECRET
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CONFIG_PATH, JWT_SECRET
 
 
 cache = cached(
@@ -18,16 +18,12 @@ security = HTTPBasic()
 
 
 def _readdb():
-    if DISABLE_BASIC_AUTH:
-        return
     users = get_yaml(CONFIG_PATH).get("users")
     for user in users:
         yield user
 
 
-userhashmap = {
-    ud["name"].casefold(): ud["passwordhash"] for ud in _readdb() if ud["name"]
-}  # pay attention not to include an empty user by accident
+userhashmap: dict[str, str] | None = None
 
 
 @cache
@@ -45,10 +41,13 @@ async def get_current_username(req: Request):
         dt = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         if dt["path"] == req.url.path or dt["host"] == req.url.hostname:
             return dt["username"]
-    if DISABLE_BASIC_AUTH:
-        return None
     credentials = await HTTPBasic(auto_error=True)(req)
     assert credentials is not None
+    global userhashmap
+    userhashmap = userhashmap or {
+        ud["name"].casefold(): ud["passwordhash"] for ud in _readdb() if ud["name"]
+    }  # pay attention not to include an empty user by accident
+
     if not credentials.username.casefold() in userhashmap.keys():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

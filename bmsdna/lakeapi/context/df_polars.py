@@ -4,7 +4,7 @@ import polars as pl
 from bmsdna.lakeapi.polars_extensions.delta import *
 from polars.datatypes.convert import DataTypeMappings, py_type_to_arrow_type
 import pyarrow as pa
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 import threading
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
@@ -14,7 +14,7 @@ from uuid import uuid4
 
 
 class PolarsResultData(ResultData):
-    def __init__(self, df: pl.Union[DataFrame, pl].LazyFrame, sql_context: pl.SQLContext):
+    def __init__(self, df: Union[pl.DataFrame, pl.LazyFrame], sql_context: pl.SQLContext):
         self.df = df
         self.random_name = "tbl_" + str(uuid4())
         self.registred_df = False
@@ -82,11 +82,11 @@ class PolarsResultData(ResultData):
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(self, sql_context: pl.Optional[SQLContext] = None):
+    def __init__(self, sql_context: Optional[pl.SQLContext] = None):
         super().__init__()
         self.sql_context = sql_context or pl.SQLContext()
 
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Union[Dataset, pyarrow].Table):
+    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
 
         if isinstance(ds, pl.DataFrame):
@@ -132,8 +132,8 @@ class PolarsExecutionContext(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.Union[
-            QueryBuilder,
+        sql: Union[
+            pypika.queries.QueryBuilder,
             str,
         ],
     ) -> PolarsResultData:

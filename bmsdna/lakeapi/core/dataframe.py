@@ -249,7 +249,7 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
 
 @cache
 async def concat_expr(
-    exprs: list[Union[pypika.Criterion, list[pa.compute.Expression]]],
+    exprs: Union[list[pypika.Criterion], list[pa.compute.Expression]],
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
     expr: Optional[pypika.Criterion] = None
     for e in exprs:

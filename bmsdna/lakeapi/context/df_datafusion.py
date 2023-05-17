@@ -1,7 +1,7 @@
 from deltalake import DeltaTable
 
 import pyarrow as pa
-from typing import List, Tuple, Any
+from typing import List, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 import datafusion
@@ -13,7 +13,7 @@ import pypika
 class DatafusionDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: pypika.queries.Union[QueryBuilder ,  str,]
+        original_sql: Union[pypika.queries.QueryBuilder, str],
         session: datafusion.SessionContext,
     ) -> None:
         super().__init__()
@@ -65,7 +65,7 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
     def register_arrow(
         self,
         name: str,
-        ds: pyarrow.dataset.Union[Dataset ,  pyarrow].Union[Table ,  pyarrow].dataset.FileSystemDataset,
+        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table, pyarrow.dataset.FileSystemDataset],
     ):
         if isinstance(ds, pyarrow.dataset.Dataset):
             self.session.deregister_table(name)
@@ -84,7 +84,10 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
 
     def execute_sql(
         self,
-        sql: pypika.queries.Union[QueryBuilder ,  str,]
+        sql: Union[
+            pypika.queries.QueryBuilder,
+            str,
+        ],
     ) -> DatafusionDBResultData:
         return DatafusionDBResultData(sql, session=self.session)
 

@@ -8,14 +8,13 @@ from typing import (
     Dict,
     List,
     Literal,
-    NotRequired,
     Optional,
-    Required,
     Tuple,
     TypedDict,
     Union,
     cast,
 )
+from typing_extensions import TypedDict, NotRequired, Required
 
 import yaml
 from polars.type_aliases import JoinStrategy
@@ -136,8 +135,8 @@ class Config:
     dataframe: DataframeConfig
     route: Optional[str] = None
     version: Optional[int] = 1
-    api_method: Literal["get", "post"Union[] ,  List[Literal[]"get", "post"]] = "get"
-    params:Union[ Optional[List[Param ,  str]] ]= None
+    api_method: Union[Literal["get", "post"], List[Literal["get", "post"]]] = "get"
+    params: Optional[List[Union[Param, str]]] = None
     engine: Engines = "duckdb"
     timestamp: Optional[datetime] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
@@ -353,6 +352,5 @@ class AppConfig(TypedDict):
 
 class YamlData(TypedDict):
     tables: list[Config]
-    http: HttpConfig
     users: list[UserConfig]
     app: AppConfig

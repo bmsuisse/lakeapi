@@ -7,9 +7,6 @@
                 "$ref": "#/$defs/Config"
             }
         },
-        "http": {
-            "$ref": "#/$defs/HttpConfig"
-        },
         "users": {
             "type": "array",
             "items": {
@@ -21,10 +18,9 @@
         }
     },
     "required": [
-        "http",
-        "users",
+        "tables",
         "app",
-        "tables"
+        "users"
     ],
     "$defs": {
         "Config": {
@@ -464,26 +460,6 @@
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "HttpConfig": {
-            "type": "object",
-            "properties": {
-                "bind": {
-                    "type": "string"
-                },
-                "max_requests": {
-                    "type": "integer"
-                },
-                "max_requests_jitter": {
-                    "type": "integer"
-                },
-                "timeout": {
-                    "type": "integer"
-                },
-                "graceful_timeout": {
-                    "type": "integer"
                 }
             }
         },

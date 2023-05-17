@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC, abstractproperty
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
-from typing import Optional, List, Tuple, Any, TYPE_CHECKING
+from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 import pyarrow.dataset
@@ -96,7 +96,7 @@ class ExecutionContext(ABC):
         uri: str,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
-    ) -> pa.dataset.Optional[Dataset]:
+    ) -> Optional[pa.dataset.Dataset]:
         if file_type in ["parquet", "ipc", "arrow", "feather", "csv", "orc"]:
             ds = pa.dataset.dataset(uri, format=file_type)
         elif file_type == "delta":
@@ -110,7 +110,7 @@ class ExecutionContext(ABC):
         return ds
 
     @abstractmethod
-    def register_arrow(self, name: str, ds: pyarrow.dataset.Union[Dataset, pyarrow].Table):
+    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         ...
 
     @abstractmethod
@@ -172,5 +172,5 @@ class ExecutionContext(ABC):
         self.register_arrow(name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: pypika.queries.Union[QueryBuilder, str]) -> ResultData:
+    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
         ...
