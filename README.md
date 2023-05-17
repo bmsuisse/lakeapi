@@ -7,6 +7,7 @@ It also contains a minimal security layer for convenience (Basic Auth), but you 
 It constrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL by default, but we limit possible queries using a config. This makes it easy for you to control what happens on your data. If you want the sql endpoint, you can enable this.
 
 To run the app with default config, just do:
+
 ```python
 app = FastAPI()
 bmsdna.lakeapi.init_lakeapi(app)
@@ -31,6 +32,23 @@ Of course, everything works with Open API and FastAPI. Meaning you can add other
 
 By Default, Basic Authentication is enabled. To add a user, simply run `add_lakeapi_user YOURUSERNAME --yaml-file config.yml`. This will add the user to your config yaml (argon2 encrypted).
 The generated Password is printed. If you do not want this logic, you can overwrite the username_retriver of the Default Config
+
+## Standalone Mode
+
+If you just want to run this thing, you can run it with a webserver:
+
+Uvicorn: `uvicorn bmsdna.lakeapi.standalone:app --host 0.0.0.0 --port 8080`
+Gunicorn: `gunicorn bmsdna.lakeapi.standalone:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:80`
+
+Of course you need to adjust your http options as needed. Also, you need to `pip install` uvicorn/gunicorn
+
+You can still use environment variables for configuration
+
+## Environment Variables
+
+CONFIG_PATH: The path of the config file, defaults to config.yml
+DATA_PATH: The path of the data files, defaults to data. Paths in config.yml are relative to DATA_PATH
+ENABLE_SQL_ENDPOINT: Set this to 1 to enable the SQL Endpoint
 
 ## Config File
 
