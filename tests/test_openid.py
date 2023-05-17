@@ -17,3 +17,5 @@ def test_openid():
     schema = jsd["components"]["schemas"]
     ## TODO : Add more tests for different endpoints
     assert "test_fake_delta_partition" in schema
+    assert "test_fake_polars_postParameter" in schema
+    assert "abc" in schema["test_fake_polars_postParameter"]["properties"]
