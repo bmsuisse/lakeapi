@@ -32,16 +32,22 @@ logger = get_logger(__name__)
 @dataclass(frozen=True)
 class BasicConfig:
     get_username: Callable
-    enable_sql_endpoint: bool = False
-    temp_folder_path = os.getenv("TEMP", "/tmp")
-    data_path = os.environ.get("DATA_PATH", "data")
-    token_jwt_secret = os.getenv("JWT_SECRET", None)  # None disables the token feature
+    enable_sql_endpoint: bool
+    temp_folder_path: str
+    data_path: str
+    token_jwt_secret: str | None  # None disables the token feature
 
 
 def get_default_config():
     from bmsdna.lakeapi.core.uservalidation import get_username
 
-    return BasicConfig(get_username=get_username)
+    return BasicConfig(
+        get_username=get_username,
+        enable_sql_endpoint=False,
+        temp_folder_path=os.getenv("TEMP", "/tmp"),
+        data_path=os.environ.get("DATA_PATH", "data"),
+        token_jwt_secret=os.getenv("JWT_SECRET", None),
+    )
 
 
 @dataclass
@@ -342,6 +348,7 @@ class Configs:
     @classmethod
     def from_yamls(
         cls,
+        basic_config: BasicConfig,
         root: str = "config",
         exclude_internal: bool = True,
         internal_pattern: str = "_",
@@ -369,6 +376,5 @@ class Configs:
                         users += yaml_data_users
 
         flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
-        configs = flat_map(Config.from_dict, tables)
-        users = flat_map(Config.from_dict, users)
+        configs = flat_map(lambda x: Config.from_dict(x, basic_config=basic_config), tables)
         return cls(configs, users)

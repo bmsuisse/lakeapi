@@ -28,6 +28,7 @@ jobs:
       - name: Pyright
         run: |
           poetry run pyright .
+      - name: Create Test data
+        run: poetry run python -m tests.create_test_data
       - name: Test with pytest
-        run: |
-          poetry run pytest tests
+        run: poetry run pytest tests

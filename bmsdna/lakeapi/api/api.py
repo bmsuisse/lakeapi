@@ -10,8 +10,8 @@ import os
 def init_lakeapi(app: FastAPI, start_config: BasicConfig | None = None, config: Configs | str | None = None):
     start_config = start_config or get_default_config()
     if config is None:
-        config = Configs.from_yamls(os.getenv("CONFIG_PATH", "config.yml"))
+        config = Configs.from_yamls(start_config, os.getenv("CONFIG_PATH", "config.yml"))
     elif isinstance(config, str):
-        config = Configs.from_yamls(config)
+        config = Configs.from_yamls(start_config, config)
     router = init_routes(config, start_config)
     app.include_router(router)
