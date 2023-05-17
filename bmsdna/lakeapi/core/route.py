@@ -1,18 +1,27 @@
-from typing import Literal, cast
+from typing import Literal, Tuple, cast
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Request
 
-from bmsdna.lakeapi.core.config import *
-from bmsdna.lakeapi.core.dataframe import *
-from bmsdna.lakeapi.core.endpoint import *
-from bmsdna.lakeapi.core.env import CONFIG_PATH
+from bmsdna.lakeapi.core.config import BasicConfig, Configs
+from bmsdna.lakeapi.core.log import get_logger
+
 
 logger = get_logger(__name__)
 
+all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
-def init_routes(configs: Configs):
+
+def init_routes(configs: Configs, basic_config: BasicConfig):
     from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
+    from bmsdna.lakeapi.core.endpoint import (
+        get_response_model,
+        create_detailed_meta_endpoint,
+        create_config_endpoint,
+        create_sql_endpoint,
+    )
+
+    all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
     with DuckDbExecutionContext() as context:
@@ -23,7 +32,9 @@ def init_routes(configs: Configs):
                 else config.api_method
             )
             try:
-                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context)
+                from bmsdna.lakeapi.core.dataframe import Dataframe
+
+                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config)
                 if not realdataframe.file_exists():
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
@@ -50,7 +61,7 @@ def init_routes(configs: Configs):
                 metamodel = None
 
             response_model = get_response_model(config=config, metamodel=metamodel) if metamodel is not None else None
-            create_detailed_meta_endpoint(metamodel=metamodel, config=config, router=router)
+            create_detailed_meta_endpoint(metamodel=metamodel, config=config, router=router, basic_config=basic_config)
             for am in methods:
                 create_config_endpoint(
                     apimethod=am,
@@ -58,15 +69,33 @@ def init_routes(configs: Configs):
                     router=router,
                     response_model=response_model,
                     metamodel=metamodel,
+                    basic_config=basic_config,
                 )
 
         @router.get(
             "/metadata",
             name="metadata",
         )
-        async def get_metadata(username: str = Depends(get_current_username)):
+        async def get_metadata(username: str = Depends(basic_config.get_username)):
             return metadata
 
-        create_sql_endpoint(router=router)
+        if basic_config.enable_sql_endpoint:
+            create_sql_endpoint(router=router, basic_config=basic_config)
 
         return router
+
+
+def get_basic_config(req: Request) -> BasicConfig:
+    for basic_config, configs in all_lake_api_routers:
+        for cfg in configs:
+            if cfg.route == req.scope["path"]:
+                return basic_config
+    return req.state.lake_api_basic_config
+
+
+def get_config(req: Request) -> Configs:
+    for basic_config, configs in all_lake_api_routers:
+        for cfg in configs:
+            if cfg.route == req.scope["path"]:
+                return configs
+    return req.state.lake_api_config

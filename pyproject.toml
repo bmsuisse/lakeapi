@@ -65,12 +65,6 @@ typeCheckingMode = "basic"
 [tool.black]
 line-length = 119
 
-[tool.pytest.ini_options]
-env = [
-    "CONFIG_PATH=config_test.yml",
-    "DATA_PATH=tests/data",
-]
-
 [tool.poetry.extras]
 schema = ["jsonschema", "python2jsonschema"]
 polars = ["polars", "xlsx2csv"]

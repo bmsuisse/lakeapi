@@ -17,6 +17,7 @@ from starlette.datastructures import URL
 from starlette.responses import FileResponse, StreamingResponse
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 
@@ -82,11 +83,7 @@ def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str
 
 
 def write_frame(
-    url: URL,
-    current_user: str,
-    content: ResultData,
-    format: OutputFormats,
-    out: str,
+    url: URL, current_user: str, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
 ):
     if format == OutputFormats.IQY:
         import jwt
@@ -97,7 +94,7 @@ def write_frame(
         query = query + ("?" if not query else "&") + "format=json"
         token = jwt.encode(
             {"host": url.hostname, "path": url.path, "username": current_user},
-            env.JWT_SECRET,
+            basic_config.token_jwt_secret,
             algorithm="HS256",
         )
         query += f"&token={token}"
@@ -185,6 +182,7 @@ async def create_response(
     accept: str,
     content: ResultData,
     context: ExecutionContext,
+    basic_config: BasicConfig,
 ):
     headers = {}
 
@@ -205,11 +203,7 @@ async def create_response(
     path = os.getenv("TEMP", "/tmp") + "/" + str(uuid4()) + extension
     media_type = mimetypes.guess_type("file" + extension)[0]
     write_frame(
-        current_user=current_user_name,
-        url=url,
-        content=content,
-        format=format,
-        out=path,
+        current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
     )
 
     if media_type is not None and format in [

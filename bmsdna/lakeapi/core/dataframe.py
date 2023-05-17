@@ -21,11 +21,11 @@ import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 
-from bmsdna.lakeapi.core.config import DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.config import BasicConfig, DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, DATA_PATH
 from bmsdna.lakeapi.context.df_base import ResultData, ExecutionContext
 import pypika
 from pypika.queries import QueryBuilder
@@ -55,6 +55,7 @@ class Dataframe:
         name: str,
         config: DataframeConfig,
         sql_context: ExecutionContext,
+        basic_config: BasicConfig,
         df: Optional[ResultData] = None,
     ) -> None:
         self.config = config
@@ -62,12 +63,13 @@ class Dataframe:
         self.name = name
         self.df = df
         self.sql_context = sql_context
+        self.basic_config = basic_config
 
     @property
     def uri(self):
         return os.path.join(
-            DATA_PATH,
-            self.config.uri if "data_test" not in self.config.uri else self.config.uri,
+            self.basic_config.data_path,
+            self.config.uri,
         )
 
     def file_exists(self):
