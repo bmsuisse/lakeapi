@@ -18,9 +18,9 @@
         }
     },
     "required": [
-        "tables",
+        "users",
         "app",
-        "users"
+        "tables"
     ],
     "$defs": {
         "Config": {
@@ -40,12 +40,6 @@
                 },
                 "dataframe": {
                     "$ref": "#/$defs/DataframeConfig"
-                },
-                "route": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
                 },
                 "version": {
                     "type": [
