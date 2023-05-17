@@ -7,11 +7,24 @@ from bmsdna.lakeapi.core.uservalidation import get_username
 import os
 
 
-def init_lakeapi(app: FastAPI, start_config: BasicConfig | None = None, config: Configs | str | None = None):
+@dataclass(frozen=True)
+class LakeApiStartInfo:
+    start_config: BasicConfig
+    config: Configs
+    get_username: Callable
+
+
+def init_lakeapi(
+    app: FastAPI, start_config: BasicConfig | None = None, config: Configs | str | None = None
+) -> LakeApiStartInfo:
     start_config = start_config or get_default_config()
+    real_config: Configs
     if config is None:
-        config = Configs.from_yamls(start_config, os.getenv("CONFIG_PATH", "config.yml"))
+        real_config = Configs.from_yamls(start_config, os.getenv("CONFIG_PATH", "config.yml"))
     elif isinstance(config, str):
-        config = Configs.from_yamls(start_config, config)
-    router = init_routes(config, start_config)
+        real_config = Configs.from_yamls(start_config, config)
+    else:
+        real_config = config
+    router, get_username = init_routes(real_config, start_config)
     app.include_router(router)
+    return LakeApiStartInfo(start_config, real_config, get_username)

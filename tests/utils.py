@@ -9,10 +9,10 @@ def get_app():
     app = FastAPI()
     def_cfg = bmsdna.lakeapi.get_default_config()
     cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data")
-    bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml")
+    sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml")
 
     @app.get("/")
-    async def root(username: str = Depends(def_cfg.get_username)):
+    async def root(username: str = Depends(sti.get_username)):
         return {"User": username}
 
     return app

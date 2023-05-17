@@ -1,3 +1,4 @@
+import inspect
 from pathlib import Path
 from typing import List, Literal, Optional, Type, Union, cast
 
@@ -23,7 +24,7 @@ from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData
-from bmsdna.lakeapi.core.config import BasicConfig, Config
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.dataframe import (
     Dataframe,
     filter_df_based_on_params,
@@ -194,12 +195,19 @@ def create_config_endpoint(
     router: APIRouter,
     response_model: Type,
     basic_config: BasicConfig,
+    configs: Configs,
 ):
     route = config.route
 
     query_model = create_parameter_model(
         metamodel, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
     )
+
+    async def get_username(req: Request):
+        res = basic_config.username_retriever(req, basic_config, configs.users)
+        if inspect.isawaitable(res):
+            await res
+        return res
 
     api_method_mapping = {
         "post": router.post(
@@ -231,7 +239,7 @@ def create_config_endpoint(
         distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
-        username=Depends(basic_config.get_username),
+        username=Depends(get_username),
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
@@ -308,7 +316,7 @@ def create_config_endpoint(
 duckcon: Optional[duckdb.DuckDBPyConnection] = None
 
 
-def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
+def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: Configs):
     paths = get_delta_folders(basic_config.data_path)
 
     @router.on_event("shutdown")
@@ -317,13 +325,19 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
         if duckcon is not None:
             duckcon.close()
 
+    async def get_username(req: Request):
+        res = basic_config.username_retriever(req, basic_config, configs.users)
+        if inspect.isawaitable(res):
+            await res
+        return res
+
     @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")
     async def get_sql_tables(
         request: Request,
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(basic_config.get_username),
+        username=Depends(get_username),
     ):
         try:
             return [table for table in paths]
@@ -340,7 +354,7 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(basic_config.get_username),
+        username=Depends(get_username),
     ):
         try:
             body = await request.body()
@@ -353,7 +367,9 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
             context = DuckDbExecutionContextBase(duckcon)
             df = context.execute_sql(body.decode("utf-8"))
 
-            return await create_response(username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config)
+            return await create_response(
+                username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
+            )
         except Exception as err:
             logger.error(err)
             raise HTTPException(status_code=500, detail=str(err))
@@ -369,7 +385,7 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
         sql: str,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(basic_config.get_username),
+        username=Depends(get_username),
     ):
         try:
             from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
@@ -381,7 +397,9 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig):
             context = DuckDbExecutionContextBase(duckcon)
 
             df = context.execute_sql(sql)
-            return await create_response(username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config)
+            return await create_response(
+                username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
+            )
         except Exception as err:
             logger.error(err)
             raise HTTPException(status_code=500, detail=str(err))

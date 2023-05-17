@@ -1,8 +1,8 @@
+from typing import List, Sequence
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 import argon2
-from bmsdna.lakeapi.core.config import BasicConfig, Configs
-from bmsdna.lakeapi.core.route import get_basic_config, get_config
+from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
 from bmsdna.lakeapi.core.yaml import get_yaml
 import inspect
 from aiocache import cached, Cache
@@ -27,12 +27,9 @@ async def is_correct(hash: str, pwd_str: str):
     return ph.verify(hash.encode("utf-8"), pwd_str.encode("utf-8"))
 
 
-async def get_username(
-    req: Request, basic_config: BasicConfig = Depends(get_basic_config), config: Configs = Depends(get_config)
-):
+async def get_username(req: Request, basic_config: BasicConfig, users: Sequence[UserConfig]):
     if req.query_params.get("token") and basic_config.token_jwt_secret is not None:
         import jwt
-        import env
 
         token = req.query_params["token"]
         dt = jwt.decode(token, basic_config.token_jwt_secret, algorithms=["HS256"])
@@ -42,7 +39,7 @@ async def get_username(
     assert credentials is not None
     global userhashmap
     userhashmap = userhashmap or {
-        ud["name"].casefold(): ud["passwordhash"] for ud in config.users if ud["name"]
+        ud["name"].casefold(): ud["passwordhash"] for ud in users if ud["name"]
     }  # pay attention not to include an empty user by accident
 
     if not credentials.username.casefold() in userhashmap.keys():

@@ -1,3 +1,4 @@
+import inspect
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
@@ -21,9 +22,16 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
         create_sql_endpoint,
     )
 
+    async def get_username(req: Request):
+        res = basic_config.username_retriever(req, basic_config, configs.users)
+        if inspect.isawaitable(res):
+            await res
+        return res
+
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
+
     with DuckDbExecutionContext() as context:
         for config in configs:
             methods = (
@@ -70,32 +78,21 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     response_model=response_model,
                     metamodel=metamodel,
                     basic_config=basic_config,
+                    configs=configs,
                 )
 
         @router.get(
             "/metadata",
             name="metadata",
         )
-        async def get_metadata(username: str = Depends(basic_config.get_username)):
+        async def get_metadata(username: str = Depends(get_username)):
             return metadata
 
         if basic_config.enable_sql_endpoint:
-            create_sql_endpoint(router=router, basic_config=basic_config)
+            create_sql_endpoint(
+                router=router,
+                basic_config=basic_config,
+                configs=configs,
+            )
 
-        return router
-
-
-def get_basic_config(req: Request) -> BasicConfig:
-    for basic_config, configs in all_lake_api_routers:
-        for cfg in configs:
-            if cfg.route == req.scope["path"]:
-                return basic_config
-    return req.state.lake_api_basic_config
-
-
-def get_config(req: Request) -> Configs:
-    for basic_config, configs in all_lake_api_routers:
-        for cfg in configs:
-            if cfg.route == req.scope["path"]:
-                return configs
-    return req.state.lake_api_config
+        return router, get_username
