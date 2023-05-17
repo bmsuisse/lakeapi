@@ -4,7 +4,25 @@ A FastAPI Plugin that allows you to expose your Data Lake as an API, allowing mu
 
 It also contains a minimal security layer for convenience (Basic Auth), but you can also bring your own.
 
-It constrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL\*, but we limit possible queries using a config. This makes it easy for you to control what happens on your data.
+It constrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL by default, but we limit possible queries using a config. This makes it easy for you to control what happens on your data. If you want the sql endpoint, you can enable this.
+
+To run the app with default config, just do:
+```python
+app = FastAPI()
+bmsdna.lakeapi.init_lakeapi(app)
+```
+
+To adjust the config, you can do like this:
+
+```python
+import dataclasses
+import bmsdna.lakeapi
+
+def_cfg = bmsdna.lakeapi.get_default_config() # Get default startup config
+cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data") # Use dataclasses.replace to set the properties you want
+sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
+```
+
 
 ## Config File
 
