@@ -206,7 +206,7 @@ def create_config_endpoint(
     async def get_username(req: Request):
         res = basic_config.username_retriever(req, basic_config, configs.users)
         if inspect.isawaitable(res):
-            await res
+            res = await res
         return res
 
     api_method_mapping = {
@@ -328,7 +328,7 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
     async def get_username(req: Request):
         res = basic_config.username_retriever(req, basic_config, configs.users)
         if inspect.isawaitable(res):
-            await res
+            res = await res
         return res
 
     @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")

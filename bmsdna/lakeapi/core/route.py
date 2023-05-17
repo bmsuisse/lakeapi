@@ -25,7 +25,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     async def get_username(req: Request):
         res = basic_config.username_retriever(req, basic_config, configs.users)
         if inspect.isawaitable(res):
-            await res
+            res = await res
         return res
 
     all_lake_api_routers.append((basic_config, configs))

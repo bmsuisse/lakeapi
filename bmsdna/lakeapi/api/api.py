@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Callable, Final
-from fastapi import FastAPI
+from typing import Awaitable, Callable, Final
+from fastapi import FastAPI, Request
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, get_default_config
 from bmsdna.lakeapi.core.route import init_routes
 from bmsdna.lakeapi.core.uservalidation import get_username
@@ -11,7 +11,7 @@ import os
 class LakeApiStartInfo:
     start_config: BasicConfig
     config: Configs
-    get_username: Callable
+    get_username: Callable[[Request], Awaitable]
 
 
 def init_lakeapi(
