@@ -23,6 +23,14 @@ cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/da
 sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
 ```
 
+## OpenApi
+
+Of course, everything works with Open API and FastAPI. Meaning you can add other FastAPI routes, you can use the /docs and /redoc endpoint.
+
+## Default Security
+
+By Default, Basic Authentication is enabled. To add a user, simply run `add_lakeapi_user YOURUSERNAME --yaml-file config.yml`. This will add the user to your config yaml (argon2 encrypted).
+The generated Password is printed. If you do not want this logic, you can overwrite the username_retriver of the Default Config
 
 ## Config File
 
