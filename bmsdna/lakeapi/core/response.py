@@ -153,11 +153,11 @@ DisableRedirections=False"""
         content.to_pandas().to_xml(out, index=False, parser="etree")
 
     elif format in (OutputFormats.ARROW_IPC, OutputFormats.ARROW_STREAM):
-        batches = content.to_arrow_recordbatch()
-        with pa.OSFile(out, "wb") as sink:
-            with pa.ipc.new_file(sink, batches.schema) as writer:
-                for batch in batches:
-                    writer.write(batch)
+        with content.to_arrow_recordbatch() as batches:
+            with pa.OSFile(out, "wb") as sink:
+                with pa.ipc.new_file(sink, batches.schema) as writer:
+                    for batch in batches:
+                        writer.write(batch)
 
     elif format == OutputFormats.ND_JSON:
         content.write_nd_json(out)

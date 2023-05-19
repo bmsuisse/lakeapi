@@ -18,8 +18,8 @@
         }
     },
     "required": [
-        "users",
         "app",
+        "users",
         "tables"
     ],
     "$defs": {

@@ -62,7 +62,7 @@ class DuckDBResultData(ResultData):
 
     def write_parquet(self, file_name: str):
         query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
-        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False)"
+        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000)"
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
@@ -118,7 +118,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.persistance_file_name = None
 
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
-        self.con.from_arrow(ds).create_view(name, replace=True)
+        # self.con.from_arrow(ds).create_view(name, replace=True)
+        self.con.register(name, ds)
 
     def close(self):
         pass
@@ -159,7 +160,6 @@ class DuckDbExecutionContextBase(ExecutionContext):
         pk_name = "__search_id"
         real_query = f"CREATE TABLE search_con.{persistence_name} AS SELECT ROW_NUMBER() OVER () AS __search_id, * FROM {source_view} s"
         persitance_path = os.getenv("TEMP", "/tmp/")
-
         persistance_file_name = os.path.join(persitance_path, persistence_name + ".duckdb")
 
         if (
