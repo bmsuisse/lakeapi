@@ -145,13 +145,17 @@ def create_detailed_meta_endpoint(
             str_cols = [name for name in schema.names if pa.types.is_string(schema.field(name).type)]
 
             str_lengths_df = (
-                context.execute_sql(
-                    df.query_builder().select(
-                        *[fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
+                (
+                    context.execute_sql(
+                        df.query_builder().select(
+                            *[fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
+                        )
                     )
+                    .to_arrow_table()
+                    .to_pylist()
                 )
-                .to_arrow_table()
-                .to_pylist()
+                if len(str_cols) > 0
+                else [{}]
             )
             str_lengths = str_lengths_df[0]
 

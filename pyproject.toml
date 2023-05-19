@@ -18,7 +18,7 @@ pypika = "^0.48.9"
 # schema stuff
 jsonschema = {version = "^4.17.3", optional=true}
 python2jsonschema = { version ="^0.8", optional=true}
-duckdb = "^0.7.1"
+duckdb = "^0.8.0"
 polars = "^0.17.13"
 
 # polars stuff
