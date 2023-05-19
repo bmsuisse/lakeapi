@@ -14,6 +14,8 @@ import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 
+ENABLE_COPY_TO = os.getenv("ENABLE_COPY_TO", "1") == "1"
+
 
 class DuckDBResultData(ResultData):
     def __init__(
@@ -61,21 +63,29 @@ class DuckDBResultData(ResultData):
         return self.df.fetch_record_batch(chunk_size)
 
     def write_parquet(self, file_name: str):
+        if not ENABLE_COPY_TO:
+            return super().write_parquet(file_name)
         query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000)"
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
+        if not ENABLE_COPY_TO:
+            return super().write_nd_json(file_name)
         query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON)"
         self.con.execute(full_query)
 
     def write_csv(self, file_name: str, *, separator: str):
+        if not ENABLE_COPY_TO:
+            return super().write_csv(file_name, separator=separator)
         query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True)"
         self.con.execute(full_query)
 
     def write_json(self, file_name: str):
+        if not ENABLE_COPY_TO:
+            return super().write_json(file_name)
         query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON, Array True)"
         self.con.execute(full_query)
