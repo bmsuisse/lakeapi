@@ -60,6 +60,26 @@ class DuckDBResultData(ResultData):
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
         return self.df.fetch_record_batch(chunk_size)
 
+    def write_parquet(self, file_name: str):
+        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False)"
+        self.con.execute(full_query)
+
+    def write_nd_json(self, file_name: str):
+        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON)"
+        self.con.execute(full_query)
+
+    def write_csv(self, file_name: str, *, separator: str):
+        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True)"
+        self.con.execute(full_query)
+
+    def write_json(self, file_name: str):
+        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON, Array True)"
+        self.con.execute(full_query)
+
 
 class Match25Term(pypika.terms.Term):
     def __init__(
@@ -142,9 +162,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
         persistance_file_name = os.path.join(persitance_path, persistence_name + ".duckdb")
 
-        if not os.path.exists(persistance_file_name) or datetime.fromtimestamp(
-            os.path.getmtime(persistance_file_name), tz=timezone.utc
-        ) < modified_date.astimezone(timezone.utc):
+        if (
+            not os.path.exists(persistance_file_name)
+            or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
+            < modified_date.astimezone(timezone.utc)
+            or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
+            < datetime.fromisoformat("2023-05-19T00:00Z")  # before duckdb upgrade
+        ):
             persistance_file_name_temp = persistance_file_name + "_temp"
             if os.path.exists(persistance_file_name_temp):
                 os.remove(persistance_file_name_temp)
