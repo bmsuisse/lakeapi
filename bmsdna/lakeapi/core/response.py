@@ -2,19 +2,15 @@ import io
 import json
 import mimetypes
 import os
-import tempfile
-import typing
 from enum import Enum
-from typing import Iterable, Union
+from typing import Union
 from uuid import uuid4
 
 import anyio
 import pyarrow as pa
-from fastapi import BackgroundTasks, Request
-from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response
+from fastapi import BackgroundTasks
 from starlette.datastructures import URL
-from starlette.responses import FileResponse, StreamingResponse
+from starlette.responses import FileResponse
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
@@ -171,11 +167,6 @@ DisableRedirections=False"""
         content.write_json(out)
 
 
-def file_response_generator(path):
-    with open(path, "rb") as f:
-        yield from f
-
-
 async def create_response(
     current_user_name: str,
     url: URL,
@@ -200,7 +191,7 @@ async def create_response(
     ]:
         content_dispositiont_type = "inline"
         filename = None
-    path = os.getenv("TEMP", "/tmp") + "/" + str(uuid4()) + extension
+    path = os.path.join(basic_config.temp_folder_path, str(uuid4()) + extension)
     media_type = mimetypes.guess_type("file" + extension)[0]
     write_frame(
         current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
