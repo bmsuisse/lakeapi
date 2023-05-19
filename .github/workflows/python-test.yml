@@ -32,5 +32,5 @@ jobs:
           poetry run pyright .
       - name: Create Test data
         run: poetry run python -m tests.create_test_data
-      - name: Test with pytest
-        run: poetry run pytest tests
+      - name: Test with pytest (no benchmarks)
+        run: poetry run pytest tests --benchmark-skip
