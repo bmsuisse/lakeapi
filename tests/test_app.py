@@ -46,7 +46,7 @@ def test_fruits_limit_1():
 
 
 def test_fruits_offset_1():
-    for e in ("duckdb", "datafusion"):  # polars does not support offset
+    for e in engines:  # polars does not support offset
         response = client.get(
             f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={e}",
             auth=auth,
