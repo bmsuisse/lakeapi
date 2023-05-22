@@ -36,3 +36,16 @@ def test_search():
                 "karen" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
                 or "example" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
             )
+
+
+def test_no_search():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        jsd = response.json()
+        assert len(jsd) >= 3
+        assert len(jsd) <= 5
+        assert "search_score" not in jsd[0]
