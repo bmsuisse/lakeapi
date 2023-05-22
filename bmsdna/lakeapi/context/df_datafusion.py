@@ -1,10 +1,12 @@
 from deltalake import DeltaTable
 
 import pyarrow as pa
-from typing import List, Tuple, Any, Union
+from typing import List, Tuple, Any, Union, TYPE_CHECKING
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
-import datafusion
+
+if TYPE_CHECKING:
+    import datafusion  # lazy import it on runtime
 import pyarrow.dataset
 import pypika.queries
 import pypika
@@ -14,7 +16,7 @@ class DatafusionDBResultData(ResultData):
     def __init__(
         self,
         original_sql: Union[pypika.queries.QueryBuilder, str],
-        session: datafusion.SessionContext,
+        session: "datafusion.SessionContext",
     ) -> None:
         super().__init__()
         self.original_sql = original_sql
@@ -58,7 +60,7 @@ class DatafusionDBResultData(ResultData):
 
 
 class DatafusionDbExecutionContextBase(ExecutionContext):
-    def __init__(self, session: datafusion.SessionContext):
+    def __init__(self, session: "datafusion.SessionContext"):
         super().__init__()
         self.session = session
 
@@ -94,6 +96,8 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
 
 class DatafusionDbExecutionContext(DatafusionDbExecutionContextBase):
     def __init__(self):
+        import datafusion
+
         runtime = datafusion.RuntimeConfig().with_disk_manager_os()
         config = (
             datafusion.SessionConfig()
