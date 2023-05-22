@@ -37,6 +37,7 @@ class BasicConfig:
     temp_folder_path: str
     data_path: str
     token_jwt_secret: str | None  # None disables the token feature
+    min_search_length: int
 
 
 def get_default_config():
@@ -48,6 +49,7 @@ def get_default_config():
         temp_folder_path=os.getenv("TEMP", "/tmp"),
         data_path=os.environ.get("DATA_PATH", "data"),
         token_jwt_secret=os.getenv("JWT_SECRET", None),
+        min_search_length=3,
     )
 
 
