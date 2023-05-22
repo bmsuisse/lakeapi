@@ -26,11 +26,12 @@ class PolarsResultData(ResultData):
         return self.df.columns
 
     def query_builder(self) -> pypika.queries.QueryBuilder:
+        import polars as pl
         if not self.registred_df:
-            if isinstance(self.df, "polars.DataFrame"):
+            if isinstance(self.df, pl.DataFrame):
                 self.df = self.df.lazy()
 
-            self.sql_context.register(self.random_name, cast("polars.LazyFrame", self.df))
+            self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
             self.registred_df = True
         return pypika.Query.from_(self.random_name)
 
