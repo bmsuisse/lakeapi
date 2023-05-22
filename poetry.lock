@@ -1598,11 +1598,11 @@ files = [
 [extras]
 auth = ["argon2-cffi", "pyjwt"]
 datafusion = ["datafusion"]
-polars = ["polars", "xlsx2csv"]
+polars = ["xlsx2csv"]
 schema = ["jsonschema", "python2jsonschema"]
 useradd = ["ruamel.yaml"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "adbbb57bbe41cf715e0b592d701150cce48418ab0c630fffbef5c62e4c6ed0d8"
+content-hash = "09917b65265d697f0d337a37ce9028e1fd267d5e7c469a261859508f8bd1b390"

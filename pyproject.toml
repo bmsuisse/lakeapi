@@ -72,7 +72,7 @@ line-length = 119
 
 [tool.poetry.extras]
 schema = ["jsonschema", "python2jsonschema"]
-polars = ["polars", "xlsx2csv"]
+polars = ["xlsx2csv"]
 auth = ["argon2-cffi", "pyjwt"]
 datafusion= ["datafusion"]
 useradd = ["ruamel.yaml"]
