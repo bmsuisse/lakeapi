@@ -284,7 +284,7 @@ def create_config_endpoint(
                 searches = {
                     k: (v, search_dict[k.lower()])
                     for k, v in params.dict(exclude_unset=True).items()
-                    if k.lower() and v is not None and len(v) >= basic_config.min_search_length in search_dict
+                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
                 }
                 if len(searches) > 0:
                     import pypika.queries
