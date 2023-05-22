@@ -11,14 +11,9 @@ name: Upload Python Package
 on:
   release:
     types: [published]
-  workflow_run:
-    workflows: ["Python test"]
-    types:
-      - completed
 
 jobs:
   deploy:    
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: pypi
