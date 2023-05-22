@@ -105,6 +105,7 @@ class ExecutionContext(ABC):
             )
 
             ds = dt.to_pyarrow_dataset(partitions=partitions)
+
         else:
             raise Exception(f"Not supported file type {file_type}")
         return ds
