@@ -80,7 +80,7 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
-async def get_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
+async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.dict(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
@@ -263,7 +263,7 @@ def create_config_endpoint(
             parts = await get_partitions(realdataframe, params, config)
             df = realdataframe.get_df(parts or None)
 
-            expr = await get_expr(df.columns(), config, params)
+            expr = await get_params_filter_expr(df.columns(), config, params)
 
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query

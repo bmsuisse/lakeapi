@@ -215,6 +215,18 @@ async def get_partition_filter(param, deltaMeta, param_def):
             if op not in operators:
                 col_for_partitioning = None
                 continue
+        elif partcol.startswith(colname + "_md5_mod_"):
+            col_for_partitioning = partcol
+            modulo_len = int(partcol[len(colname + "_md5_mod_") :])
+            if isinstance(value, (List, Tuple)):
+                hashvl = [int(hashlib.md5(v.encode("utf8")).hexdigest(), 16) for v in value]
+                value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
+            else:
+                hashvl = int(hashlib.md5(value.encode("utf8")).hexdigest(), 16)
+                value_for_partitioning = hashvl % modulo_len
+            if op not in operators:
+                col_for_partitioning = None
+                continue
         elif partcol.startswith(colname + "_prefix_"):
             col_for_partitioning = partcol
             prefix_len = int(partcol[len(colname + "_prefix_") :])

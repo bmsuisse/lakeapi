@@ -362,6 +362,36 @@ def test_data_partition():
         ]
 
 
+def test_data_partition_mod():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 2,
+                "fruits": "banana",
+                "B": 4,
+                "cars": "audi",
+            }
+        ]
+        response = client.get(
+            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&fruits=ananas&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 9,
+                "fruits": "ananas",
+                "B": 9,
+                "cars": "fiat",
+            }
+        ]
+
+
 def test_sql_endoint_post():
     # better naming needed in the future
 

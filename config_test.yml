@@ -67,6 +67,18 @@ tables:
         - name: B
         - name: cars
 
+  - name: fruits_partition_mod
+    tag: test
+    version: 1
+    api_method:
+      - get
+    dataframe:
+      uri: delta/fruits_partition_mod
+    params:
+      - name: cars
+        operators:
+          - "="
+
   - name: fake_delta
     tag: test
     version: 1
