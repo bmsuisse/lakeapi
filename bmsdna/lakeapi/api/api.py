@@ -3,7 +3,6 @@ from typing import Awaitable, Callable, Final
 from fastapi import FastAPI, Request
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, get_default_config
 from bmsdna.lakeapi.core.route import init_routes
-from bmsdna.lakeapi.core.uservalidation import get_username
 import os
 
 
