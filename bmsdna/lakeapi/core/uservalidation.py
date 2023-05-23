@@ -1,7 +1,6 @@
 from typing import List, Sequence
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import argon2
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
 from bmsdna.lakeapi.core.yaml import get_yaml
 import inspect
@@ -23,6 +22,8 @@ userhashmap: dict[str, str] | None = None
 
 @cache
 async def is_correct(hash: str, pwd_str: str):
+    import argon2
+
     ph = argon2.PasswordHasher()
     return ph.verify(hash.encode("utf-8"), pwd_str.encode("utf-8"))
 

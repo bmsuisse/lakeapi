@@ -1,5 +1,4 @@
 import argon2
-import ruamel.yaml as yml  # need to use ruaml.yaml to write yaml because it preserves comments
 from typing import cast, List, Optional
 import secrets
 import string
@@ -38,6 +37,8 @@ def useradd(name: str, pwd: Optional[str], yaml_file: str):
         pwd = generate_strong_password()
     print(name + ": " + pwd)
     hash = hasher.hash(pwd)
+    import ruamel.yaml as yml  # need to use ruaml.yaml to write yaml because it preserves comments
+
     yaml = yml.YAML()
     yaml.indent = 2
     with open(yaml_file, "r", encoding="utf-8") as r:
