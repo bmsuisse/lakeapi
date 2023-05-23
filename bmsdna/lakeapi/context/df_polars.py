@@ -8,6 +8,7 @@ import threading
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import pypika.queries
+import pypika.terms
 import pypika
 from uuid import uuid4
 
@@ -27,6 +28,7 @@ class PolarsResultData(ResultData):
 
     def query_builder(self) -> pypika.queries.QueryBuilder:
         import polars as pl
+
         if not self.registred_df:
             if isinstance(self.df, pl.DataFrame):
                 self.df = self.df.lazy()
@@ -122,6 +124,9 @@ class PolarsExecutionContext(ExecutionContext):
 
     def close(self):
         pass
+
+    def json_function(self, term: pypika.terms.Term):
+        return None
 
     def register_dataframe(
         self,

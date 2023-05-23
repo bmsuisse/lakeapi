@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     import datafusion  # lazy import it on runtime
 import pyarrow.dataset
 import pypika.queries
+import pypika.terms
 import pypika
 
 
@@ -59,10 +60,25 @@ class DatafusionDBResultData(ResultData):
         return self.df.to_arrow_table().to_reader(max_chunksize=chunk_size)
 
 
+from datafusion import udf
+
+
+def to_json(array: pa.Array) -> pa.Array:
+    import json
+
+    return pa.array([json.dumps(s) for s in array.to_pylist()], type=pa.string)
+
+
+to_json = udf(to_json, [pa.struct], pyarrow.string(), "stable")
+
+
 class DatafusionDbExecutionContextBase(ExecutionContext):
     def __init__(self, session: "datafusion.SessionContext"):
         super().__init__()
         self.session = session
+
+    def json_function(self, term: pypika.terms.Term):
+        return pypika.terms.Function("to_json", term)
 
     def register_arrow(
         self,
@@ -107,7 +123,7 @@ class DatafusionDbExecutionContext(DatafusionDbExecutionContextBase):
             .set("datafusion.sql_parser.enable_ident_normalization", "false")
         )
         ctx = datafusion.SessionContext(config, runtime)
-
+        ctx.register_udf(to_json)
         super().__init__(ctx)
 
     def __enter__(self):
