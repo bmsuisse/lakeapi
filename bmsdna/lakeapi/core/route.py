@@ -45,7 +45,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 from bmsdna.lakeapi.core.dataframe import Dataframe
 
                 realdataframe = Dataframe(
-                    config.version_str, config.tag, config.name, config.dataframe, context, basic_config
+                    config.version_str, config.tag, config.name, config.datasource, context, basic_config
                 )
                 if not realdataframe.file_exists():
                     logger.warning(
@@ -61,8 +61,8 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         "tag": config.tag,
                         "route": config.route,
                         "methods": methods,
-                        "file_type": config.dataframe.file_type,
-                        "uri": config.dataframe.uri,
+                        "file_type": config.datasource.file_type,
+                        "uri": config.datasource.uri,
                         "version": config.version,
                         "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
                     }
@@ -107,7 +107,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     from bmsdna.lakeapi.core.dataframe import Dataframe
 
                     realdataframe = Dataframe(
-                        config.version_str, config.tag, config.name, config.dataframe, context, basic_config
+                        config.version_str, config.tag, config.name, config.datasource, context, basic_config
                     )
                     if realdataframe.file_exists():
                         with get_context_by_engine(config.engine)() as ctx:

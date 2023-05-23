@@ -21,7 +21,7 @@ import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 
-from bmsdna.lakeapi.core.config import BasicConfig, DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, GroupByConfig, GroupByExpConfig, Param
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
@@ -54,7 +54,7 @@ class Dataframe:
         version: str,
         tag: str,
         name: str,
-        config: DataframeConfig,
+        config: DatasourceConfig,
         sql_context: ExecutionContext,
         basic_config: BasicConfig,
         df: Optional[ResultData] = None,

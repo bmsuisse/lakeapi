@@ -133,7 +133,7 @@ class Join:
 
 
 @dataclass
-class DataframeConfig:
+class DatasourceConfig:
     uri: str
     file_type: FileTypes = "delta"
     select: Optional[List[Column]] = None
@@ -160,7 +160,7 @@ class Option:
 class Config:
     name: str
     tag: str
-    dataframe: DataframeConfig
+    datasource: DatasourceConfig
     version: Optional[int] = 1
     api_method: Union[Literal["get", "post"], List[Literal["get", "post"]]] = "get"
     params: Optional[List[Union[Param, str]]] = None
@@ -186,27 +186,29 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def from_dict(cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]) -> List["Config"]:
+    def from_dict(
+        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]
+    ) -> List["Config"]:
         name = config["name"]
         tag = config["tag"]
         version = config.get("version", 1)
         engine = config.get("engine", "duckdb")
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))
         params = config.get("params")
-        dataframe = config["dataframe"]
-        uri = dataframe["uri"]
+        datasource = config["datasource"]
+        uri = datasource["uri"]
         assert isinstance(uri, str)
-        file_type = cast(FileTypes, dataframe.get("file_type", "delta") if dataframe else "delta")
-        columns = dataframe.get("columns") if dataframe else None
-        select = dataframe.get("select") if dataframe else None
-        exclude = dataframe.get("exclude") if dataframe else None
-        groupby = dataframe.get("groupby") if dataframe else None
-        sortby = dataframe.get("sortby") if dataframe else None
+        file_type = cast(FileTypes, datasource.get("file_type", "delta") if datasource else "delta")
+        columns = datasource.get("columns") if datasource else None
+        select = datasource.get("select") if datasource else None
+        exclude = datasource.get("exclude") if datasource else None
+        groupby = datasource.get("groupby") if datasource else None
+        sortby = datasource.get("sortby") if datasource else None
         cache_expiration_time_seconds = (
-            dataframe.get("cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS) if dataframe else None
+            datasource.get("cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS) if datasource else None
         )
-        orderby = dataframe.get("orderby") if dataframe else None
-        joins = dataframe.get("joins") if dataframe else None
+        orderby = datasource.get("orderby") if datasource else None
+        joins = datasource.get("joins") if datasource else None
         search_config = [SearchConfig(**c) for c in config["search"]] if "search" in config else None
         logger.debug(config)
 
@@ -252,7 +254,7 @@ class Config:
                     if res_name not in table_names and (
                         (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
                     ):
-                        dataframe = DataframeConfig(
+                        datasource = DatasourceConfig(
                             uri=folder + "/" + it.name,
                             file_type=file_type,
                             select=select,
@@ -274,13 +276,13 @@ class Config:
                                 search=search_config,
                                 params=_params,  # type: ignore
                                 allow_get_all_pages=config.get("allow_get_all_pages", False),
-                                dataframe=dataframe,
+                                datasource=datasource,
                                 cache_expiration_time_seconds=cache_expiration_time_seconds,
                             )
                         )
             return ls
         else:
-            dataframe = DataframeConfig(
+            datasource = DatasourceConfig(
                 uri=uri,
                 file_type=file_type,
                 select=select,
@@ -302,7 +304,7 @@ class Config:
                     api_method=api_method,
                     params=_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
-                    dataframe=dataframe,
+                    datasource=datasource,
                     cache_expiration_time_seconds=cache_expiration_time_seconds,
                 )
             ]

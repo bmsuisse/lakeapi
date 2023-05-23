@@ -67,7 +67,7 @@ async def get_partitions(dataframe: Dataframe, params: BaseModel, config: Config
             params.dict(exclude_unset=True) if params else {},
             config.params or [],
         )
-        if config.dataframe.file_type == "delta"
+        if config.datasource.file_type == "delta"
         else None
     )
     return parts
@@ -129,13 +129,13 @@ def create_detailed_meta_endpoint(
 
         with DuckDbExecutionContext() as context:
             realdataframe = Dataframe(
-                config.version_str, config.tag, config.name, config.dataframe, context, basic_config=basic_config
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
             partition_columns = []
             partition_values = None
             delta_tbl = None
             df = realdataframe.get_df(None)
-            if config.dataframe.file_type == "delta":
+            if config.datasource.file_type == "delta":
                 delta_tbl = DeltaTable(realdataframe.uri)
                 partition_columns = delta_tbl.metadata().partition_columns
                 if len(partition_columns) > 0:
@@ -257,7 +257,7 @@ def create_config_endpoint(
 
         with ExecutionContext() as context:
             realdataframe = Dataframe(
-                config.version_str, config.tag, config.name, config.dataframe, context, basic_config=basic_config
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
 
             parts = await get_partitions(realdataframe, params, config)
