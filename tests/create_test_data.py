@@ -67,6 +67,9 @@ if __name__ == "__main__":
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite")
 
+    delete_folder("tests/data/startest")
+    write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
+
     print(df)
 
     delta_path = "tests/data/delta/fruits_partition"
@@ -78,12 +81,12 @@ if __name__ == "__main__":
 
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
-
+    write_deltalake("tests/data/startest/fruits_partition", df, mode="overwrite")
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)
     df.to_csv(csv_path)
-
+    df.to_csv("tests/data/startest/fruits_csv.csv")
     delta_path = "tests/data/delta/fake"
     delete_folder(delta_path)
 
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     delete_folder(parquet_path)
     os.makedirs(pathlib.Path(parquet_path).parent, exist_ok=True)
     df.to_parquet(parquet_path)
-
+    df.to_parquet("tests/data/startest/faker.parquet")
     arrow_path = "tests/data/arrow/fake.arrow"
     delete_folder(arrow_path)
     os.makedirs(pathlib.Path(arrow_path).parent, exist_ok=True)
