@@ -164,7 +164,7 @@ class TypeBaseModel(BaseModel):
 
 
 def should_hide_colname(name: str):
-    return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name
+    return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name or "_md5_mod_" in name
 
 
 def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:

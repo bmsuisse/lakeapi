@@ -28,7 +28,7 @@
             "required": [
                 "name",
                 "tag",
-                "dataframe"
+                "datasource"
             ],
             "additionalProperties": false,
             "properties": {
@@ -38,8 +38,8 @@
                 "tag": {
                     "type": "string"
                 },
-                "dataframe": {
-                    "$ref": "#/$defs/DataframeConfig"
+                "datasource": {
+                    "$ref": "#/$defs/DatasourceConfig"
                 },
                 "version": {
                     "type": [
@@ -123,7 +123,7 @@
                 }
             }
         },
-        "DataframeConfig": {
+        "DatasourceConfig": {
             "type": "object",
             "required": [
                 "uri"

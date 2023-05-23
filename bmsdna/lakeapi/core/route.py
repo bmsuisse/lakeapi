@@ -2,9 +2,11 @@ import inspect
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
+from bmsdna.lakeapi.context import get_context_by_engine
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger
+from bmsdna.lakeapi.utils.fast_api_utils import _repeat_every
 
 
 logger = get_logger(__name__)
@@ -42,7 +44,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
             try:
                 from bmsdna.lakeapi.core.dataframe import Dataframe
 
-                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config)
+                realdataframe = Dataframe(
+                    config.version_str, config.tag, config.name, config.datasource, context, basic_config
+                )
                 if not realdataframe.file_exists():
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
@@ -57,8 +61,8 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         "tag": config.tag,
                         "route": config.route,
                         "methods": methods,
-                        "file_type": config.dataframe.file_type,
-                        "uri": config.dataframe.uri,
+                        "file_type": config.datasource.file_type,
+                        "uri": config.datasource.uri,
                         "version": config.version,
                         "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
                     }
@@ -94,5 +98,19 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 basic_config=basic_config,
                 configs=configs,
             )
+
+        @router.on_event("startup")
+        @_repeat_every(seconds=60 * 60)  # 1 hour
+        def _persist_search_endpoints() -> None:
+            for config in configs:
+                if config.search:
+                    from bmsdna.lakeapi.core.dataframe import Dataframe
+
+                    realdataframe = Dataframe(
+                        config.version_str, config.tag, config.name, config.datasource, context, basic_config
+                    )
+                    if realdataframe.file_exists():
+                        with get_context_by_engine(config.engine)() as ctx:
+                            ctx.init_search(realdataframe.tablename, config.search)
 
         return router, get_username

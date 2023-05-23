@@ -74,6 +74,7 @@ if __name__ == "__main__":
 
     delta_path = "tests/data/delta/fruits_partition"
 
+    df2 = df.copy()
     df["fruits_partition"] = df["fruits"]
     df["cars_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:2] for val in df["cars"]]
 
@@ -81,7 +82,14 @@ if __name__ == "__main__":
 
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
-    write_deltalake("tests/data/startest/fruits_partition", df, mode="overwrite")
+    write_deltalake(
+        "tests/data/startest/fruits_partition", df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"]
+    )
+
+    df2["cars_md5_mod_27"] = [str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in df["cars"]]
+    delete_folder("tests/data/delta/fruits_partition_mod")
+    write_deltalake("tests/data/delta/fruits_partition_mod", df2, mode="overwrite", partition_by=["cars_md5_mod_27"])
+
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)

@@ -31,7 +31,7 @@ tables:
         combi:
           - fruits
           - cars
-    dataframe:
+    datasource:
       uri: delta/fruits
       file_type: delta
 
@@ -58,7 +58,7 @@ tables:
         combi:
           - fruits
           - cars
-    dataframe:
+    datasource:
       uri: delta/fruits_partition
       file_type: delta
       select:
@@ -66,6 +66,18 @@ tables:
         - name: fruits
         - name: B
         - name: cars
+
+  - name: fruits_partition_mod
+    tag: test
+    version: 1
+    api_method:
+      - get
+    datasource:
+      uri: delta/fruits_partition_mod
+    params:
+      - name: cars
+        operators:
+          - "="
 
   - name: fake_delta
     tag: test
@@ -81,7 +93,7 @@ tables:
       - name: name1
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -99,7 +111,7 @@ tables:
       - name: name1
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -117,7 +129,7 @@ tables:
       - name: cars
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: csv/fruits.csv
       file_type: csv
 
@@ -135,7 +147,7 @@ tables:
       - name: name1
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: arrow/fake.arrow
       file_type: arrow
 
@@ -145,7 +157,7 @@ tables:
     api_method:
       - get
       - post
-    dataframe:
+    datasource:
       uri: parquet/fake.parquet
       file_type: parquet
 
@@ -161,7 +173,7 @@ tables:
         operators:
           - "="
           - in
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -177,7 +189,7 @@ tables:
         operators:
           - "="
           - in
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -193,7 +205,7 @@ tables:
         operators:
           - "="
           - in
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -203,7 +215,7 @@ tables:
     api_method:
       - get
       - post
-    dataframe:
+    datasource:
       uri: delta/fruits
       file_type: delta
       select:
@@ -216,7 +228,7 @@ tables:
     api_method:
       - get
       - post
-    dataframe:
+    datasource:
       uri: parquet/search.parquet
       file_type: parquet
     search:
@@ -232,7 +244,7 @@ tables:
     api_method:
       - get
       - post
-    dataframe:
+    datasource:
       uri: b/not_existing.parquet
       file_type: parquet
 
@@ -241,7 +253,7 @@ tables:
     version: 1
     api_method:
       - post
-    dataframe:
+    datasource:
       uri: startest/*
       file_type: delta
 
@@ -250,7 +262,7 @@ tables:
     version: 1
     api_method:
       - get
-    dataframe:
+    datasource:
       uri: startest/fruits
       file_type: delta
 
@@ -260,7 +272,7 @@ tables:
     api_method:
       - get
       - post
-    dataframe:
+    datasource:
       uri: startest/fruits_csv
       file_type: delta
 

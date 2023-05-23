@@ -67,7 +67,7 @@ async def get_partitions(dataframe: Dataframe, params: BaseModel, config: Config
             params.dict(exclude_unset=True) if params else {},
             config.params or [],
         )
-        if config.dataframe.file_type == "delta"
+        if config.datasource.file_type == "delta"
         else None
     )
     return parts
@@ -80,7 +80,7 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
-async def get_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
+async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.dict(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
@@ -128,12 +128,14 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
         with DuckDbExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config=basic_config)
+            realdataframe = Dataframe(
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+            )
             partition_columns = []
             partition_values = None
             delta_tbl = None
             df = realdataframe.get_df(None)
-            if config.dataframe.file_type == "delta":
+            if config.datasource.file_type == "delta":
                 delta_tbl = DeltaTable(realdataframe.uri)
                 partition_columns = delta_tbl.metadata().partition_columns
                 if len(partition_columns) > 0:
@@ -254,12 +256,14 @@ def create_config_endpoint(
         ExecutionContext = get_context_by_engine(engine)
 
         with ExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config=basic_config)
+            realdataframe = Dataframe(
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+            )
 
             parts = await get_partitions(realdataframe, params, config)
             df = realdataframe.get_df(parts or None)
 
-            expr = await get_expr(df.columns(), config, params)
+            expr = await get_params_filter_expr(df.columns(), config, params)
 
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query

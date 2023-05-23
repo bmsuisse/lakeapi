@@ -21,7 +21,7 @@ import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 
-from bmsdna.lakeapi.core.config import BasicConfig, DataframeConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, GroupByConfig, GroupByExpConfig, Param
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
@@ -51,13 +51,15 @@ def get_table_name_from_uri(uri: str):
 class Dataframe:
     def __init__(
         self,
+        version: str,
         tag: str,
         name: str,
-        config: DataframeConfig,
+        config: DatasourceConfig,
         sql_context: ExecutionContext,
         basic_config: BasicConfig,
         df: Optional[ResultData] = None,
     ) -> None:
+        self.version = version
         self.config = config
         self.tag = tag
         self.name = name
@@ -136,7 +138,7 @@ class Dataframe:
 
     @property
     def tablename(self):
-        return self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
+        return self.version + "_" + self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
 
     def get_df(
         self,
@@ -210,6 +212,18 @@ async def get_partition_filter(param, deltaMeta, param_def):
             else:
                 hashvl = hashlib.md5(value.encode("utf8")).hexdigest()
                 value_for_partitioning = hashvl[:prefix_len]
+            if op not in operators:
+                col_for_partitioning = None
+                continue
+        elif partcol.startswith(colname + "_md5_mod_"):
+            col_for_partitioning = partcol
+            modulo_len = int(partcol[len(colname + "_md5_mod_") :])
+            if isinstance(value, (List, Tuple)):
+                hashvl = [int(hashlib.md5(v.encode("utf8")).hexdigest(), 16) for v in value]
+                value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
+            else:
+                hashvl = int(hashlib.md5(value.encode("utf8")).hexdigest(), 16)
+                value_for_partitioning = hashvl % modulo_len
             if op not in operators:
                 col_for_partitioning = None
                 continue
