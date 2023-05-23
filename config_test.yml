@@ -236,6 +236,34 @@ tables:
       uri: b/not_existing.parquet
       file_type: parquet
 
+  - name: "*"
+    tag: startest
+    version: 1
+    api_method:
+      - post
+    dataframe:
+      uri: startest/*
+      file_type: delta
+
+  - name: fruits
+    tag: startest
+    version: 1
+    api_method:
+      - get
+    dataframe:
+      uri: startest/fruits
+      file_type: delta
+
+  - name: fruit_csv
+    tag: startest
+    version: 1
+    api_method:
+      - get
+      - post
+    dataframe:
+      uri: startest/fruits_csv
+      file_type: delta
+
 # --------------------------------
 # User / Password
 # --------------------------------

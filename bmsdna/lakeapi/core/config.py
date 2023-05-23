@@ -8,6 +8,7 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -185,7 +186,7 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def from_dict(cls, config: Dict, basic_config: BasicConfig) -> List["Config"]:
+    def from_dict(cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]) -> List["Config"]:
         name = config["name"]
         tag = config["tag"]
         version = config.get("version", 1)
@@ -247,7 +248,10 @@ class Config:
             else:
                 ls = []
                 for it in os.scandir(root_folder):
-                    if it.is_dir():
+                    res_name = (version, tag, it.name)
+                    if res_name not in table_names and (
+                        (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
+                    ):
                         dataframe = DataframeConfig(
                             uri=folder + "/" + it.name,
                             file_type=file_type,
@@ -379,5 +383,6 @@ class Configs:
                         users += yaml_data_users
 
         flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
-        configs = flat_map(lambda x: Config.from_dict(x, basic_config=basic_config), tables)
+        table_names = [(t.get("version", 1), t["tag"], t["name"]) for t in tables if t["name"] != "*"]
+        configs = flat_map(lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names), tables)
         return cls(configs, users)
