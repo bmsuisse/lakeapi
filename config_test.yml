@@ -79,6 +79,21 @@ tables:
         operators:
           - "="
 
+  - name: fruits_nested
+    tag: test
+    version: 1
+    api_method:
+      - get
+    datasource:
+      uri: delta/fruits_nested
+    params:
+      - name: cars
+        operators:
+          - "="
+      - name: fruits
+        operators:
+          - "="
+
   - name: fake_delta
     tag: test
     version: 1

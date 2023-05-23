@@ -70,31 +70,42 @@ if __name__ == "__main__":
     delete_folder("tests/data/startest")
     write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
 
+    df = pl.from_pandas(df)
+    df_nested = df.with_columns(pl.struct([df["fruits"], df["cars"]]).alias("nested"))
+
+    df_nested = df_nested.to_pandas()
+    delta_path = "tests/data/delta/fruits_nested"
+    delete_folder(delta_path)
+    write_deltalake(delta_path, df_nested, mode="overwrite")
+
+    delete_folder("tests/data/startest")
+    write_deltalake("tests/data/startest/fruits_nested", df_nested, mode="overwrite")
+
     print(df)
 
     delta_path = "tests/data/delta/fruits_partition"
 
-    df2 = df.copy()
-    df["fruits_partition"] = df["fruits"]
-    df["cars_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:2] for val in df["cars"]]
+    df2 = df.to_pandas().copy()
+    df2["fruits_partition"] = df2["fruits"]
+    df2["cars_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:2] for val in df2["cars"]]
 
-    print(df)
+    print(df2)
 
     delete_folder(delta_path)
-    write_deltalake(delta_path, df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
+    write_deltalake(delta_path, df2, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
     write_deltalake(
-        "tests/data/startest/fruits_partition", df, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"]
+        "tests/data/startest/fruits_partition", df2, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"]
     )
 
-    df2["cars_md5_mod_27"] = [str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in df["cars"]]
+    df2["cars_md5_mod_27"] = [str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in df2["cars"]]
     delete_folder("tests/data/delta/fruits_partition_mod")
     write_deltalake("tests/data/delta/fruits_partition_mod", df2, mode="overwrite", partition_by=["cars_md5_mod_27"])
 
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)
-    df.to_csv(csv_path)
-    df.to_csv("tests/data/startest/fruits_csv.csv")
+    df2.to_csv(csv_path)
+    df2.to_csv("tests/data/startest/fruits_csv.csv")
     delta_path = "tests/data/delta/fake"
     delete_folder(delta_path)
 

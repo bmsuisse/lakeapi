@@ -429,3 +429,16 @@ def test_sql_endoint_get():
             "cars": "audi",
         }
     ]
+
+
+def test_fruits_nested():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert response.json() == [
+            {"A": 1, "fruits": "banana", "B": 5, "cars": "beetle", "nested": {"fruits": "banana", "cars": "beetle"}},
+            {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"fruits": "banana", "cars": "audi"}},
+        ] or response.json() == [
+            {"A": 1, "fruits": "banana", "B": 5, "cars": "beetle", "nested": {"cars": "beetle", "fruits": "banana"}},
+            {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"cars": "audi", "fruits": "banana"}},
+        ]

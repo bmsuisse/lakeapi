@@ -27,6 +27,7 @@ class PolarsResultData(ResultData):
 
     def query_builder(self) -> pypika.queries.QueryBuilder:
         import polars as pl
+
         if not self.registred_df:
             if isinstance(self.df, pl.DataFrame):
                 self.df = self.df.lazy()
