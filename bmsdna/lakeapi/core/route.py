@@ -44,7 +44,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
             try:
                 from bmsdna.lakeapi.core.dataframe import Dataframe
 
-                realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config)
+                realdataframe = Dataframe(
+                    config.version_str, config.tag, config.name, config.dataframe, context, basic_config
+                )
                 if not realdataframe.file_exists():
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
@@ -104,7 +106,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 if config.search:
                     from bmsdna.lakeapi.core.dataframe import Dataframe
 
-                    realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config)
+                    realdataframe = Dataframe(
+                        config.version_str, config.tag, config.name, config.dataframe, context, basic_config
+                    )
                     if realdataframe.file_exists():
                         with get_context_by_engine(config.engine)() as ctx:
                             ctx.init_search(realdataframe.tablename, config.search)

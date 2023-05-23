@@ -51,6 +51,7 @@ def get_table_name_from_uri(uri: str):
 class Dataframe:
     def __init__(
         self,
+        version: str,
         tag: str,
         name: str,
         config: DataframeConfig,
@@ -58,6 +59,7 @@ class Dataframe:
         basic_config: BasicConfig,
         df: Optional[ResultData] = None,
     ) -> None:
+        self.version = version
         self.config = config
         self.tag = tag
         self.name = name
@@ -136,7 +138,7 @@ class Dataframe:
 
     @property
     def tablename(self):
-        return self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
+        return self.version + "_" + self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
 
     def get_df(
         self,

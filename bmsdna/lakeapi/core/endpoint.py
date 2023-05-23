@@ -128,7 +128,9 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
         with DuckDbExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config=basic_config)
+            realdataframe = Dataframe(
+                config.version_str, config.tag, config.name, config.dataframe, context, basic_config=basic_config
+            )
             partition_columns = []
             partition_values = None
             delta_tbl = None
@@ -254,7 +256,9 @@ def create_config_endpoint(
         ExecutionContext = get_context_by_engine(engine)
 
         with ExecutionContext() as context:
-            realdataframe = Dataframe(config.tag, config.name, config.dataframe, context, basic_config=basic_config)
+            realdataframe = Dataframe(
+                config.version_str, config.tag, config.name, config.dataframe, context, basic_config=basic_config
+            )
 
             parts = await get_partitions(realdataframe, params, config)
             df = realdataframe.get_df(parts or None)
