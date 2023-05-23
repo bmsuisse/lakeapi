@@ -4,7 +4,7 @@ A FastAPI Plugin that allows you to expose your Data Lake as an API, allowing mu
 
 The lake API also contains a minimal security layer for convenience (Basic Auth), but you can also bring your own.
 
-It constrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL by default, but we limit possible queries using a config. This makes it easy for you to control what happens on your data. If you want the sql endpoint, you can enable this.
+It contrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL by default, but we limit possible queries using a config. This makes it easy for you to control what happens on your data. If you want the sql endpoint, you can enable this.
 
 To run the app with default config, just do:
 
@@ -80,7 +80,7 @@ tables:
         operators:
           - "="
           - in
-    dataframe:
+    datasource:
       uri: delta/fruits
       file_type: delta
 
@@ -107,7 +107,7 @@ tables:
         combi:
           - fruits
           - cars
-    dataframe:
+    datasource:
       uri: delta/fruits_partition
       file_type: delta
       select:
@@ -130,7 +130,7 @@ tables:
       - name: name1
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -148,7 +148,7 @@ tables:
       - name: name1
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: delta/fake
       file_type: delta
 
@@ -166,7 +166,7 @@ tables:
       - name: cars
         operators:
           - "="
-    dataframe:
+    datasource:
       uri: csv/fruits.csv
       file_type: csv
 ```
