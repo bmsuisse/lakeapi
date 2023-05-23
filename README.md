@@ -24,7 +24,8 @@ cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/da
 sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
 ```
 
-## Installation 
+## Installation
+
 [![PyPI version](https://badge.fury.io/py/bmsdna-lakeapi.svg)](https://pypi.org/project/bmsdna-lakeapi/)
 
 Pypi Package `bmsdna-lakeapi` can be installed like any python package : `pip install bmsdna-lakeapi`
@@ -52,9 +53,9 @@ You can still use environment variables for configuration
 
 ## Environment Variables
 
- - CONFIG_PATH: The path of the config file, defaults to `config.yml`. If you want to split the config, you can specify a folder, too
- - DATA_PATH: The path of the data files, defaults to `data`. Paths in `config.yml` are relative to DATA_PATH
- - ENABLE_SQL_ENDPOINT: Set this to 1 to enable the SQL Endpoint
+- CONFIG_PATH: The path of the config file, defaults to `config.yml`. If you want to split the config, you can specify a folder, too
+- DATA_PATH: The path of the data files, defaults to `data`. Paths in `config.yml` are relative to DATA_PATH
+- ENABLE_SQL_ENDPOINT: Set this to 1 to enable the SQL Endpoint
 
 ## Config File
 
@@ -169,3 +170,15 @@ tables:
       uri: csv/fruits.csv
       file_type: csv
 ```
+
+## Partioning for awesome performance
+
+In order to use partitions, you can either:
+
+- partition by a column you filter on. Obviously
+- partition on a special column called `columnname_md5_prefix_2` which means that you're partitioning by the first two chars of
+  your hex-encoded md5 hash. If you now filter by `columnname` this will greatly reduce files searched for. The number of chars used is up to you, we found two to be meaningful
+- partition on a special column called `columnname_md5_mod_NRPARTIIONS` where your partition value is `str(int(hashlib.md5(COLUMNNAME).hexdigest(), 16) % NRPARTITIONS)`. That might look a bit complicated, but it's not that hard :) your just doing a modulo on your md5 hash which
+  allows you to set the exact number of partitions. Filtering is still happening on `columname` correctly
+
+You must use deltalake to use parttions and you must only have str partition columns for now.
