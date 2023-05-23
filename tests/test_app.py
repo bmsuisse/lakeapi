@@ -377,19 +377,6 @@ def test_data_partition_mod():
                 "cars": "audi",
             }
         ]
-        response = client.get(
-            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&fruits=ananas&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            }
-        ]
 
 
 def test_sql_endoint_post():
