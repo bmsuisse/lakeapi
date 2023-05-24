@@ -126,7 +126,7 @@ class PolarsExecutionContext(ExecutionContext):
         pass
 
     def json_function(self, term: pypika.terms.Term):
-        return None
+        raise NotImplementedError()
 
     def register_dataframe(
         self,

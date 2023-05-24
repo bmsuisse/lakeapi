@@ -63,21 +63,23 @@ class DatafusionDBResultData(ResultData):
 from datafusion import udf
 
 
-def to_json(array: pa.Array) -> pa.Array:
+def to_json_impl(array: pa.Array) -> pa.Array:
     import json
 
     return pa.array([json.dumps(s) for s in array.to_pylist()], type=pa.string)
-
-
-to_json = udf(to_json, [pa.struct], pyarrow.string(), "stable")
 
 
 class DatafusionDbExecutionContextBase(ExecutionContext):
     def __init__(self, session: "datafusion.SessionContext"):
         super().__init__()
         self.session = session
+        self._registred_udf = False
 
     def json_function(self, term: pypika.terms.Term):
+        if not self._registred_udf:  # does not seem to work
+            to_json = udf(to_json_impl, [pa.struct], pyarrow.string(), "stable")
+            self.session.register_udf(to_json)
+            self._registred_udf = True
         return pypika.terms.Function("to_json", term)
 
     def register_arrow(
@@ -123,7 +125,6 @@ class DatafusionDbExecutionContext(DatafusionDbExecutionContextBase):
             .set("datafusion.sql_parser.enable_ident_normalization", "false")
         )
         ctx = datafusion.SessionContext(config, runtime)
-        ctx.register_udf(to_json)
         super().__init__(ctx)
 
     def __enter__(self):

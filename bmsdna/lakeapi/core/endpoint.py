@@ -193,8 +193,11 @@ def exclude_cols(columns: List[str]) -> List[str]:
     columns = [c for c in columns if not should_hide_colname(c)]
     return columns
 
+
 def is_complex_type(schema: pa.Schema, col_name: str):
-    return False # TODO
+    f = schema.field(col_name)
+    return pa.types.is_struct(f.type) or pa.types.is_list(f.type)
+
 
 def create_config_endpoint(
     metamodel: Optional[ResultData],
@@ -272,11 +275,19 @@ def create_config_endpoint(
             new_query = new_query.where(expr) if expr is not None else new_query
 
             import pypika
+
             columns = exclude_cols(df.columns())
             if select:
                 columns = [c for c in columns if c in select.split(",")]
             if jsonify_complex:
-                new_query = new_query.select(*[pypika.Field(c) if not is_complex_type(base_schema, c) else context.json_function(pypika.Field(c)).as(c) for c in columns])
+                new_query = new_query.select(
+                    *[
+                        pypika.Field(c)
+                        if not is_complex_type(base_schema, c)
+                        else context.json_function(pypika.Field(c)).as_(c)
+                        for c in columns
+                    ]
+                )
             else:
                 new_query = new_query.select(*columns)
 

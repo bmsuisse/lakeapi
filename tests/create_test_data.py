@@ -81,6 +81,7 @@ if __name__ == "__main__":
                 {"name": "marc", "age": 3},
                 {"name": "peter", "age": 32},
             ],
+            "vitamines": [["A", "B12"], [], ["C", "B12"], ["D", "B12", "C"], ["C"], ["E", "B12"]],
         }
     )
     df = df.to_pandas()
