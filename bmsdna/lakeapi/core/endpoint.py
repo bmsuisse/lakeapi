@@ -238,6 +238,9 @@ def create_config_endpoint(
     }
 
     api_method = api_method_mapping[apimethod]
+    has_complex = True
+    if metamodel is not None:
+        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
 
     @api_method
     async def data(
@@ -250,7 +253,7 @@ def create_config_endpoint(
         distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
-        jsonify_complex=Query(title="jsonify_complex", default=False),
+        jsonify_complex=Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         username=Depends(get_username),
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
