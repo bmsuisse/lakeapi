@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context import get_context_by_engine
-from bmsdna.lakeapi.context.df_base import ResultData
+from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
 from bmsdna.lakeapi.core.dataframe import (
     Dataframe,
@@ -152,6 +152,9 @@ def create_detailed_meta_endpoint(
             if config.datasource.file_type == "delta":
                 delta_tbl = DeltaTable(realdataframe.uri)
                 partition_columns = delta_tbl.metadata().partition_columns
+                partition_columns = [
+                    c for c in partition_columns if not should_hide_colname(c)
+                ]  # also hide those from metadata detail
                 if len(partition_columns) > 0:
                     qb: QueryBuilder = (
                         df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
@@ -325,8 +328,6 @@ def create_config_endpoint(
             columns = exclude_cols(df.columns())
             if select:
                 columns = [c for c in columns if c in select.split(",")]
-            if config.datasource.select and len(config.datasource.select) > 0:
-                columns = [c for c in columns if c in config.datasource.select]
             if config.datasource.exclude and len(config.datasource.exclude) > 0:
                 columns = [c for c in columns if c not in config.datasource.exclude]
             if config.datasource.sortby and len(searches) == 0:
@@ -376,7 +377,7 @@ def create_config_endpoint(
 
                 new_query = new_query.orderby(pypika.queries.Field("search_score"), order=pypika.Order.desc)
 
-            logger.info(f"Query: {new_query.get_sql()}")
+            logger.info(f"Query: {get_sql(new_query)}")
 
             df2 = context.execute_sql(new_query)
 

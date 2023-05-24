@@ -4,7 +4,7 @@ from deltalake import DeltaTable
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 import duckdb
 import pyarrow.dataset
 import pypika.queries
@@ -40,18 +40,14 @@ class DuckDBResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = (
-            self.original_sql.limit(0).get_sql()
-            if not isinstance(self.original_sql, str)
-            else "SELECT * FROM (" + self.original_sql + ") s LIMIT 0 "
-        )
+        query = get_sql(self.original_sql, limit_zero=True)
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+            query = get_sql(self.original_sql)
             self._df = self.con.execute(query)
         return self._df
 
@@ -67,28 +63,28 @@ class DuckDBResultData(ResultData):
     def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_parquet(file_name)
-        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        query = get_sql(self.original_sql)
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000)"
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_nd_json(file_name)
-        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        query = get_sql(self.original_sql)
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON)"
         self.con.execute(full_query)
 
     def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
-        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        query = get_sql(self.original_sql)
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True)"
         self.con.execute(full_query)
 
     def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
-        query = self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
+        query = get_sql(self.original_sql)
         full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON, Array True)"
         self.con.execute(full_query)
 

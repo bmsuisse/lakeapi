@@ -3,7 +3,7 @@ from deltalake import DeltaTable
 import pyarrow as pa
 from typing import List, Tuple, Any, Union, TYPE_CHECKING
 from bmsdna.lakeapi.core.types import FileTypes
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 
 if TYPE_CHECKING:
     import datafusion  # lazy import it on runtime
@@ -34,20 +34,14 @@ class DatafusionDBResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = (
-            self.original_sql.limit(0).get_sql()
-            if not isinstance(self.original_sql, str)
-            else "SELECT * FROM (" + self.original_sql + ") s LIMIT 0 "
-        )
+        query = get_sql(self.original_sql, limit_zero=True)
         self._arrow_schema = self.session.sql(query).to_arrow_table()
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            self._df = self.session.sql(
-                self.original_sql if isinstance(self.original_sql, str) else self.original_sql.get_sql()
-            )
+            self._df = self.session.sql(get_sql(self.original_sql))
         return self._df
 
     def to_pandas(self):

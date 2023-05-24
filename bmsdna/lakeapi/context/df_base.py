@@ -14,6 +14,20 @@ if TYPE_CHECKING:
     import pandas as pd
 
 
+def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) -> str:
+    if limit_zero:
+        sql_or_pypika = (
+            sql_or_pypika.limit(0)
+            if not isinstance(sql_or_pypika, str)
+            else "SELECT * FROM (" + sql_or_pypika + ") s LIMIT 0 "
+        )
+    if isinstance(sql_or_pypika, str):
+        return sql_or_pypika
+    if len(sql_or_pypika._selects) == 0:
+        return sql_or_pypika.select("*").get_sql()
+    return sql_or_pypika.get_sql()
+
+
 class ResultData(ABC):
     @abstractmethod
     def columns(self) -> List[str]:
