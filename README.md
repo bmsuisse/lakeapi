@@ -43,8 +43,8 @@ Of course, everything works with Open API and FastAPI. Meaning you can add other
 
 ## Engine
 
-By default, DuckDB is the query engine. Polars and Datafusion are also supported.
-The query engine can be defined on a route level and on a query level with the hidden parameter $engine="duckdb|datafusion|polars".
+By default, DuckDB is the query engine. Polars and Datafusion are also supported, but lack some features.
+The query engine can be defined on a route level and on a query level with the hidden parameter $engine="duckdb|datafusion|polars". If you want polars or datafusion, also add the extra required
 
 At the moment DuckDB seems to have an edge and performances the best. Also features like full text search are only available with DuckDB.
 
