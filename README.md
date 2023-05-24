@@ -1,7 +1,7 @@
 # The BMS LakeAPI
 
 <h1 align="center">
-  <img src="https://raw.githubusercontent.com/bmsuisse/lakeapi/main/assets/LakeAPI.drawio.svg">
+  <img src="https://raw.githubusercontent.com/bmsuisse/lakeapi/main/assets/LakeAPI.drawio.png">
   <br>
 </h1>
 
