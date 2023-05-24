@@ -156,6 +156,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
         fields = ",".join(search_config.columns)
         return Match25Term(source_view, pypika.queries.Field("__search_id"), search_text, fields)
 
+    def json_function(self, term: pypika.terms.Term):
+        return pypika.terms.Function("to_json", term)
+
     def init_search(
         self,
         source_view: str,

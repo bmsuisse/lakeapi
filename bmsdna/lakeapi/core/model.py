@@ -57,44 +57,50 @@ async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Op
     return None
 
 
-def get_schema_for(model_ns: str, field: pa.Field) -> tuple[Union[type, Any], Any]:
-    if pa.types.is_timestamp(field.type):
+def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.DataType) -> tuple[Union[type, Any], Any]:
+    if pa.types.is_timestamp(field_type):
         return (Union[datetime.datetime, None], None)
-    if pa.types.is_duration(field.type):
+    if pa.types.is_duration(field_type):
         return (Union[datetime.time, None], None)
-    if pa.types.is_date(field.type):
+    if pa.types.is_date(field_type):
         return (Union[datetime.date, None], None)
-    if pa.types.is_time(field.type):
+    if pa.types.is_time(field_type):
         return (Union[datetime.time, None], None)
-    if pa.types.is_map(field.type):
+    if pa.types.is_map(field_type):
         return (Union[dict, None], None)
-    if pa.types.is_struct(field.type):
-        st = field.type
+    if pa.types.is_struct(field_type):
+        st = field_type
         assert isinstance(st, pa.StructType)
-        res = {st.field(ind).name: get_schema_for(model_ns, st.field(ind)) for ind in range(0, st.num_fields)}
+        res = {
+            st.field(ind).name: get_schema_for(model_ns, st.field(ind).name, st.field(ind).type)
+            for ind in range(0, st.num_fields)
+        }
         return (
             Union[
-                create_model(model_ns + ("_" + field.name if field.name else ""), **res, __base__=TypeBaseModel),
+                create_model(model_ns + ("_" + field_name if field_name else ""), **res, __base__=TypeBaseModel),
                 None,
             ],
             None,
         )
-    if pa.types.is_list(field.type) or pa.types.is_large_list(field.type):
-        if field.type.value_type is None:
+    if pa.types.is_list(field_type) or pa.types.is_large_list(field_type):
+        if field_type.value_type is None:
             return (Union[List[Any], None], [])
 
-        itemtype = cast(Any, get_schema_for(model_ns, field.type.value_type)[0])
+        itemtype = cast(Any, get_schema_for(model_ns, field_name, field_type.value_type)[0])
         return (Union[List[itemtype], None], [])
-    if pa.types.is_integer(field.type):
+    if pa.types.is_integer(field_type):
         return (Union[int, None], None)
-    if pa.types.is_boolean(field.type):
+    if pa.types.is_boolean(field_type):
         return (Union[bool, None], None)
-    if pa.types.is_decimal(field.type) or pa.types.is_floating(field.type):
+    if pa.types.is_decimal(field_type) or pa.types.is_floating(field_type):
         return (Union[float, None], None)
-    if pa.types.is_string(field.type) or pa.types.is_large_string(field.type):
+    if pa.types.is_string(field_type) or pa.types.is_large_string(field_type):
         return (Union[str, None], None)
-    if pa.types.is_union(field.type):
-        types = [get_schema_for(model_ns, field.type.field(ind)) for ind in range(0, field.type.num_fields)]
+    if pa.types.is_union(field_type):
+        types = [
+            get_schema_for(model_ns, field_type.field(ind).name, field_type.field(ind).type)
+            for ind in range(0, field_type.num_fields)
+        ]
         types.append(None)  # type: ignore
         return Union.__call__(*types)
     raise ValueError("Not supported")
@@ -105,7 +111,7 @@ def _get_datatype(schema: Optional[pa.Schema], name: str):
         return str
     try:
         field = schema.field(name)
-        return get_schema_for("prm_" + name, field)[0]
+        return get_schema_for("prm_" + name, field.name, field.type)[0]
     except KeyError as err:
         return str
 
@@ -169,6 +175,10 @@ def should_hide_colname(name: str):
 
 def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:
     schema = frame.arrow_schema()
-    props = {k: get_schema_for(name, schema.field(k)) for k in schema.names if not should_hide_colname(k)}
+    props = {
+        k: get_schema_for(name, schema.field(k).name, schema.field(k).type)
+        for k in schema.names
+        if not should_hide_colname(k)
+    }
 
     return create_model(name, **props, __base__=TypeBaseModel)

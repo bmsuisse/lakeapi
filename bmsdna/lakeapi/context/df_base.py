@@ -125,6 +125,10 @@ class ExecutionContext(ABC):
     ):
         pass
 
+    @abstractmethod
+    def json_function(self, term: pypika.terms.Term) -> pypika.terms.Term:
+        ...
+
     def search_score_function(
         self,
         source_view: str,
