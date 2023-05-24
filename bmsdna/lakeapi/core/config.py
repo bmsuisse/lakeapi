@@ -123,9 +123,7 @@ class DatasourceConfig:
     file_type: FileTypes = "delta"
     select: Optional[List[Column]] = None
     exclude: Optional[List[str]] = None
-    groupby: Optional[GroupByConfig] = None
     sortby: Optional[List[SortBy]] = None
-    joins: Optional[List[Join]] = None
     filters: Optional[List[Filter]] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
 
@@ -181,13 +179,11 @@ class Config:
         columns = datasource.get("columns") if datasource else None
         select = datasource.get("select") if datasource else None
         exclude = datasource.get("exclude") if datasource else None
-        groupby = datasource.get("groupby") if datasource else None
         sortby = datasource.get("sortby") if datasource else None
         cache_expiration_time_seconds = (
             datasource.get("cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS) if datasource else None
         )
         orderby = datasource.get("orderby") if datasource else None
-        joins = datasource.get("joins") if datasource else None
         search_config = [SearchConfig(**c) for c in config["search"]] if "search" in config else None
         logger.debug(config)
 
@@ -196,15 +192,6 @@ class Config:
             logger.debug(f"Parameter: {name} -> {params}")
 
             _params += [Param(name=param) if isinstance(param, str) else Param(**param) for param in params]
-
-        if joins:
-            logger.debug(f"Joins: {name} -> {joins}")
-            joins = [Join(**join) for join in joins]
-
-        if groupby:
-            logger.debug(f"Groupby: {name} -> {groupby}")
-            expressions = [GroupByExpConfig.from_dict(e) for e in groupby.get("expressions")]
-            groupby = GroupByConfig(by=groupby.get("by"), expressions=expressions)
 
         sortby = orderby if orderby else sortby
         if sortby:
@@ -238,9 +225,7 @@ class Config:
                             file_type=file_type,
                             select=select,
                             exclude=exclude,
-                            groupby=groupby,
                             sortby=sortby,
-                            joins=joins,
                             filters=None,
                             cache_expiration_time_seconds=cache_expiration_time_seconds,
                         )
@@ -266,9 +251,7 @@ class Config:
                 file_type=file_type,
                 select=select,
                 exclude=exclude,
-                groupby=groupby,
                 sortby=sortby,
-                joins=joins,
                 filters=None,
                 cache_expiration_time_seconds=cache_expiration_time_seconds,
             )
