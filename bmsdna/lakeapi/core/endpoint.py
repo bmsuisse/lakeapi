@@ -143,6 +143,8 @@ def create_detailed_meta_endpoint(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
 
+            if not realdataframe.file_exists():
+                raise HTTPException(404)
             partition_columns = []
             partition_values = None
             delta_tbl = None
@@ -301,7 +303,6 @@ def create_config_endpoint(
             realdataframe = Dataframe(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
-
             parts = await get_partitions(realdataframe, params, config)
             df = realdataframe.get_df(parts or None)
 
@@ -310,11 +311,30 @@ def create_config_endpoint(
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
 
+            searches = {}
+            if config.search is not None and params is not None:
+                search_dict = {c.name.lower(): c for c in config.search}
+                searches = {
+                    k: (v, search_dict[k.lower()])
+                    for k, v in params.dict(exclude_unset=True).items()
+                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
+                }
+
             import pypika
 
             columns = exclude_cols(df.columns())
             if select:
                 columns = [c for c in columns if c in select.split(",")]
+            if config.datasource.select and len(config.datasource.select) > 0:
+                columns = [c for c in columns if c in config.datasource.select]
+            if config.datasource.exclude and len(config.datasource.exclude) > 0:
+                columns = [c for c in columns if c not in config.datasource.exclude]
+            if config.datasource.sortby and len(searches) == 0:
+                for s in config.datasource.sortby:
+                    new_query = new_query.orderby(
+                        s.by,
+                        ord=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
+                    )
             if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
                 jsonify_complex = True
             if jsonify_complex:
@@ -337,31 +357,24 @@ def create_config_endpoint(
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
 
-            if config.search is not None and params is not None:
-                search_dict = {c.name.lower(): c for c in config.search}
-                searches = {
-                    k: (v, search_dict[k.lower()])
-                    for k, v in params.dict(exclude_unset=True).items()
-                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
-                }
-                if len(searches) > 0:
-                    import pypika.queries
-                    import pypika.terms
+            if len(searches) > 0 and config.search is not None:
+                import pypika.queries
+                import pypika.terms
 
-                    source_view = realdataframe.tablename
-                    context.init_search(source_view, config.search)
-                    score_sum = None
-                    for search_key, (search_val, search_cfg) in searches.items():
-                        score_sum = (
-                            context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                            if score_sum is None
-                            else score_sum
-                            + context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                        )
-                    assert score_sum is not None
-                    new_query = new_query.select(score_sum.as_("search_score"))
-                    new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
-                    new_query = new_query.orderby(pypika.queries.Field("search_score"), order=pypika.Order.desc)
+                source_view = realdataframe.tablename
+                context.init_search(source_view, config.search)
+                score_sum = None
+                for search_key, (search_val, search_cfg) in searches.items():
+                    score_sum = (
+                        context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                        if score_sum is None
+                        else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                    )
+                assert score_sum is not None
+                new_query = new_query.select(score_sum.as_("search_score"))
+                new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
+
+                new_query = new_query.orderby(pypika.queries.Field("search_score"), order=pypika.Order.desc)
 
             logger.info(f"Query: {new_query.get_sql()}")
 

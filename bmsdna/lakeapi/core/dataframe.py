@@ -98,42 +98,12 @@ class Dataframe:
 
         return df
 
-    def sort_df(self, df: QueryBuilder) -> QueryBuilder:
-        if self.config.sortby:
-            for s in self.config.sortby:
-                df = df.orderby(
-                    s.by,
-                    ord=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
-                )
-        return df
-
-    def select_df(self, df: QueryBuilder) -> QueryBuilder:
-        if self.config.select:
-            select = [
-                pypika.Field(c.name).as_(c.alias or c.name)
-                for c in self.config.select
-                if c not in (self.config.exclude or [])
-            ]
-            df = df.select(*select)
-        else:
-            from pypika.terms import Star
-
-            df = df.select(
-                Star(
-                    table=pypika.Table(get_table_name_from_uri(self.config.uri)),
-                )
-            )
-        return df
-
     def _prep_df(self, df: QueryBuilder, endpoint: endpoints) -> QueryBuilder:
         df = self.join_df(df)
         df = self.groupby_df(df)
+        df = df.select("*")
         if endpoint == "query":
             pass
-        else:
-            df = self.select_df(df)
-        if endpoint != "meta":
-            df = self.sort_df(df)
         return df
 
     @property
@@ -158,7 +128,7 @@ class Dataframe:
             query = pypika.Query.from_(tname)
             self.query = self._prep_df(query, endpoint=endpoint)
             self.df = self.sql_context.execute_sql(self.query)
-
+            
         return self.df  # type: ignore
 
     def join_df(self, df: QueryBuilder) -> QueryBuilder:
