@@ -105,6 +105,15 @@ if __name__ == "__main__":
     ]
     store_df_as_delta(fruits_partition_mod, "delta/fruits_partition_mod", partition_by=["cars_md5_mod_27"])
 
+    df_fruits_nested = pl.from_pandas(df_fruits)
+    df_fruits_nested = df_fruits_nested.with_columns(
+        pl.struct([df_fruits_nested["fruits"], df_fruits_nested["cars"]]).alias("nested")
+    )
+
+    df_fruits_nested = df_fruits_nested.to_pandas()
+    store_df_as_delta(df_fruits_nested, "delta/fruits_nested")
+    store_df_as_delta(df_fruits_nested, "startest/fruits_nested")
+
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)
