@@ -1,6 +1,7 @@
 import sys
 import os
 import pathlib
+from typing import Any, Optional
 import polars as pl
 from deltalake import write_deltalake
 import shutil
@@ -15,16 +16,12 @@ sys.path.append(os.path.realpath(f"{dir_path}"))
 
 
 def delete_folder(path):
-    if os.path.exists(path):
-        try:
-            os.remove(path)
-        except:
-            print("File not deleted")
-    try:
+    if not os.path.exists(path):
+        return  # nothing todo
+    if os.path.isfile(path):
+        os.remove(path)
+    else:
         shutil.rmtree(path)
-        print(f"Remove: {path}")
-    except:
-        print("Folder not deleted")
 
 
 def create_rows_faker(num=1):
@@ -49,25 +46,33 @@ def create_rows_faker(num=1):
     return output
 
 
+def store_df_as_delta(
+    data: dict[str, list[Any]] | pd.DataFrame, data_path: str, partition_by: Optional[list[str]] = None
+):
+    dfp = data if isinstance(data, pd.DataFrame) else pl.DataFrame(data).to_pandas()
+    delta_path = "tests/data/" + data_path
+    delete_folder(delta_path)
+    write_deltalake(delta_path, dfp, mode="overwrite", partition_by=partition_by)
+    return dfp
+
+
 if __name__ == "__main__":
     if not os.path.exists("tests/data/parquet/search.parquet"):
         os.makedirs("tests/data/parquet", exist_ok=True)
         pl.DataFrame(create_rows_faker(1000)).write_parquet("tests/data/parquet/search.parquet")
 
-    df = pl.DataFrame(
+    df_fruits = store_df_as_delta(
         {
             "A": [1, 2, 3, 4, 5, 9],
             "fruits": ["banana", "banana", "apple", "apple", "banana", "ananas"],
             "B": [5, 4, 3, 2, 1, 9],
             "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "fiat"],
-        }
+        },
+        "delta/fruits",
     )
-    df = df.to_pandas()
-    delta_path = "tests/data/delta/fruits"
-    delete_folder(delta_path)
-    write_deltalake(delta_path, df, mode="overwrite")
+    store_df_as_delta(df_fruits, "startest/fruits")
 
-    df = pl.DataFrame(
+    store_df_as_delta(
         {
             "A": [1, 2, 3, 4, 5, 9],
             "fruits": ["banana", "banana", "apple", "apple", "banana", "ananas"],
@@ -82,77 +87,46 @@ if __name__ == "__main__":
                 {"name": "peter", "age": 32},
             ],
             "vitamines": [["A", "B12"], [], ["C", "B12"], ["D", "B12", "C"], ["C"], ["E", "B12"]],
-        }
-    )
-    df = df.to_pandas()
-    delta_path = "tests/data/delta/struct_fruits"
-    delete_folder(delta_path)
-    write_deltalake(delta_path, df, mode="overwrite")
-
-    delete_folder("tests/data/startest")
-    write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
-
-    df = pl.from_pandas(df)
-    df_nested = df.with_columns(pl.struct([df["fruits"], df["cars"]]).alias("nested"))
-
-    df_nested = df_nested.to_pandas()
-    delta_path = "tests/data/delta/fruits_nested"
-    delete_folder(delta_path)
-    write_deltalake(delta_path, df_nested, mode="overwrite")
-
-    delete_folder("tests/data/startest")
-    write_deltalake("tests/data/startest/fruits_nested", df_nested, mode="overwrite")
-
-    print(df)
-
-    delta_path = "tests/data/delta/fruits_partition"
-
-    df2 = df.to_pandas().copy()
-    df2["fruits_partition"] = df2["fruits"]
-    df2["cars_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:2] for val in df2["cars"]]
-
-    print(df2)
-
-    delete_folder(delta_path)
-    write_deltalake(delta_path, df2, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"])
-    write_deltalake(
-        "tests/data/startest/fruits_partition", df2, mode="overwrite", partition_by=["cars_md5_prefix_2", "cars"]
+        },
+        "delta/struct_fruits",
     )
 
-    df2["cars_md5_mod_27"] = [str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in df2["cars"]]
-    delete_folder("tests/data/delta/fruits_partition_mod")
-    write_deltalake("tests/data/delta/fruits_partition_mod", df2, mode="overwrite", partition_by=["cars_md5_mod_27"])
+    fruits_partition = df_fruits.copy()
+
+    fruits_partition["fruits_partition"] = fruits_partition["fruits"]
+    fruits_partition["cars_md5_prefix_2"] = [
+        md5(val.encode("UTF-8")).hexdigest()[:2] for val in fruits_partition["cars"]
+    ]
+    store_df_as_delta(fruits_partition, "delta/fruits_partition", partition_by=["cars_md5_prefix_2", "cars"])
+    store_df_as_delta(fruits_partition, "startest/fruits_partition", partition_by=["cars_md5_prefix_2", "cars"])
+    fruits_partition_mod = df_fruits.copy()
+    fruits_partition_mod["cars_md5_mod_27"] = [
+        str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in fruits_partition_mod["cars"]
+    ]
+    store_df_as_delta(fruits_partition_mod, "delta/fruits_partition_mod", partition_by=["cars_md5_mod_27"])
 
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)
-    df2.to_csv(csv_path)
-    df2.to_csv("tests/data/startest/fruits_csv.csv")
-    delta_path = "tests/data/delta/fake"
-    delete_folder(delta_path)
+    df_fruits.to_csv(csv_path)
+    df_fruits.to_csv("tests/data/startest/fruits_csv.csv")
 
-    df = pl.DataFrame(create_rows_faker(100_011)).to_pandas()
+    df_faker = pl.DataFrame(create_rows_faker(100_011)).to_pandas()
 
-    df["name_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:1] for val in df["name"]]
+    df_faker["name_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:1] for val in df_faker["name"]]
 
-    df["name1"] = df["name"]
+    df_faker["name1"] = df_faker["name"]
 
-    print(df)
-
-    write_deltalake(delta_path, df, mode="overwrite")  # , partition_by=["name_md5_prefix_2", "abc"]
-
-    write_deltalake(
-        delta_path + "_partition",
-        df,
-        mode="overwrite",  # , partition_by=["name_md5_prefix_2", "abc"]
-    )
+    print(df_faker)
+    store_df_as_delta(df_faker, "delta/fake", partition_by=None)
+    # store_df_as_delta(df_faker, "delta/fake_partition", partition_by=None)
 
     parquet_path = "tests/data/parquet/fake.parquet"
     delete_folder(parquet_path)
     os.makedirs(pathlib.Path(parquet_path).parent, exist_ok=True)
-    df.to_parquet(parquet_path)
-    df.to_parquet("tests/data/startest/faker.parquet")
+    df_faker.to_parquet(parquet_path)
+    df_faker.to_parquet("tests/data/startest/faker.parquet")
     arrow_path = "tests/data/arrow/fake.arrow"
     delete_folder(arrow_path)
     os.makedirs(pathlib.Path(arrow_path).parent, exist_ok=True)
-    df.to_feather(arrow_path)
+    df_faker.to_feather(arrow_path)
