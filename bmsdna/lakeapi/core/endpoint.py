@@ -161,7 +161,11 @@ def create_detailed_meta_endpoint(
                     )
                     partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
             schema = df.arrow_schema()
-            str_cols = [name for name in schema.names if pa.types.is_string(schema.field(name).type)]
+            str_cols = [
+                name
+                for name in schema.names
+                if pa.types.is_string(schema.field(name).type) or pa.types.is_large_string(schema.field(name).type)
+            ]
             complex_str_cols = (
                 [
                     name
