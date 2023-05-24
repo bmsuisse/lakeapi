@@ -184,7 +184,7 @@ tables:
       file_type: delta
 ```
 
-## Partioning for awesome performance
+## Partitioning for awesome performance
 
 To use partitions, you can either
 
