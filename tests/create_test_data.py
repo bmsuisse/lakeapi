@@ -67,6 +67,9 @@ if __name__ == "__main__":
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite")
 
+    delete_folder("tests/data/startest")
+    write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
+
     df = pl.DataFrame(
         {
             "A": [1, 2, 3, 4, 5, 9],
@@ -88,9 +91,6 @@ if __name__ == "__main__":
     delta_path = "tests/data/delta/struct_fruits"
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite")
-
-    delete_folder("tests/data/startest")
-    write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
 
     print(df)
 
