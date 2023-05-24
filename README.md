@@ -11,7 +11,7 @@ A `FastAPI` plugin that allows you to expose your data lake as an API, allowing 
 
 The LakeAPI also includes a minimal security layer for convenience (Basic Auth), but you can also bring your own.
 
-Unlike [roapi](https://github.com/roapi/roapi), we intentionally do not expose most SQL by default, but limit the possible queries with a config. This makes it easy for you to control what happens to your data. If you want the SQL endpoint, you can enable it.
+Unlike [roapi](https://github.com/roapi/roapi), we intentionally do not expose most SQL by default, but limit the possible queries with a config. This makes it easy for you to control what happens to your data. If you want the SQL endpoint, you can enable it. And because we built LakeAPI on the shoulders of giants like FastAPI. A lot of things like documentation and authentication are built in and we don't have to reinvent the wheel.
 
 To run the application with the default config, just do it:
 
