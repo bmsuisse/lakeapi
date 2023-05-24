@@ -5,10 +5,6 @@
   <br>
 </h1>
 
-## Work in progress
-
-Please note that this is a work in progress, changes may be made and things may break. Especially at this early stage.
-
 [![tests](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml/badge.svg?branch=main)](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml)
 
 A FastAPI plugin that allows you to expose your data lake as an API, allowing several output formats such as Parquet, Csv, Json, Excel, ...
@@ -212,6 +208,10 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - Metadata endpoints to retrieve data types, string lengths and more
 - Easily expose entire folders by using a "\*" wildcard in both the name and the datasource.uri config, see example in the config above
 - Good test coverage
+
+## Work in progress
+
+Please note that this is a work in progress, changes may be made and things may break. Especially at this early stage.
 
 ## Contribution
 
