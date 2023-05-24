@@ -200,7 +200,7 @@ With this hack you can get sub-second results on very large data. 🚀🚀🚀
 
 You need to use `deltalake` to use partitions, and you only need str partition columns for now.
 
-[Z-ordering](https://docs.delta.io/latest/optimizations-oss.html#z-ordering-multi-dimensional-clustering) can also help a lot :). This approach should only be used for very large datasets.
+[Z-ordering](https://docs.delta.io/latest/optimizations-oss.html#z-ordering-multi-dimensional-clustering) can also help a lot :).
 
 ## Even more features
 
