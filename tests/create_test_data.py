@@ -67,6 +67,28 @@ if __name__ == "__main__":
     delete_folder(delta_path)
     write_deltalake(delta_path, df, mode="overwrite")
 
+    df = pl.DataFrame(
+        {
+            "A": [1, 2, 3, 4, 5, 9],
+            "fruits": ["banana", "banana", "apple", "apple", "banana", "ananas"],
+            "B": [5, 4, 3, 2, 1, 9],
+            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "fiat"],
+            "person": [
+                {"name": "tom", "age": 3},
+                {"name": "bob", "age": 5},
+                {"name": "tim", "age": 7},
+                {"name": "john", "age": 1},
+                {"name": "marc", "age": 3},
+                {"name": "peter", "age": 32},
+            ],
+            "vitamines": [["A", "B12"], [], ["C", "B12"], ["D", "B12", "C"], ["C"], ["E", "B12"]],
+        }
+    )
+    df = df.to_pandas()
+    delta_path = "tests/data/delta/struct_fruits"
+    delete_folder(delta_path)
+    write_deltalake(delta_path, df, mode="overwrite")
+
     delete_folder("tests/data/startest")
     write_deltalake("tests/data/startest/fruits", df, mode="overwrite")
 

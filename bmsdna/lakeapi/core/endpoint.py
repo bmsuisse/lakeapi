@@ -194,6 +194,11 @@ def exclude_cols(columns: List[str]) -> List[str]:
     return columns
 
 
+def is_complex_type(schema: pa.Schema, col_name: str):
+    f = schema.field(col_name)
+    return pa.types.is_struct(f.type) or pa.types.is_list(f.type)
+
+
 def create_config_endpoint(
     metamodel: Optional[ResultData],
     apimethod: Literal["get", "post"],
@@ -233,6 +238,9 @@ def create_config_endpoint(
     }
 
     api_method = api_method_mapping[apimethod]
+    has_complex = True
+    if metamodel is not None:
+        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
 
     @api_method
     async def data(
@@ -245,6 +253,7 @@ def create_config_endpoint(
         distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
+        jsonify_complex=Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         username=Depends(get_username),
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
@@ -264,19 +273,29 @@ def create_config_endpoint(
             df = realdataframe.get_df(parts or None)
 
             expr = await get_params_filter_expr(df.columns(), config, params)
-
+            base_schema = df.arrow_schema()
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
 
+            import pypika
+
             columns = exclude_cols(df.columns())
-
-            if columns:
-                new_query = new_query.select(*columns)
             if select:
-                import pypika
+                columns = [c for c in columns if c in select.split(",")]
+            if jsonify_complex:
+                new_query = new_query.select(
+                    *[
+                        pypika.Field(c)
+                        if not is_complex_type(base_schema, c)
+                        else context.json_function(pypika.Field(c)).as_(c)
+                        for c in columns
+                    ]
+                )
+            else:
+                new_query = new_query.select(*columns)
 
-                new_query = new_query.select(*[pypika.Field(s) for s in select.split(",")])
             if distinct:
+                assert len(columns) <= 3  # reduce complexity here
                 new_query = new_query.distinct()
 
             if not (limit == -1 and config.allow_get_all_pages):
@@ -310,6 +329,7 @@ def create_config_endpoint(
                     new_query = new_query.orderby(pypika.queries.Field("search_score"), order=pypika.Order.desc)
 
             logger.info(f"Query: {new_query.get_sql()}")
+
             df2 = context.execute_sql(new_query)
 
             try:

@@ -263,7 +263,7 @@ tables:
       uri: b/not_existing.parquet
       file_type: parquet
 
-  - name: "*"
+  - name: "*" # We're lazy and want to expose all in that folder
     tag: startest
     version: 1
     api_method:
@@ -272,7 +272,7 @@ tables:
       uri: startest/*
       file_type: delta
 
-  - name: fruits
+  - name: fruits # But we want to overwrite this one
     tag: startest
     version: 1
     api_method:
@@ -289,6 +289,13 @@ tables:
       - post
     datasource:
       uri: startest/fruits_csv
+      file_type: delta
+
+  - name: complex_fruits
+    tag: complexer
+    api_method: post
+    datasource:
+      uri: delta/struct_fruits
       file_type: delta
 
 # --------------------------------
