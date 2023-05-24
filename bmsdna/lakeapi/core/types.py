@@ -142,7 +142,7 @@ class MetadataDetailResult(BaseModel):
     data_schema: list[MetadataSchemaField]
     delta_meta: Optional[dict]
     delta_schema: Any
-    parameters: Optional[List[Param]]
+    parameters: Optional[List[Any]]
     search: Optional[List[SearchConfig]]
 
 
