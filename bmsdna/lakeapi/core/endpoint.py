@@ -282,6 +282,8 @@ def create_config_endpoint(
             columns = exclude_cols(df.columns())
             if select:
                 columns = [c for c in columns if c in select.split(",")]
+            if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
+                jsonify_complex = True
             if jsonify_complex:
                 new_query = new_query.select(
                     *[

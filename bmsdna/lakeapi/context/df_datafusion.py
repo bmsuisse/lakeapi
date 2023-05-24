@@ -60,9 +60,6 @@ class DatafusionDBResultData(ResultData):
         return self.df.to_arrow_table().to_reader(max_chunksize=chunk_size)
 
 
-from datafusion import udf
-
-
 def to_json_impl(array: pa.Array) -> pa.Array:
     import json
 
@@ -77,6 +74,8 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
 
     def json_function(self, term: pypika.terms.Term):
         if not self._registred_udf:  # does not seem to work
+            from datafusion import udf
+
             to_json = udf(to_json_impl, [pa.struct], pyarrow.string(), "stable")
             self.session.register_udf(to_json)
             self._registred_udf = True

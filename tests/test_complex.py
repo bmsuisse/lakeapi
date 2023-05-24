@@ -43,3 +43,22 @@ def test_returns_jsonify():
 
         assert isinstance(json.loads(jsd[0]["vitamines"]), list)
         assert isinstance(json.loads(jsd[0]["person"]), dict)
+
+
+def test_returns_csv():
+    for e in engines:
+        response = client.post(
+            f"/api/v1/complexer/complex_fruits?limit=10&format=csv&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        import csv
+
+        reader = csv.DictReader(response.text.splitlines())
+        line1 = reader.__next__()
+        assert isinstance(line1["vitamines"], str)
+        assert isinstance(line1["person"], str)
+        import json
+
+        assert isinstance(json.loads(line1["vitamines"]), list)
+        assert isinstance(json.loads(line1["person"]), dict)
