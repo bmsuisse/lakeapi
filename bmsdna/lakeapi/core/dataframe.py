@@ -81,9 +81,6 @@ class Dataframe:
             return False
         return True
 
-    def filter_df(self):
-        raise NotImplementedError()
-
     def select_df(self, df: QueryBuilder) -> QueryBuilder:
         if self.config.select:
             select = [

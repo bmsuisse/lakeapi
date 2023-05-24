@@ -1,17 +1,17 @@
-# The BMS Lake API
+# The BMS LakeAPI
 
 <h1 align="center">
-  <img src="assets\LakeAPI.drawio.png">
+  <img src="https://raw.githubusercontent.com/bmsuisse/lakeapi/main/assets/LakeAPI.drawio.png">
   <br>
 </h1>
 
 [![tests](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml/badge.svg?branch=main)](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml)
 
-A FastAPI plugin that allows you to expose your data lake as an API, allowing several output formats such as Parquet, Csv, Json, Excel, ...
+A `FastAPI` plugin that allows you to expose your data lake as an API, allowing several output formats such as Parquet, Csv, Json, Excel, ...
 
-The Lake API also includes a minimal security layer for convenience (Basic Auth), but you can also bring your own.
+The LakeAPI also includes a minimal security layer for convenience (Basic Auth), but you can also bring your own.
 
-Unlike [roapi](https://github.com/roapi/roapi), we intentionally do not expose most SQL by default, but limit the possible queries with a config. This makes it easy for you to control what happens to your data. If you want the SQL endpoint, you can enable it.
+Unlike [roapi](https://github.com/roapi/roapi), we intentionally do not expose most SQL by default, but limit the possible queries with a config. This makes it easy for you to control what happens to your data. If you want the SQL endpoint, you can enable it. And because we built LakeAPI on the shoulders of giants like FastAPI. A lot of things like documentation and authentication are built in and we don't have to reinvent the wheel.
 
 To run the application with the default config, just do it:
 
@@ -37,9 +37,17 @@ sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The 
 
 Pypi Package `bmsdna-lakeapi` can be installed like any python package : `pip install bmsdna-lakeapi`
 
-## OpenApi
+## Basic Idea
 
-Of course, everything works with Open API and FastAPI. Meaning you can add other FastAPI routes, you can use the /docs and /redoc endpoint.
+Based on a `YAML` configuration and the data source, LakeAPI will automatically generate GET and/or POST endpoints.
+Calling the endpoint turns the query into an SQL statement that can be executed with the engine of your choice (duckdb, datafusion or polars).
+The result is then seralised into the requested format (Json, CSV, Arrow etc).
+
+## OpenAPI
+
+Of course everything works with `OpenAPI` and `FastAPI`. This means you can add other FastAPI routes, you can use the /docs and /redoc endpoints.
+
+So everything will be fully documented automatically, which is really cool. 🔥🔥
 
 ## Engine
 
@@ -74,7 +82,7 @@ You can still use environment variables for configuration
 
 The application by default relies on a Config file beeing present at the root of your project that's call `config.yml`.
 
-The config file looks something like this, see also [our test yaml](config_test.yml):
+The config file looks something like this, see also [our test yaml](https://raw.githubusercontent.com/bmsuisse/lakeapi/dev/config_test.yml):
 
 ```yaml
 tables:
@@ -196,11 +204,11 @@ To use partitions, you can either
 
 Why partition by MD5 hash? Imagine you have a product id where most id's start with a 1 and some newer ones start with a 2. Most of the data will be in the first partition. If you use an MD5 hash, the data will be spread evenly across the partitions.
 
-With this hack you can get sub-second results on very large data. 🚀🚀🚀
+With this hack you can get sub-second results on very large data. 🚀🚀
 
 You need to use `deltalake` to use partitions, and you only need str partition columns for now.
 
-[Z-ordering](https://docs.delta.io/latest/optimizations-oss.html#z-ordering-multi-dimensional-clustering) can also help a lot :). This approach should only be used for very large datasets.
+[Z-ordering](https://docs.delta.io/latest/optimizations-oss.html#z-ordering-multi-dimensional-clustering) can also help a lot :).
 
 ## Even more features
 
@@ -213,7 +221,7 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 
 ## Work in progress
 
-Please note that this is a work in progress, changes may be made and things may break. Especially at this early stage.
+Please note that this is a work in progress, changes will be made and things may break. Especially at this early stage.
 
 ## Contribution
 
