@@ -136,14 +136,14 @@ class Param:
 
 
 class MetadataDetailResult(BaseModel):
-    partition_values: Optional[dict[str, Any]]
+    partition_values: Optional[list[dict[str, Any]]]
     partition_columns: List[str]
     max_string_lengths: dict[str, int]
     data_schema: list[MetadataSchemaField]
     delta_meta: Optional[dict]
     delta_schema: Any
     parameters: Optional[List[Any]]
-    search: Optional[List[SearchConfig]]
+    search: Optional[List[Any]]
 
 
 MetadataSchemaFieldType.update_forward_refs()

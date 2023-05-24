@@ -1,5 +1,5 @@
 from datetime import datetime
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 
 
 import pyarrow as pa
@@ -173,7 +173,7 @@ class PolarsExecutionContext(ExecutionContext):
     ) -> PolarsResultData:
         import polars as pl
 
-        df = self.sql_context.execute(sql.get_sql() if not isinstance(sql, str) else sql)
+        df = self.sql_context.execute(get_sql(sql))
         if isinstance(df, pl.LazyFrame):
             df = df.collect()
         return PolarsResultData(df, self.sql_context)

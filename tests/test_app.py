@@ -325,7 +325,21 @@ def test_fake_arrow():
         assert len(response.json()) == 10
 
 
-def test_metadata():
+def test_all_metadata():
+    response = client.get(f"/metadata", auth=auth)
+    assert response.status_code == 200
+    jsd = response.json()
+    for item in jsd:
+        name = item["name"]
+        tag = item["tag"]
+        route = item["route"]
+        meta_detail_route = route + "/metadata_detail"
+        response = client.get(meta_detail_route, auth=auth)
+        if name != "not_existing":
+            assert name + "_" + str(response.status_code) == name + "_200"
+        else:
+            assert name + "_" + str(response.status_code) == name + "_404"
+
     response = client.get(f"/api/v1/test/fake_arrow/metadata_detail", auth=auth)
     assert response.status_code == 200
     jsd = response.json()

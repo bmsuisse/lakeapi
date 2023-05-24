@@ -281,16 +281,6 @@ tables:
       uri: startest/fruits
       file_type: delta
 
-  - name: fruit_csv
-    tag: startest
-    version: 1
-    api_method:
-      - get
-      - post
-    datasource:
-      uri: startest/fruits_csv
-      file_type: delta
-
   - name: complex_fruits
     tag: complexer
     api_method: post
