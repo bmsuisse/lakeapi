@@ -41,6 +41,13 @@ Pypi Package `bmsdna-lakeapi` can be installed like any python package : `pip in
 
 Of course, everything works with Open API and FastAPI. Meaning you can add other FastAPI routes, you can use the /docs and /redoc endpoint.
 
+## Engine
+
+By default, DuckDB is the query engine. Polars and Datafusion are also supported.
+The query engine can be defined on a route level and on a query level with the hidden parameter $engine="duckdb|datafusion|polars".
+
+At the moment DuckDB seems to have an edge and performances the best. Also features like full text search are only available with DuckDB.
+
 ## Default Security
 
 By Default, Basic Authentication is enabled. To add a user, simply run `add_lakeapi_user YOURUSERNAME --yaml-file config.yml`. This will add the user to your config yaml (argon2 encrypted).
