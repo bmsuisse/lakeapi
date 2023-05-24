@@ -5,6 +5,10 @@
   <br>
 </h1>
 
+## Work in progress
+
+Please note that this is a work in progress, changes may be made and things may break. Especially at this early stage.
+
 [![tests](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml/badge.svg?branch=main)](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml)
 
 A FastAPI plugin that allows you to expose your data lake as an API, allowing several output formats such as Parquet, Csv, Json, Excel, ...
@@ -43,9 +47,9 @@ Of course, everything works with Open API and FastAPI. Meaning you can add other
 
 ## Engine
 
-DuckDB is the default query engine. Polars and Datafusion are also supported, but lack some features. The query engine can be specified at the route level and at the query level with the hidden parameter $engine="duckdb|datafusion|polars". If you want polars or datafusion, add the required extra.
+`DuckDB` is the default query engine. `Polars` and `Datafusion` are also supported, but lack some features. The query engine can be specified at the route level and at the query level with the hidden parameter $engine="duckdb|datafusion|polars". If you want polars or datafusion, add the required extra.
 
-At the moment, DuckDB seems to have an advantage and performs the best. Also features like full text search are only available with DuckDB.
+At the moment, DuckDB seems to have an advantage and performs the best. Also features like full text search are only available with `DuckDB`.
 
 ## Default Security
 
@@ -194,13 +198,21 @@ To use partitions, you can either
 - partition on a special column called `columnname_md5_mod_NRPARTITIONS`, where your partition value is `str(int(hashlib.md5(COLUMNNAME).hexdigest(), 16) % NRPARTITIONS)`. This might look a bit complicated, but it's not that hard :) You're just doing a modulo on your md5 hash, which allows you to
   which allows you to set the exact number of partitions. Filtering is still done correctly on `columnname`.
 
-You need to use deltalake to use partitions and you only need to have str partition columns for now.
+Why partition by MD5 hash? Imagine you have a product id where most id's start with a 1 and some newer ones start with a 2. Most of the data will be in the first partition. If you use an MD5 hash, the data will be spread evenly across the partitions.
+
+With this hack you can get sub-second results on very large data.
+
+You need to use `deltalake` to use partitions, and you only need str partition columns for now. Z-ordering can also help a lot :). This approach should only be used for very large datasets.
 
 ## Even more features
 
-- Paging built-in, you can use limit/offset to control what you receive
-- Full-text Search using DuckDB's Full Text Search Feature
-- jsonify_complex Parameter to turn structs/lists into Json the client cannot deal with structs/lists
+- Built-in paging, you can use limit/offset to control what you get
+- Full-text search using DuckDB's full-text search feature
+- jsonify_complex parameter to convert structs/lists to json, the client cannot handle structs/lists
 - Metadata endpoints to retrieve data types, string lengths and more
-- Expose whole folders easily by using a "\*" wildcard in both the name and the datasource.uri config, see sample in above config
+- Easily expose entire folders by using a "\*" wildcard in both the name and the datasource.uri config, see example in the config above
 - Good test coverage
+
+## Contribution
+
+Feel free to contribute, report bugs or request enhancements.
