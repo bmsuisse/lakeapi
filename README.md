@@ -41,9 +41,9 @@ Pypi Package `bmsdna-lakeapi` can be installed like any python package : `pip in
 
 Based on a `YAML` configuration and the data source, LakeAPI will automatically generate GET and/or POST endpoints.
 Calling the endpoint turns the query into an SQL statement that can be executed with the engine of your choice (duckdb, datafusion or polars).
-The result is then seralised into the requested format by default (json, csv, arrow etc).
+The result is then seralised into the requested format (Json, CSV, Arrow etc).
 
-## OpenApi
+## OpenAPI
 
 Of course everything works with `OpenAPI` and `FastAPI`. This means you can add other FastAPI routes, you can use the /docs and /redoc endpoints.
 
@@ -221,7 +221,7 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 
 ## Work in progress
 
-Please note that this is a work in progress, changes may be made and things may break. Especially at this early stage.
+Please note that this is a work in progress, changes will be made and things may break. Especially at this early stage.
 
 ## Contribution
 
