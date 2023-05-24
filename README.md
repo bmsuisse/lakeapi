@@ -82,7 +82,7 @@ You can still use environment variables for configuration
 
 The application by default relies on a Config file beeing present at the root of your project that's call `config.yml`.
 
-The config file looks something like this, see also [our test yaml](config_test.yml):
+The config file looks something like this, see also [our test yaml](https://raw.githubusercontent.com/bmsuisse/lakeapi/dev/config_test.yml):
 
 ```yaml
 tables:
