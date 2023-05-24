@@ -375,7 +375,7 @@ def create_config_endpoint(
                 new_query = new_query.select(score_sum.as_("search_score"))
                 new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
 
-                new_query = new_query.orderby("search_score", order=pypika.Order.desc)
+                new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
 
             logger.info(f"Query: {get_sql(new_query)}")
 
