@@ -1,10 +1,11 @@
 # The BMS Lake API
 
+<h1 align="center">
+  <img src="assets\LakeAPI.drawio.png">
+  <br>
+</h1>
+
 [![tests](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml/badge.svg?branch=main)](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml)
-
-#### Build on giants
-
-<img src="/assets/LakeAPI.drawio.png" alt="LakeAPI" style="height: 100%; width:100%;"/>
 
 A FastAPI Plugin that allows you to expose your Data Lake as an API, allowing multiple output formats, such as Parquet, Csv, Json, Excel, ...
 
