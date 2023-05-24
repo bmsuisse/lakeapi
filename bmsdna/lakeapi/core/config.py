@@ -26,7 +26,7 @@ from polars.type_aliases import JoinStrategy
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.types import FileTypes, OperatorType, PolaryTypeFunction, Engines
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
 
 logger = get_logger(__name__)
 
@@ -52,21 +52,6 @@ def get_default_config():
         token_jwt_secret=os.getenv("JWT_SECRET", None),
         min_search_length=3,
     )
-
-
-@dataclass
-class Param:
-    name: str
-    combi: Optional[Optional[List[str]]] = None
-    default: Optional[str] = None
-    required: Optional[bool] = False
-    operators: Optional[list[OperatorType]] = None
-    colname: Optional[str] = None
-
-    @property
-    def real_default(self) -> str:
-        self._real_default = ast.literal_eval(self.default) if self.default else None
-        return cast(str, self._real_default)
 
 
 @dataclass
@@ -143,12 +128,6 @@ class DatasourceConfig:
     joins: Optional[List[Join]] = None
     filters: Optional[List[Filter]] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
-
-
-@dataclass
-class SearchConfig:
-    name: str
-    columns: List[str]
 
 
 @dataclass

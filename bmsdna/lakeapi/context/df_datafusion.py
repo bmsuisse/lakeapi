@@ -72,7 +72,7 @@ class DatafusionDbExecutionContextBase(ExecutionContext):
         self.session = session
         self._registred_udf = False
 
-    def json_function(self, term: pypika.terms.Term):
+    def json_function(self, term: pypika.terms.Term, assure_string=False):
         if not self._registred_udf:  # does not seem to work
             from datafusion import udf
 
