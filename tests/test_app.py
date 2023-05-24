@@ -456,3 +456,19 @@ def test_fruits_nested():
             {"A": 1, "fruits": "banana", "B": 5, "cars": "beetle", "nested": {"cars": "beetle", "fruits": "banana"}},
             {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"cars": "audi", "fruits": "banana"}},
         ]
+
+
+def test_sortby():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        jsd = response.json()
+        assert len(jsd) == 5
+
+        assert jsd[0]["randomdata"] <= jsd[1]["randomdata"]
+        assert jsd[1]["randomdata"] <= jsd[2]["randomdata"]
+        assert jsd[2]["randomdata"] <= jsd[3]["randomdata"]
+        assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]

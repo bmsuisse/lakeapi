@@ -18,8 +18,8 @@
         }
     },
     "required": [
-        "app",
         "users",
+        "app",
         "tables"
     ],
     "$defs": {
@@ -158,26 +158,10 @@
                         "type": "string"
                     }
                 },
-                "groupby": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/GroupByConfig"
-                        }
-                    ]
-                },
                 "sortby": {
                     "type": "array",
                     "items": {
                         "$ref": "#/$defs/SortBy"
-                    }
-                },
-                "joins": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Join"
                     }
                 },
                 "filters": {
@@ -212,60 +196,6 @@
                 }
             }
         },
-        "GroupByConfig": {
-            "type": "object",
-            "required": [
-                "by",
-                "expressions"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "by": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "expressions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/GroupByExpConfig"
-                    }
-                }
-            }
-        },
-        "GroupByExpConfig": {
-            "type": "object",
-            "required": [],
-            "additionalProperties": false,
-            "properties": {
-                "col": {
-                    "type": "string"
-                },
-                "func": {
-                    "enum": [
-                        "sum",
-                        "count",
-                        "mean",
-                        "median",
-                        "min",
-                        "max",
-                        "first",
-                        "std",
-                        "n_unique",
-                        "distinct",
-                        "mode",
-                        "null_count"
-                    ]
-                },
-                "alias": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
         "SortBy": {
             "type": "object",
             "required": [
@@ -281,52 +211,6 @@
                         "asc",
                         "desc"
                     ]
-                }
-            }
-        },
-        "Join": {
-            "type": "object",
-            "required": [
-                "uri",
-                "left_on",
-                "right_on"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "uri": {
-                    "type": "string"
-                },
-                "left_on": {
-                    "type": "string"
-                },
-                "right_on": {
-                    "type": "string"
-                },
-                "file_type": {
-                    "enum": [
-                        "delta",
-                        "parquet",
-                        "arrow",
-                        "arrow-stream",
-                        "avro",
-                        "csv",
-                        "json",
-                        "ndjson",
-                        "parquet_withdecimal"
-                    ]
-                },
-                "how": {
-                    "enum": [
-                        "inner",
-                        "left",
-                        "outer",
-                        "semi",
-                        "anti",
-                        "cross"
-                    ]
-                },
-                "suffix": {
-                    "type": "string"
                 }
             }
         },

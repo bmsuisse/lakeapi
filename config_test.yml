@@ -246,6 +246,8 @@ tables:
     datasource:
       uri: parquet/search.parquet
       file_type: parquet
+      sortby:
+        - by: "randomdata"
     search:
       - name: search
         columns:

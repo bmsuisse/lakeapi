@@ -84,29 +84,6 @@ class Dataframe:
     def filter_df(self):
         raise NotImplementedError()
 
-    def groupby_df(self, df: QueryBuilder) -> QueryBuilder:
-        if self.config.groupby:
-            df = df.groupby(*self.config.groupby.by)
-            df = df.select(
-                [
-                    fn.Function(g.func, fn.Field(g.col)).as_(g.alias or g.col)
-                    if g.func
-                    else fn.Field(g.col, g.alias or g.col)
-                    for g in self.config.groupby.expressions
-                ]
-            )
-
-        return df
-
-    def sort_df(self, df: QueryBuilder) -> QueryBuilder:
-        if self.config.sortby:
-            for s in self.config.sortby:
-                df = df.orderby(
-                    s.by,
-                    ord=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
-                )
-        return df
-
     def select_df(self, df: QueryBuilder) -> QueryBuilder:
         if self.config.select:
             select = [
@@ -126,14 +103,10 @@ class Dataframe:
         return df
 
     def _prep_df(self, df: QueryBuilder, endpoint: endpoints) -> QueryBuilder:
-        df = self.join_df(df)
-        df = self.groupby_df(df)
         if endpoint == "query":
             pass
         else:
             df = self.select_df(df)
-        if endpoint != "meta":
-            df = self.sort_df(df)
         return df
 
     @property
@@ -160,25 +133,6 @@ class Dataframe:
             self.df = self.sql_context.execute_sql(self.query)
 
         return self.df  # type: ignore
-
-    def join_df(self, df: QueryBuilder) -> QueryBuilder:
-        if self.config.joins:
-            for join in self.config.joins:
-                table_name = get_table_name_from_uri(join.uri)
-                self.sql_context.register_dataframe(
-                    table_name,
-                    join.uri,
-                    join.file_type,
-                    partitions=None,
-                )
-                df = df.join(table_name, how=join.how).on(
-                    pypika.Field(
-                        join.left_on,
-                        table=pypika.Table(get_table_name_from_uri(self.config.uri)),
-                    )
-                    == pypika.Field(join.right_on, table=pypika.Table(table_name))
-                )
-        return df
 
 
 @cache
