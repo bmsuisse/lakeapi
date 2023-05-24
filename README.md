@@ -154,23 +154,23 @@ tables:
       uri: delta/fake
       file_type: delta
 
-  - name: fruits_csv
-    tag: test
+  - name: "*" # We're lazy and want to expose all in that folder. Name MUST be * and nothing else
+    tag: startest
     version: 1
-    allow_get_all_pages: true
+    api_method:
+      - post
+    datasource:
+      uri: startest/* # Uri MUST end with /*
+      file_type: delta
+
+  - name: fruits # But we want to overwrite this one
+    tag: startest
+    version: 1
     api_method:
       - get
-      - post
-    params:
-      - name: fruits
-        operators:
-          - "="
-      - name: cars
-        operators:
-          - "="
     datasource:
-      uri: csv/fruits.csv
-      file_type: csv
+      uri: startest/fruits
+      file_type: delta
 ```
 
 ## Partioning for awesome performance
@@ -191,5 +191,5 @@ You must use deltalake to use parttions and you must only have str partition col
 - Full-text Search using DuckDB's Full Text Search Feature
 - jsonify_complex Parameter to turn structs/lists into Json the client cannot deal with structs/lists
 - Metadata endpoints to retrieve data types, string lengths and more
-- Expose whole folders easily by using a "\*" wildcard in both the name and the datasource.uri config
+- Expose whole folders easily by using a "\*" wildcard in both the name and the datasource.uri config, see sample in above config
 - Good test coverage
