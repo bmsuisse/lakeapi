@@ -7,13 +7,13 @@
 
 [![tests](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml/badge.svg?branch=main)](https://github.com/bmsuisse/lakeapi/actions/workflows/python-test.yml)
 
-A FastAPI Plugin that allows you to expose your Data Lake as an API, allowing multiple output formats, such as Parquet, Csv, Json, Excel, ...
+A FastAPI plugin that allows you to expose your data lake as an API, allowing several output formats such as Parquet, Csv, Json, Excel, ...
 
-The lake API also contains a minimal security layer for convenience (Basic Auth), but you can also bring your own.
+The Lake API also includes a minimal security layer for convenience (Basic Auth), but you can also bring your own.
 
-It contrast to [roapi](https://github.com/roapi/roapi), we intentionally do not want to expose most SQL by default, but we limit possible queries using a config. This makes it easy for you to control what happens on your data. If you want the sql endpoint, you can enable this.
+Unlike [roapi](https://github.com/roapi/roapi), we intentionally do not expose most SQL by default, but limit the possible queries with a config. This makes it easy for you to control what happens to your data. If you want the SQL endpoint, you can enable it.
 
-To run the app with default config, just do:
+To run the application with the default config, just do it:
 
 ```python
 app = FastAPI()
@@ -43,10 +43,9 @@ Of course, everything works with Open API and FastAPI. Meaning you can add other
 
 ## Engine
 
-By default, DuckDB is the query engine. Polars and Datafusion are also supported.
-The query engine can be defined on a route level and on a query level with the hidden parameter $engine="duckdb|datafusion|polars".
+DuckDB is the default query engine. Polars and Datafusion are also supported, but lack some features. The query engine can be specified at the route level and at the query level with the hidden parameter $engine="duckdb|datafusion|polars". If you want polars or datafusion, add the required extra.
 
-At the moment DuckDB seems to have an edge and performances the best. Also features like full text search are only available with DuckDB.
+At the moment, DuckDB seems to have an advantage and performs the best. Also features like full text search are only available with DuckDB.
 
 ## Default Security
 
@@ -187,15 +186,15 @@ tables:
 
 ## Partioning for awesome performance
 
-In order to use partitions, you can either:
+To use partitions, you can either
 
-- partition by a column you filter on. Obviously
-- partition on a special column called `columnname_md5_prefix_2` which means that you're partitioning by the first two chars of
-  your hex-encoded md5 hash. If you now filter by `columnname` this will greatly reduce files searched for. The number of chars used is up to you, we found two to be meaningful
-- partition on a special column called `columnname_md5_mod_NRPARTIIONS` where your partition value is `str(int(hashlib.md5(COLUMNNAME).hexdigest(), 16) % NRPARTITIONS)`. That might look a bit complicated, but it's not that hard :) your just doing a modulo on your md5 hash which
-  allows you to set the exact number of partitions. Filtering is still happening on `columname` correctly
+- Partition by a column that you filter on. Obviously
+- partition on a special column called `columnname_md5_prefix_2`, which means that you're partitioning on the first two characters of your hex-coded md5 hash.
+  of the hexadecimal md5 hash. If you now filter by `columnname`, this will greatly reduce the number of files you search for. The number of characters used is up to you, we found two to be useful
+- partition on a special column called `columnname_md5_mod_NRPARTITIONS`, where your partition value is `str(int(hashlib.md5(COLUMNNAME).hexdigest(), 16) % NRPARTITIONS)`. This might look a bit complicated, but it's not that hard :) You're just doing a modulo on your md5 hash, which allows you to
+  which allows you to set the exact number of partitions. Filtering is still done correctly on `columnname`.
 
-You must use deltalake to use parttions and you must only have str partition columns for now.
+You need to use deltalake to use partitions and you only need to have str partition columns for now.
 
 ## Even more features
 
