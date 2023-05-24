@@ -182,3 +182,12 @@ In order to use partitions, you can either:
   allows you to set the exact number of partitions. Filtering is still happening on `columname` correctly
 
 You must use deltalake to use parttions and you must only have str partition columns for now.
+
+## Even more features
+
+- Paging built-in, you can use limit/offset to control what you receive
+- Full-text Search using DuckDB's Full Text Search Feature
+- jsonify_complex Parameter to turn structs/lists into Json the client cannot deal with structs/lists
+- Metadata endpoints to retrieve data types, string lengths and more
+- Expose whole folders easily by using a "\*" wildcard in both the name and the datasource.uri config
+- Good test coverage
