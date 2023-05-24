@@ -196,7 +196,7 @@ To use partitions, you can either
 
 Why partition by MD5 hash? Imagine you have a product id where most id's start with a 1 and some newer ones start with a 2. Most of the data will be in the first partition. If you use an MD5 hash, the data will be spread evenly across the partitions.
 
-With this hack you can get sub-second results on very large data.
+With this hack you can get sub-second results on very large data. 🚀🚀🚀
 
 You need to use `deltalake` to use partitions, and you only need str partition columns for now.
 
