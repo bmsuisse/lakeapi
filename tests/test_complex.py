@@ -64,6 +64,7 @@ def test_returns_metadatadeta():
 
     assert "person" not in jsd["max_string_lengths"]
     assert "vitamines" not in jsd["max_string_lengths"]
+    assert "fruits" in jsd["max_string_lengths"]
 
 
 def test_returns_metadatadeta_jsonifiyed():
@@ -85,6 +86,7 @@ def test_returns_metadatadeta_jsonifiyed():
 
     assert "person" in jsd["max_string_lengths"]
     assert "vitamines" in jsd["max_string_lengths"]
+    assert "fruits" in jsd["max_string_lengths"]
 
 
 def test_returns_csv():
