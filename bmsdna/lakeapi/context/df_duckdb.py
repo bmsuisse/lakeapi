@@ -9,6 +9,8 @@ import duckdb
 import pyarrow.dataset
 import pypika.queries
 import pypika.terms
+import pypika.functions
+import pypika.enums
 import pypika
 import os
 from datetime import datetime, timezone
@@ -156,8 +158,11 @@ class DuckDbExecutionContextBase(ExecutionContext):
         fields = ",".join(search_config.columns)
         return Match25Term(source_view, pypika.queries.Field("__search_id"), search_text, fields)
 
-    def json_function(self, term: pypika.terms.Term):
-        return pypika.terms.Function("to_json", term)
+    def json_function(self, term: pypika.terms.Term, assure_string=False):
+        fn = pypika.terms.Function("to_json", term)
+        if assure_string:
+            return pypika.functions.Cast(fn, pypika.enums.SqlTypes.VARCHAR)
+        return fn
 
     def init_search(
         self,
