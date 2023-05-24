@@ -122,7 +122,7 @@ def create_detailed_meta_endpoint(
     route = config.route + "/metadata_detail"
     has_complex = True
     if metamodel is not None:
-        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
+        has_complex = any((pa.types.is_nested(t) for t in metamodel.arrow_schema().types))
 
     @router.get(
         route,
@@ -200,7 +200,7 @@ def create_detailed_meta_endpoint(
             str_lengths = str_lengths_df[0]
 
             def _recursive_get_type(t: pa.DataType) -> MetadataSchemaFieldType:
-                is_complex = pa.types.is_struct(t) or pa.types.is_list(t)
+                is_complex = pa.types.is_nested(t)
 
                 return MetadataSchemaFieldType(
                     type_str=str(pa.string()) if is_complex and jsonify_complex else str(t),
@@ -212,7 +212,7 @@ def create_detailed_meta_endpoint(
                     if pa.types.is_struct(t) and not jsonify_complex
                     else None,
                     inner=_recursive_get_type(t.value_type)
-                    if pa.types.is_list(t) and t.value_type is not None and not jsonify_complex
+                    if pa.types.is_list(t) or pa.types.is_large_list(t) or pa.types.is_fixed_size_list(t) and t.value_type is not None and not jsonify_complex
                     else None,
                 )
 
@@ -238,7 +238,7 @@ def exclude_cols(columns: List[str]) -> List[str]:
 
 def is_complex_type(schema: pa.Schema, col_name: str):
     f = schema.field(col_name)
-    return pa.types.is_struct(f.type) or pa.types.is_list(f.type)
+    return pa.types.is_nested(f.type)
 
 
 def create_config_endpoint(
