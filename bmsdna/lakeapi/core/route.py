@@ -73,7 +73,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 metamodel = None
 
             response_model = get_response_model(config=config, metamodel=metamodel) if metamodel is not None else None
-            create_detailed_meta_endpoint(metamodel=metamodel, config=config, router=router, basic_config=basic_config)
+            create_detailed_meta_endpoint(
+                metamodel=metamodel, config=config, configs=configs, router=router, basic_config=basic_config
+            )
             for am in methods:
                 create_config_endpoint(
                     apimethod=am,

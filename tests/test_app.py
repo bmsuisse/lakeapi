@@ -346,6 +346,14 @@ def test_all_metadata():
     assert len(jsd["parameters"]) == 2
 
 
+def test_auth_metadata():
+    response = client.get(f"/metadata")
+    assert response.status_code == 401
+
+    response = client.get(f"/api/v1/test/fake_arrow/metadata_detail")
+    assert response.status_code == 401
+
+
 def test_data_partition():
     for e in engines:
         response = client.get(

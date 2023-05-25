@@ -117,12 +117,18 @@ def _to_dict(tblmeta: Optional[Metadata]):
 
 
 def create_detailed_meta_endpoint(
-    metamodel: Optional[ResultData], config: Config, router: APIRouter, basic_config: BasicConfig
+    metamodel: Optional[ResultData], config: Config, configs: Configs, router: APIRouter, basic_config: BasicConfig
 ):
     route = config.route + "/metadata_detail"
     has_complex = True
     if metamodel is not None:
         has_complex = any((pa.types.is_nested(t) for t in metamodel.arrow_schema().types))
+
+    async def get_username(req: Request):
+        res = basic_config.username_retriever(req, basic_config, configs.users)
+        if inspect.isawaitable(res):
+            res = await res
+        return res
 
     @router.get(
         route,
@@ -132,6 +138,7 @@ def create_detailed_meta_endpoint(
     )
     def get_detailed_metadata(
         req: Request,
+        username=Depends(get_username),
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
     ) -> MetadataDetailResult:
         import json
