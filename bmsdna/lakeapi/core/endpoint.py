@@ -131,7 +131,8 @@ def create_detailed_meta_endpoint(
         name=config.name + "_metadata",
     )
     def get_detailed_metadata(
-        req: Request, jsonify_complex=Query(title="jsonify_complex", include_in_schema=has_complex, default=False)
+        req: Request,
+        jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
     ) -> MetadataDetailResult:
         import json
 
@@ -212,7 +213,11 @@ def create_detailed_meta_endpoint(
                     if pa.types.is_struct(t) and not jsonify_complex
                     else None,
                     inner=_recursive_get_type(t.value_type)
-                    if pa.types.is_list(t) or pa.types.is_large_list(t) or pa.types.is_fixed_size_list(t) and t.value_type is not None and not jsonify_complex
+                    if pa.types.is_list(t)
+                    or pa.types.is_large_list(t)
+                    or pa.types.is_fixed_size_list(t)
+                    and t.value_type is not None
+                    and not jsonify_complex
                     else None,
                 )
 
@@ -295,7 +300,7 @@ def create_config_endpoint(
         distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
-        jsonify_complex=Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+        jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         username=Depends(get_username),
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
