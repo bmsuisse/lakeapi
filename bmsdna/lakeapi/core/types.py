@@ -138,7 +138,7 @@ class Param:
 class MetadataDetailResult(BaseModel):
     partition_values: Optional[list[dict[str, Any]]]
     partition_columns: List[str]
-    max_string_lengths: dict[str, int]
+    max_string_lengths: dict[str, Optional[int]]
     data_schema: list[MetadataSchemaField]
     delta_meta: Optional[dict]
     delta_schema: Any
