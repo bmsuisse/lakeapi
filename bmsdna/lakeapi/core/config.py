@@ -133,6 +133,25 @@ class Option:
     ...
 
 
+def _with_implicit_parameters(paramslist: List[Param], file_type: str, basic_config: BasicConfig, uri: str):
+    if file_type == "delta":
+        delta_uri = os.path.join(
+            basic_config.data_path,
+            uri,
+        )
+        from deltalake import DeltaTable
+
+        part_cols = DeltaTable(delta_uri).metadata().partition_columns
+        if part_cols and len(part_cols) > 0:
+            all_names = [(p.colname or p.name).lower() for p in paramslist]
+            new_params = list(paramslist)
+            for pc in part_cols:
+                if pc.lower() not in all_names:
+                    new_params.append(Param(pc, operators=["="], colname=pc))
+            return new_params
+    return paramslist
+
+
 @dataclass
 class Config:
     name: str
@@ -229,7 +248,7 @@ class Config:
                             filters=None,
                             cache_expiration_time_seconds=cache_expiration_time_seconds,
                         )
-
+                        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
                         ls.append(
                             cls(
                                 name=it.name,
@@ -238,7 +257,7 @@ class Config:
                                 version=version,
                                 api_method=api_method,
                                 search=search_config,
-                                params=_params,  # type: ignore
+                                params=new_params,  # type: ignore
                                 allow_get_all_pages=config.get("allow_get_all_pages", False),
                                 datasource=datasource,
                                 cache_expiration_time_seconds=cache_expiration_time_seconds,
@@ -255,6 +274,7 @@ class Config:
                 filters=None,
                 cache_expiration_time_seconds=cache_expiration_time_seconds,
             )
+            new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
 
             return [
                 cls(
@@ -264,7 +284,7 @@ class Config:
                     search=search_config,
                     engine=engine,  # type: ignore
                     api_method=api_method,
-                    params=_params,  # type: ignore
+                    params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
                     datasource=datasource,
                     cache_expiration_time_seconds=cache_expiration_time_seconds,
