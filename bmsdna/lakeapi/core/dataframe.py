@@ -295,7 +295,7 @@ async def filter_df_based_on_params(
                 case "=":
                     exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
                 case "not contains":
-                    exprs.append(fn.Field(colname).not_like.contains("%" + value + "%"))
+                    exprs.append(fn.Field(colname).not_like("%" + value + "%"))
                 case "contains":
                     exprs.append(fn.Field(colname).like("%" + value + "%"))
                 case "in":
