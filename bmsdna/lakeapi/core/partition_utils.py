@@ -24,6 +24,8 @@ def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_c
             new_params = list(paramslist)
             for pc in part_cols:
                 if pc.lower() not in all_names and not should_hide_colname(pc):
+                    from bmsdna.lakeapi.core.types import Param
+
                     new_params.append(Param(pc, operators=["="], colname=pc))
             return new_params
     return paramslist
