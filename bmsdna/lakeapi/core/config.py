@@ -26,6 +26,7 @@ from polars.type_aliases import JoinStrategy
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 
 from bmsdna.lakeapi.core.log import get_logger
+from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
 
 logger = get_logger(__name__)
@@ -131,25 +132,6 @@ class DatasourceConfig:
 @dataclass
 class Option:
     ...
-
-
-def _with_implicit_parameters(paramslist: List[Param], file_type: str, basic_config: BasicConfig, uri: str):
-    if file_type == "delta":
-        delta_uri = os.path.join(
-            basic_config.data_path,
-            uri,
-        )
-        from deltalake import DeltaTable
-
-        part_cols = DeltaTable(delta_uri).metadata().partition_columns
-        if part_cols and len(part_cols) > 0:
-            all_names = [(p.colname or p.name).lower() for p in paramslist]
-            new_params = list(paramslist)
-            for pc in part_cols:
-                if pc.lower() not in all_names:
-                    new_params.append(Param(pc, operators=["="], colname=pc))
-            return new_params
-    return paramslist
 
 
 @dataclass

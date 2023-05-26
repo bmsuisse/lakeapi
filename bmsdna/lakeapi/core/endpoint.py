@@ -31,11 +31,8 @@ from bmsdna.lakeapi.core.dataframe import (
     filter_partitions_based_on_params,
 )
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.model import (
-    create_parameter_model,
-    create_response_model,
-    should_hide_colname,
-)
+from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
+from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import (
     MetadataDetailResult,
