@@ -43,6 +43,8 @@ Based on a `YAML` configuration and the data source, LakeAPI will automatically 
 Calling the endpoint turns the query into an SQL statement that can be executed with the engine of your choice (duckdb, datafusion or polars).
 The result is then seralised into the requested format (Json, CSV, Arrow etc).
 
+This makes it super easy to distribute your data lake data to other systems. We use it internally to feed data to MS SQL Server, SQLite, Streamlit and Web Apps. You can host it wherever you want, we use Azure Websites which works fine even for very large data amounts. 
+
 ## OpenAPI
 
 Of course everything works with `OpenAPI` and `FastAPI`. This means you can add other FastAPI routes, you can use the /docs and /redoc endpoints.
@@ -222,6 +224,11 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 ## Work in progress
 
 Please note that this is a work in progress, changes will be made and things may break. Especially at this early stage.
+We recommend only using the export from `bmsdna.lakeapi` for now and not to use the submodules.
+
+## Limitations
+
+- You can currently only serve local files. We might add support for `fsspec` later on. You can still mount your data if you use Linux, which is what we do in production
 
 ## Contribution
 
