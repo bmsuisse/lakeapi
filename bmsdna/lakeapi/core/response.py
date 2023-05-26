@@ -9,6 +9,7 @@ from uuid import uuid4
 import anyio
 import pyarrow as pa
 from fastapi import BackgroundTasks
+from starlette.background import BackgroundTask
 from starlette.datastructures import URL
 from starlette.responses import FileResponse
 
@@ -80,7 +81,7 @@ def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str
 
 def write_frame(
     url: URL, current_user: str, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
-):
+) -> list[str]:
     if format == OutputFormats.IQY:
         import jwt
 
@@ -111,7 +112,7 @@ DisableRedirections=False"""
                 f.write(strdt)
         else:
             out.write(strdt.encode("utf-8"))
-        return
+        return []
 
     if format == OutputFormats.AVRO:
         import polars as pl
@@ -134,7 +135,7 @@ DisableRedirections=False"""
                 while line != "":
                     f.write(line.encode("utf-16le"))
                     line = c8.readline()
-            os.remove(out + "_u8")
+            return [out + "_u8"]
     elif format == OutputFormats.XLSX:
         import polars as pl
 
@@ -160,6 +161,14 @@ DisableRedirections=False"""
         content.write_parquet(out)
     else:
         content.write_json(out)
+    return []
+
+
+class FileResponseWCharset(FileResponse):
+    def __init__(self, *args, **kwargs):
+        if "charset" in kwargs:
+            self.charset = kwargs.pop("charset")
+        super().__init__(*args, **kwargs)
 
 
 async def create_response(
@@ -187,22 +196,11 @@ async def create_response(
         content_dispositiont_type = "inline"
         filename = None
     path = os.path.join(basic_config.temp_folder_path, str(uuid4()) + extension)
-    media_type = mimetypes.guess_type("file" + extension)[0]
-    write_frame(
+    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
+    additional_files = write_frame(
         current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
     )
 
-    if media_type is not None and format in [
-        OutputFormats.JSON,
-        OutputFormats.ND_JSON,
-        OutputFormats.CSV,
-        OutputFormats.SEMI_CSV,
-        OutputFormats.CSV4EXCEL,
-        OutputFormats.HTML,
-        OutputFormats.XLSX,
-        OutputFormats.XML,
-    ]:
-        media_type = media_type + ";charset=utf-8"
     tasks = BackgroundTasks()
     import asyncio
 
@@ -211,14 +209,18 @@ async def create_response(
         await anyio.sleep(3)
 
         os.remove(path)
+        for f in additional_files:
+            os.remove(f)
 
     tasks.add_task(remove)
 
-    return FileResponse(
+    fr = FileResponseWCharset(
         path=path,
         headers=headers,
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,
         filename=filename,
         background=tasks,
+        charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
     )
+    return fr
