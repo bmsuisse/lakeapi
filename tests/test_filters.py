@@ -165,6 +165,13 @@ def test_between():
         for item in jsd:
             assert item["B"] >= 5 and item["B"] <= 7
 
+        response = client.post(
+            f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
+            auth=auth,
+            json={"B_between": [5, 7, 9]},
+        )
+        assert response.status_code == 400
+
 
 def test_not_between():
     for e in engines:
@@ -179,3 +186,10 @@ def test_not_between():
 
         for item in jsd:
             assert not (item["B"] >= 5 and item["B"] <= 7)
+
+        response = client.post(
+            f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
+            auth=auth,
+            json={"B_not_between": [5, 7, 9]},
+        )
+        assert response.status_code == 400
