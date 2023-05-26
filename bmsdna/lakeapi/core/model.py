@@ -7,6 +7,7 @@ from fastapi import Query
 from pydantic import BaseModel, create_model
 from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig
+from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
@@ -167,10 +168,6 @@ def create_parameter_model(
 class TypeBaseModel(BaseModel):
     class Config:
         orm_mode = True
-
-
-def should_hide_colname(name: str):
-    return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name or "_md5_mod_" in name
 
 
 def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:

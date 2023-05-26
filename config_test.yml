@@ -42,10 +42,6 @@ tables:
       - get
       - post
     params:
-      - name: cars
-        operators:
-          - "="
-          - in
       - name: fruits
         operators:
           - "="
@@ -72,12 +68,14 @@ tables:
     version: 1
     api_method:
       - get
+      - post
     datasource:
       uri: delta/fruits_partition_mod
     params:
       - name: cars
         operators:
           - "="
+          - "in"
 
   - name: fruits_nested
     tag: test

@@ -124,22 +124,17 @@ DisableRedirections=False"""
     elif format == OutputFormats.SEMI_CSV:
         content.write_csv(out, separator=";")
     elif format == OutputFormats.CSV4EXCEL:  # need to write sep=, on first line
-        if isinstance(out, str):
-            content.write_csv(out + "_u8", separator=",")  # type: ignore
-            with open(
-                out, mode="wb"
-            ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
-                f.write(b"sep=,\n")  # add utf-8 bom at beginning
-                with open(out + "_u8", mode="r", encoding="utf-8") as c8:
+        content.write_csv(out + "_u8", separator=",")  # type: ignore
+        with open(
+            out, mode="wb"
+        ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
+            f.write(b"sep=,\n")  # add utf-8 bom at beginning
+            with open(out + "_u8", mode="r", encoding="utf-8") as c8:
+                line = c8.readline()
+                while line != "":
+                    f.write(line.encode("utf-16le"))
                     line = c8.readline()
-                    while line != "":
-                        f.write(line.encode("utf-16le"))
-                        line = c8.readline()
-                os.remove(out + "_u8")
-
-        else:
-            out.write(b"sep=,\r\n")  # not used, and would break special characters
-            content.write_csv(out, separator=",")
+            os.remove(out + "_u8")
     elif format == OutputFormats.XLSX:
         import polars as pl
 

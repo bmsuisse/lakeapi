@@ -24,7 +24,7 @@ from aiocache.serializers import PickleSerializer
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, GroupByConfig, GroupByExpConfig, Param
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.model import get_param_def, should_hide_colname
+from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
 from bmsdna.lakeapi.context.df_base import ResultData, ExecutionContext
 import pypika

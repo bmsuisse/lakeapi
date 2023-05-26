@@ -26,6 +26,7 @@ from polars.type_aliases import JoinStrategy
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 
 from bmsdna.lakeapi.core.log import get_logger
+from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
 
 logger = get_logger(__name__)
@@ -229,7 +230,7 @@ class Config:
                             filters=None,
                             cache_expiration_time_seconds=cache_expiration_time_seconds,
                         )
-
+                        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
                         ls.append(
                             cls(
                                 name=it.name,
@@ -238,7 +239,7 @@ class Config:
                                 version=version,
                                 api_method=api_method,
                                 search=search_config,
-                                params=_params,  # type: ignore
+                                params=new_params,  # type: ignore
                                 allow_get_all_pages=config.get("allow_get_all_pages", False),
                                 datasource=datasource,
                                 cache_expiration_time_seconds=cache_expiration_time_seconds,
@@ -255,6 +256,7 @@ class Config:
                 filters=None,
                 cache_expiration_time_seconds=cache_expiration_time_seconds,
             )
+            new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
 
             return [
                 cls(
@@ -264,7 +266,7 @@ class Config:
                     search=search_config,
                     engine=engine,  # type: ignore
                     api_method=api_method,
-                    params=_params,  # type: ignore
+                    params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
                     datasource=datasource,
                     cache_expiration_time_seconds=cache_expiration_time_seconds,

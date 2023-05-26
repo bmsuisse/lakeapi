@@ -388,7 +388,21 @@ def test_data_partition_mod():
     for e in engines:
         response = client.get(
             f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={e}",
+            auth=auth,  # works because of implicit parameters
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 2,
+                "fruits": "banana",
+                "B": 4,
+                "cars": "audi",
+            }
+        ]
+        response = client.post(
+            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={e}",
             auth=auth,
+            json={"cars_in": ["audi"]},
         )
         assert response.status_code == 200
         assert response.json() == [
