@@ -291,7 +291,9 @@ tables:
       file_type: delta
     params:
       - name: fruits
-        operators: ["not in", "contains", "not contains", "<>"]
+        operators: ["not in", "in", "contains", "not contains", "<>"]
+      - name: cars
+        operators: ["not in", "in", "contains", "not contains", "<>"]
       - name: B
         operators: [">", "<", "<=", ">=", "between", "not between"]
 

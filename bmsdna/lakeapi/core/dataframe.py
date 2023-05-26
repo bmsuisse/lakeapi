@@ -295,7 +295,7 @@ async def filter_df_based_on_params(
                 case "=":
                     exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
                 case "not contains":
-                    exprs.append(fn.Field(colname).not_like.contains("%" + value + "%"))
+                    exprs.append(fn.Field(colname).not_like("%" + value + "%"))
                 case "contains":
                     exprs.append(fn.Field(colname).like("%" + value + "%"))
                 case "in":
@@ -310,10 +310,18 @@ async def filter_df_based_on_params(
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
                         exprs.append(fn.Field(colname).between(lsv[0], lsv[1]))
+                    else:
+                        from fastapi import HTTPException
+
+                        raise HTTPException(400, "Must have an array with 2 elements for between")
                 case "not between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
                         exprs.append(~fn.Field(colname).between(lsv[0], lsv[1]))
+                    else:
+                        from fastapi import HTTPException
+
+                        raise HTTPException(400, "Must have an array with 2 elements for between")
 
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")
