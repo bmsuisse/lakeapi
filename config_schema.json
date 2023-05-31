@@ -17,19 +17,11 @@
             "$ref": "#/$defs/AppConfig"
         }
     },
-    "required": [
-        "users",
-        "app",
-        "tables"
-    ],
+    "required": ["users", "tables", "app"],
     "$defs": {
         "Config": {
             "type": "object",
-            "required": [
-                "name",
-                "tag",
-                "datasource"
-            ],
+            "required": ["name", "tag", "datasource"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -42,26 +34,17 @@
                     "$ref": "#/$defs/DatasourceConfig"
                 },
                 "version": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "api_method": {
                     "oneOf": [
                         {
-                            "enum": [
-                                "get",
-                                "post"
-                            ]
+                            "enum": ["get", "post"]
                         },
                         {
                             "type": "array",
                             "items": {
-                                "enum": [
-                                    "get",
-                                    "post"
-                                ]
+                                "enum": ["get", "post"]
                             }
                         }
                     ]
@@ -79,25 +62,12 @@
                         ]
                     }
                 },
-                "engine": {
-                    "enum": [
-                        "duckdb",
-                        "polars",
-                        "datafusion"
-                    ]
-                },
                 "timestamp": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
+                    "type": ["string", "null"],
                     "format": "date-time"
                 },
                 "cache_expiration_time_seconds": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "options": {
                     "oneOf": [
@@ -110,41 +80,29 @@
                     ]
                 },
                 "allow_get_all_pages": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "type": ["boolean", "null"]
                 },
                 "search": {
                     "type": "array",
                     "items": {
                         "$ref": "#/$defs/SearchConfig"
                     }
+                },
+                "engine": {
+                    "enum": ["duckdb", "polars"]
                 }
             }
         },
         "DatasourceConfig": {
             "type": "object",
-            "required": [
-                "uri"
-            ],
+            "required": ["uri"],
             "additionalProperties": false,
             "properties": {
                 "uri": {
                     "type": "string"
                 },
                 "file_type": {
-                    "enum": [
-                        "delta",
-                        "parquet",
-                        "arrow",
-                        "arrow-stream",
-                        "avro",
-                        "csv",
-                        "json",
-                        "ndjson",
-                        "parquet_withdecimal"
-                    ]
+                    "enum": ["delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson"]
                 },
                 "select": {
                     "type": "array",
@@ -171,76 +129,46 @@
                     }
                 },
                 "cache_expiration_time_seconds": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 }
             }
         },
         "Column": {
             "type": "object",
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "additionalProperties": false,
             "properties": {
                 "name": {
                     "type": "string"
                 },
                 "alias": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 }
             }
         },
         "SortBy": {
             "type": "object",
-            "required": [
-                "by"
-            ],
+            "required": ["by"],
             "additionalProperties": false,
             "properties": {
                 "by": {
                     "type": "string"
                 },
                 "direction": {
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ]
+                    "enum": ["asc", "desc"]
                 }
             }
         },
         "Filter": {
             "type": "object",
-            "required": [
-                "key",
-                "operator",
-                "value"
-            ],
+            "required": ["key", "operator", "value"],
             "additionalProperties": false,
             "properties": {
                 "key": {
                     "type": "string"
                 },
                 "operator": {
-                    "enum": [
-                        "=",
-                        ">",
-                        "<",
-                        ">=",
-                        "<=",
-                        "<>",
-                        "!=",
-                        "==",
-                        "between",
-                        "not between",
-                        "in",
-                        "not in"
-                    ]
+                    "enum": ["=", ">", "<", ">=", "<=", "<>", "!=", "==", "between", "not between", "in", "not in"]
                 },
                 "value": {
                     "oneOf": [
@@ -250,10 +178,7 @@
                             "minItems": 2,
                             "maxItems": 2,
                             "additionalItems": false,
-                            "prefixItems": [
-                                {},
-                                {}
-                            ]
+                            "prefixItems": [{}, {}]
                         }
                     ]
                 }
@@ -261,9 +186,7 @@
         },
         "Param": {
             "type": "object",
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -276,16 +199,10 @@
                     }
                 },
                 "default": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 },
                 "required": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "type": ["boolean", "null"]
                 },
                 "operators": {
                     "type": "array",
@@ -309,10 +226,7 @@
                     }
                 },
                 "colname": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 }
             }
         },
@@ -324,10 +238,7 @@
         },
         "SearchConfig": {
             "type": "object",
-            "required": [
-                "name",
-                "columns"
-            ],
+            "required": ["name", "columns"],
             "additionalProperties": false,
             "properties": {
                 "name": {

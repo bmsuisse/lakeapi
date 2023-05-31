@@ -226,22 +226,6 @@ tables:
       uri: delta/fake
       file_type: delta
 
-  - name: fake_datafusion
-    tag: test
-    version: 1
-    engine: datafusion
-    api_method:
-      - get
-      - post
-    params:
-      - name: abc
-        operators:
-          - "="
-          - in
-    datasource:
-      uri: delta/fake
-      file_type: delta
-
   - name: fake_polars
     tag: test
     version: 1

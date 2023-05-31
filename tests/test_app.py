@@ -15,8 +15,7 @@ sys.path.append(".")
 client = TestClient(get_app())
 auth = get_auth()
 
-# engines = ("duckdb", "datafusion", "polars")
-engines = ("duckdb", "datafusion", "polars")
+engines = ("duckdb", "polars")
 # engines = ("duckdb")
 
 

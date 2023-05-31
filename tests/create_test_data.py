@@ -5,10 +5,9 @@ from typing import Any, Optional
 import polars as pl
 from deltalake import write_deltalake
 import shutil
-from faker import Faker
 import pandas as pd
-import random
 from hashlib import md5
+from .utils import create_rows_faker
 
 
 dir_path = pathlib.Path(os.path.dirname(os.path.realpath(__file__))).parent
@@ -22,28 +21,6 @@ def delete_folder(path):
         os.remove(path)
     else:
         shutil.rmtree(path)
-
-
-def create_rows_faker(num=1):
-    fake = Faker()
-    output = [
-        {
-            "name": fake.name(),
-            "address": fake.address(),
-            "name": fake.name(),
-            "email": fake.email(),
-            "bs": fake.bs(),
-            "city": fake.city(),
-            "state": fake.state(),
-            "date_time": fake.date_time(),
-            "paragraph": fake.paragraph(),
-            "Conrad": fake.catch_phrase(),
-            "randomdata": random.randint(1000, 2000),
-            "abc": random.choice(["a", "b", "c"]),
-        }
-        for x in range(num)
-    ]
-    return output
 
 
 def store_df_as_delta(
