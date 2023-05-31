@@ -11,7 +11,7 @@ files = [
     {file = "aiocache-0.12.1-py2.py3-none-any.whl", hash = "sha256:15eb17188e12d7226678c22a890824ff9c406cf7e5b418f86944395db63a3c1b"},
     {file = "aiocache-0.12.1.tar.gz", hash = "sha256:7d9ffbd4ca2b1c51e5b213fd7d42dc43b80af01a436b14be5ebcbde199709fb3"},
 ]
-
+    
 [package.extras]
 memcached = ["aiomcache (>=0.5.2)"]
 msgpack = ["msgpack (>=0.5.5)"]
