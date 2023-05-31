@@ -15,7 +15,7 @@ pyyaml = "^6.0"
 aiocache = "^0.12.1"
 pypika = "^0.48.9"
 duckdb = "^0.8.0"
-polars = "^0.17.14"
+polars = "^0.18.0"
 
 # schema stuff
 jsonschema = {version = "^4.17.3", optional=true}
