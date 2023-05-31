@@ -37,12 +37,6 @@ def benchmark_engine(engine="duckdb"):
 
 
 @pytest.mark.benchmark(min_rounds=min_rounds, warmup=False)
-def test_benchmark_datafusion(benchmark):
-    result = benchmark(benchmark_engine, engine="datafusion")
-    assert result == True
-
-
-@pytest.mark.benchmark(min_rounds=min_rounds, warmup=False)
 def test_benchmark_duckdb(benchmark):
     result = benchmark(benchmark_engine, engine="duckdb")
     assert result == True

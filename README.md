@@ -40,10 +40,10 @@ Pypi Package `bmsdna-lakeapi` can be installed like any python package : `pip in
 ## Basic Idea
 
 Based on a `YAML` configuration and the data source, LakeAPI will automatically generate GET and/or POST endpoints.
-Calling the endpoint turns the query into an SQL statement that can be executed with the engine of your choice (duckdb, datafusion or polars).
+Calling the endpoint turns the query into an SQL statement that can be executed with the engine of your choice (duckdb or polars).
 The result is then seralised into the requested format (Json, CSV, Arrow etc).
 
-This makes it super easy to distribute your data lake data to other systems. We use it internally to feed data to MS SQL Server, SQLite, Streamlit and Web Apps. You can host it wherever you want, we use Azure Websites which works fine even for very large data amounts. 
+This makes it super easy to distribute your data lake data to other systems. We use it internally to feed data to MS SQL Server, SQLite, Streamlit and Web Apps. You can host it wherever you want, we use Azure Websites which works fine even for very large data amounts.
 
 ## OpenAPI
 
@@ -53,7 +53,7 @@ So everything will be fully documented automatically, which is really cool. 🔥
 
 ## Engine
 
-`DuckDB` is the default query engine. `Polars` and `Datafusion` are also supported, but lack some features. The query engine can be specified at the route level and at the query level with the hidden parameter $engine="duckdb|datafusion|polars". If you want polars or datafusion, add the required extra.
+`DuckDB` is the default query engine. `Polars` is also supported, but lack some features. The query engine can be specified at the route level and at the query level with the hidden parameter $engine="duckdb|polars". If you want polars, add the required extra.
 
 At the moment, DuckDB seems to have an advantage and performs the best. Also features like full text search are only available with `DuckDB`.
 

@@ -24,12 +24,6 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
         create_sql_endpoint,
     )
 
-    async def get_username(req: Request):
-        res = basic_config.username_retriever(req, basic_config, configs.users)
-        if inspect.isawaitable(res):
-            res = await res
-        return res
-
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
@@ -91,7 +85,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
             "/metadata",
             name="metadata",
         )
-        async def get_metadata(username: str = Depends(get_username)):
+        async def get_metadata():
             return metadata
 
         if basic_config.enable_sql_endpoint:
@@ -115,4 +109,4 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         with get_context_by_engine(basic_config.default_engine)() as ctx:
                             ctx.init_search(realdataframe.tablename, config.search)
 
-        return router, get_username
+        return router

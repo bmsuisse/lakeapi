@@ -443,23 +443,6 @@ tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.1
 toml = ["tomli"]
 
 [[package]]
-name = "datafusion"
-version = "24.0.0"
-description = "Build and run queries against data"
-category = "main"
-optional = true
-python-versions = ">=3.6"
-files = [
-    {file = "datafusion-24.0.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:5a8b6e6bd5aff0c403796b0de73bba73b85383f84b651584258b5157f1034cf7"},
-    {file = "datafusion-24.0.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:08801eeb9519688bcfe34be0361f7990912f7177c262b8b30390f92479040a05"},
-    {file = "datafusion-24.0.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1067cf534f83aeff902458ae8dacd99c282daca8b5d6e86ebfbcecbeec0b3e90"},
-    {file = "datafusion-24.0.0-cp37-abi3-win_amd64.whl", hash = "sha256:5f72740be251c9b7af0fee4549b70290ba5322616a8646504c0ccc5da2fc286f"},
-]
-
-[package.dependencies]
-pyarrow = ">=11.0.0"
-
-[[package]]
 name = "deltalake"
 version = "0.9.0"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
@@ -1371,14 +1354,14 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "ruamel-yaml"
-version = "0.17.30"
+version = "0.17.31"
 description = "ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order"
 category = "main"
 optional = true
 python-versions = ">=3"
 files = [
-    {file = "ruamel.yaml-0.17.30-py3-none-any.whl", hash = "sha256:b73821c1e0a9daa459e215db7c4d6d23d7159fb61c4c536653a2b4fb5b8d08a7"},
-    {file = "ruamel.yaml-0.17.30.tar.gz", hash = "sha256:7e47a3d9ccfa2e41d353e6615661308bcbbc2ebad393bdc13b725bac15baf8a9"},
+    {file = "ruamel.yaml-0.17.31-py3-none-any.whl", hash = "sha256:3cf153f0047ced526e723097ac615d3009371779432e304dbd5596b6f3a4c777"},
+    {file = "ruamel.yaml-0.17.31.tar.gz", hash = "sha256:098ed1eb6d338a684891a72380277c1e6fc4d4ae0e120de9a447275056dda335"},
 ]
 
 [package.dependencies]
@@ -1607,7 +1590,6 @@ files = [
 
 [extras]
 auth = ["argon2-cffi", "pyjwt"]
-datafusion = ["datafusion"]
 polars = ["xlsx2csv"]
 schema = ["jsonschema", "python2jsonschema"]
 useradd = ["ruamel.yaml"]
@@ -1615,4 +1597,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "296bf4fdeedd1932b481021da283bef60f5b9440c5df1b5f053ba96db981b15c"
+content-hash = "ac87aba093a535a60f3f5b5ad99f280774584036e4aebaa0c9ef9ad60959a9cf"

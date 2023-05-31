@@ -121,12 +121,6 @@ def create_detailed_meta_endpoint(
     if metamodel is not None:
         has_complex = any((pa.types.is_nested(t) for t in metamodel.arrow_schema().types))
 
-    async def get_username(req: Request):
-        res = basic_config.username_retriever(req, basic_config, configs.users)
-        if inspect.isawaitable(res):
-            res = await res
-        return res
-
     @router.get(
         route,
         tags=["metadata", "metadata:" + config.tag],
@@ -135,7 +129,6 @@ def create_detailed_meta_endpoint(
     )
     def get_detailed_metadata(
         req: Request,
-        username=Depends(get_username),
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
     ) -> MetadataDetailResult:
         import json
@@ -265,12 +258,6 @@ def create_config_endpoint(
         metamodel, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
     )
 
-    async def get_username(req: Request):
-        res = basic_config.username_retriever(req, basic_config, configs.users)
-        if inspect.isawaitable(res):
-            res = await res
-        return res
-
     api_method_mapping = {
         "post": router.post(
             route,
@@ -305,7 +292,6 @@ def create_config_endpoint(
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
-        username=Depends(get_username),
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
@@ -396,7 +382,7 @@ def create_config_endpoint(
 
             try:
                 return await create_response(
-                    username, request.url, format or request.headers["Accept"], df2, context, basic_config=basic_config
+                    request.url, format or request.headers["Accept"], df2, context, basic_config=basic_config
                 )
             except Exception as err:
                 logger.error("Error in creating response", exc_info=err)
@@ -415,19 +401,12 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
         if duckcon is not None:
             duckcon.close()
 
-    async def get_username(req: Request):
-        res = basic_config.username_retriever(req, basic_config, configs.users)
-        if inspect.isawaitable(res):
-            res = await res
-        return res
-
     @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")
     async def get_sql_tables(
         request: Request,
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(get_username),
     ):
         try:
             return [table for table in paths]
@@ -444,7 +423,6 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(get_username),
     ):
         try:
             body = await request.body()
@@ -458,7 +436,7 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
             df = context.execute_sql(body.decode("utf-8"))
 
             return await create_response(
-                username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
+                request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
             )
         except Exception as err:
             logger.error(err)
@@ -475,7 +453,6 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
         sql: str,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        username=Depends(get_username),
     ):
         try:
             from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
@@ -488,7 +465,7 @@ def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: C
 
             df = context.execute_sql(sql)
             return await create_response(
-                username, request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
+                request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
             )
         except Exception as err:
             logger.error(err)

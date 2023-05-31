@@ -8,7 +8,7 @@ from polars.datatypes.convert import DataTypeMappings
 from pydantic import BaseModel
 
 
-Engines = Literal["duckdb", "polars", "datafusion"]
+Engines = Literal["duckdb", "polars"]
 
 
 FileTypes = Literal[

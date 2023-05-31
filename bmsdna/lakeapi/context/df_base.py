@@ -115,10 +115,15 @@ class ExecutionContext(ABC):
             ds = pa.dataset.dataset(uri, format=file_type)
         elif file_type in ["ndjson", "json"]:
             import pandas
-            
-            pd = pandas.read_json(uri, orient="records",lines=file_type=="ndjson")
+
+            pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
 
             return pyarrow.Table.from_pandas(pd)
+        elif file_type == "avro":
+            import polars as pl
+
+            pd = pl.read_avro(uri).to_arrow()
+            return pd
         elif file_type == "delta":
             dt = DeltaTable(
                 uri,

@@ -34,7 +34,6 @@ class OutputFormats(Enum):
     JSON = 8
     XML = 9
     ORC = 10
-    IQY = 13
     ARROW_STREAM = 14
 
 
@@ -56,9 +55,6 @@ def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str
         return (OutputFormats.XLSX, ".xlsx")
     elif realaccept == "text/html" or realaccept == "html":
         return (OutputFormats.HTML, ".html")
-    elif realaccept == "x-application/iqy" or realaccept == "iqy":
-        return (OutputFormats.IQY, ".iqy")
-
     elif realaccept == "application/vnd.apache.arrow.stream" or realaccept == "arrow-stream":
         return (OutputFormats.ARROW_STREAM, "")
 
@@ -80,40 +76,8 @@ def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str
 
 
 def write_frame(
-    url: URL, current_user: str, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
+    url: URL, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
 ) -> list[str]:
-    if format == OutputFormats.IQY:
-        import jwt
-
-        import env
-
-        query = url.query.replace("format=iqy", "").rstrip("&")
-        query = query + ("?" if not query else "&") + "format=json"
-        token = jwt.encode(
-            {"host": url.hostname, "path": url.path, "username": current_user},
-            basic_config.token_jwt_secret,
-            algorithm="HS256",
-        )
-        query += f"&token={token}"
-        host_and_port = (url.hostname or "localhost") + (":" + str(url.port) if url.port and url.port != 443 else "")
-        strdt = f"""WEB
-1
-{url.scheme}://{host_and_port}{url.path}?{query}
-
-Selection=1
-Formatting=None
-PreFormattedTextToColumns=True
-ConsecutiveDelimitersAsOne=False
-SingleBlockTextImport=False
-DisableDateRecognition=False
-DisableRedirections=False"""
-        if isinstance(out, str):
-            with open(out, "w") as f:
-                f.write(strdt)
-        else:
-            out.write(strdt.encode("utf-8"))
-        return []
-
     if format == OutputFormats.AVRO:
         import polars as pl
 
@@ -172,7 +136,6 @@ class FileResponseWCharset(FileResponse):
 
 
 async def create_response(
-    current_user_name: str,
     url: URL,
     accept: str,
     content: ResultData,
@@ -197,9 +160,7 @@ async def create_response(
         filename = None
     path = os.path.join(basic_config.temp_folder_path, str(uuid4()) + extension)
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    additional_files = write_frame(
-        current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
-    )
+    additional_files = write_frame(url=url, content=content, format=format, out=path, basic_config=basic_config)
 
     tasks = BackgroundTasks()
     import asyncio

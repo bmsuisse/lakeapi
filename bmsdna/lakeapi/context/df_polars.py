@@ -181,13 +181,3 @@ class PolarsExecutionContext(ExecutionContext):
 
     def __exit__(self, *args):
         pass
-
-
-local = threading.local()
-local.exec_context = None
-
-
-def get_polars_context() -> ExecutionContext:
-    if local.exec_context is None:
-        local.exec_context = PolarsExecutionContext()
-    return local.exec_context

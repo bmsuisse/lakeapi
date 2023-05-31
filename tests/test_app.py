@@ -15,8 +15,7 @@ sys.path.append(".")
 client = TestClient(get_app())
 auth = get_auth()
 
-# engines = ("duckdb", "datafusion", "polars")
-engines = ("duckdb", "datafusion", "polars")
+engines = ("duckdb", "polars")
 # engines = ("duckdb")
 
 
@@ -319,15 +318,22 @@ def test_fake_csv():
 
 
 def test_json():
-    for e in ("duckdb", "polars"):
+    for e in engines:
         response = client.get(f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 3
 
 
 def test_ndjson():
-    for e in ("duckdb", "polars"):
+    for e in engines:
         response = client.get(f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+
+def test_avro():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 3
 

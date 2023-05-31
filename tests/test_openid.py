@@ -7,7 +7,7 @@ from .utils import get_app, get_auth
 
 auth = get_auth()
 
-engines = ("duckdb", "datafusion", "polars")
+engines = ("duckdb", "polars")
 
 
 def test_openid():
