@@ -34,24 +34,18 @@ logger = get_logger(__name__)
 
 @dataclass(frozen=True)
 class BasicConfig:
-    username_retriever: Callable[[Request, "BasicConfig", "Sequence[UserConfig]"], str | Awaitable[str]]
     enable_sql_endpoint: bool
     temp_folder_path: str
     data_path: str
-    token_jwt_secret: str | None  # None disables the token feature
     min_search_length: int
     default_engine: Engines
 
 
 def get_default_config():
-    from bmsdna.lakeapi.core.uservalidation import get_username
-
     return BasicConfig(
-        username_retriever=get_username,
         enable_sql_endpoint=os.getenv("ENABLE_SQL_ENDPOINT", "0") == "1",
         temp_folder_path=os.getenv("TEMP", "/tmp"),
         data_path=os.environ.get("DATA_PATH", "data"),
-        token_jwt_secret=os.getenv("JWT_SECRET", None),
         min_search_length=3,
         default_engine="duckdb",
     )

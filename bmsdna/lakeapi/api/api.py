@@ -10,11 +10,10 @@ import os
 class LakeApiStartInfo:
     start_config: BasicConfig
     config: Configs
-    get_username: Callable[[Request], Awaitable]
 
 
 def init_lakeapi(
-    app: FastAPI, start_config: BasicConfig | None = None, config: Configs | str | None = None
+    app: FastAPI, use_basic_auth: bool, start_config: BasicConfig | None = None, config: Configs | str | None = None
 ) -> LakeApiStartInfo:
     start_config = start_config or get_default_config()
     real_config: Configs
@@ -24,6 +23,10 @@ def init_lakeapi(
         real_config = Configs.from_yamls(start_config, config)
     else:
         real_config = config
-    router, get_username = init_routes(real_config, start_config)
+    router = init_routes(real_config, start_config)
+    if use_basic_auth:
+        from bmsdna.lakeapi.core.uservalidation import add_user_middlware
+
+        add_user_middlware(app, start_config, real_config.users)
     app.include_router(router)
-    return LakeApiStartInfo(start_config, real_config, get_username)
+    return LakeApiStartInfo(start_config, real_config)

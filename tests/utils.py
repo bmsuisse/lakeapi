@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 import dataclasses
 import os
 from faker import Faker
@@ -11,11 +11,11 @@ def get_app(default_engine="duckdb"):
     app = FastAPI()
     def_cfg = bmsdna.lakeapi.get_default_config()
     cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data", default_engine=default_engine)
-    sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml")
+    sti = bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
 
     @app.get("/")
-    async def root(username: str = Depends(sti.get_username)):
-        return {"User": username}
+    async def root(req: Request):
+        return {"User": req.user["username"]}
 
     return app
 

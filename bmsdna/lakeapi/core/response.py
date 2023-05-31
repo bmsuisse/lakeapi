@@ -76,7 +76,7 @@ def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str
 
 
 def write_frame(
-    url: URL, current_user: str, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
+    url: URL, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
 ) -> list[str]:
     if format == OutputFormats.AVRO:
         import polars as pl
@@ -136,7 +136,6 @@ class FileResponseWCharset(FileResponse):
 
 
 async def create_response(
-    current_user_name: str,
     url: URL,
     accept: str,
     content: ResultData,
@@ -161,9 +160,7 @@ async def create_response(
         filename = None
     path = os.path.join(basic_config.temp_folder_path, str(uuid4()) + extension)
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    additional_files = write_frame(
-        current_user=current_user_name, url=url, content=content, format=format, out=path, basic_config=basic_config
-    )
+    additional_files = write_frame(url=url, content=content, format=format, out=path, basic_config=basic_config)
 
     tasks = BackgroundTasks()
     import asyncio
