@@ -146,24 +146,6 @@ tables:
       uri: csv/fruits.csv
       file_type: csv
 
-  - name: fruits_csv
-    tag: test
-    version: 1
-    allow_get_all_pages: true
-    api_method:
-      - get
-      - post
-    params:
-      - name: fruits
-        operators:
-          - "="
-      - name: cars
-        operators:
-          - "="
-    datasource:
-      uri: csv/fruits.csv
-      file_type: csv
-
   - name: fruits_json
     tag: test
     version: 1

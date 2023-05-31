@@ -149,6 +149,7 @@ class Config:
     options: Optional[Union[Option, None]] = None
     allow_get_all_pages: Optional[bool] = False
     search: Optional[List[SearchConfig]] = None
+    engine: Optional[Engines] = None
 
     def __post_init__(self):
         self.version_str = (
@@ -233,6 +234,7 @@ class Config:
                                 name=it.name,
                                 tag=tag,
                                 version=version,
+                                engine=config.get("engine", None),
                                 api_method=api_method,
                                 search=search_config,
                                 params=new_params,  # type: ignore
@@ -261,6 +263,7 @@ class Config:
                     version=version,
                     search=search_config,
                     api_method=api_method,
+                    engine=config.get("engine", None),
                     params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
                     datasource=datasource,
