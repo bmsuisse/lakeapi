@@ -20,7 +20,6 @@ FileTypes = Literal[
     "csv",
     "json",
     "ndjson",
-    "parquet_withdecimal",
 ]
 OutputFileType = Literal[
     "json",

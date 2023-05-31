@@ -146,6 +146,42 @@ tables:
       uri: csv/fruits.csv
       file_type: csv
 
+  - name: fruits_json
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: fruits
+        operators:
+          - "="
+      - name: cars
+        operators:
+          - "="
+    datasource:
+      uri: json/fruits.json
+      file_type: json
+
+  - name: fruits_ndjson
+    tag: test
+    version: 1
+    allow_get_all_pages: true
+    api_method:
+      - get
+      - post
+    params:
+      - name: fruits
+        operators:
+          - "="
+      - name: cars
+        operators:
+          - "="
+    datasource:
+      uri: ndjson/fruits.ndjson
+      file_type: ndjson
+
   - name: fake_arrow
     tag: test
     version: 1

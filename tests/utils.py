@@ -3,12 +3,12 @@ import dataclasses
 import os
 
 
-def get_app():
+def get_app(default_engine="duckdb"):
     import bmsdna.lakeapi
 
     app = FastAPI()
     def_cfg = bmsdna.lakeapi.get_default_config()
-    cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data")
+    cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data", default_engine=default_engine)
     sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml")
 
     @app.get("/")
