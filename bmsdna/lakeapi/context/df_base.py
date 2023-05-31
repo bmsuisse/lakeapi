@@ -110,9 +110,15 @@ class ExecutionContext(ABC):
         uri: str,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
-    ) -> Optional[pa.dataset.Dataset]:
+    ) -> Optional[pa.dataset.Dataset | pa.Table]:
         if file_type in ["parquet", "ipc", "arrow", "feather", "csv", "orc"]:
             ds = pa.dataset.dataset(uri, format=file_type)
+        elif file_type in ["ndjson", "json"]:
+            import pandas
+            
+            pd = pandas.read_json(uri, orient="records",lines=file_type=="ndjson")
+
+            return pyarrow.Table.from_pandas(pd)
         elif file_type == "delta":
             dt = DeltaTable(
                 uri,

@@ -318,6 +318,20 @@ def test_fake_csv():
         assert len(response.json()) == 3
 
 
+def test_json():
+    for e in ("duckdb", "polars"):
+        response = client.get(f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+
+def test_ndjson():
+    for e in ("duckdb", "polars"):
+        response = client.get(f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert len(response.json()) == 3
+
+
 def test_fake_arrow():
     for e in engines:
         response = client.get(f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth)

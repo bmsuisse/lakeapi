@@ -120,6 +120,16 @@ if __name__ == "__main__":
     df_fruits.to_csv(csv_path)
     df_fruits.to_csv("tests/data/startest/fruits_csv.csv")
 
+    json_path = "tests/data/json/fruits.json"
+    delete_folder(json_path)
+    os.makedirs(pathlib.Path(json_path).parent, exist_ok=True)
+    df_fruits.to_json(json_path, orient="records")
+
+    json_path = "tests/data/ndjson/fruits.ndjson"
+    delete_folder(json_path)
+    os.makedirs(pathlib.Path(json_path).parent, exist_ok=True)
+    df_fruits.to_json(json_path, orient="records", lines=True)
+
     df_faker = pl.DataFrame(create_rows_faker(100_011)).to_pandas()
 
     df_faker["name_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:1] for val in df_faker["name"]]

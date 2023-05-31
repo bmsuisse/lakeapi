@@ -201,6 +201,17 @@ class DuckDbExecutionContextBase(ExecutionContext):
             os.rename(persistance_file_name_temp, persistance_file_name)
         self.persistance_file_name = persistance_file_name
 
+    def register_dataframe(
+        self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
+    ):
+        if file_type == "json":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
+            return
+        if file_type == "ndjson":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
+            return
+        return super().register_dataframe(name, uri, file_type, partitions)
+
     def __enter__(self):
         return self
 

@@ -309,7 +309,7 @@ def create_config_endpoint(
     ):  # type: ignore
         logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
-        engine = engine or config.engine
+        engine = engine or basic_config.default_engine
 
         logger.info(f"Engine: {engine}")
 

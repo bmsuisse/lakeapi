@@ -40,6 +40,7 @@ class BasicConfig:
     data_path: str
     token_jwt_secret: str | None  # None disables the token feature
     min_search_length: int
+    default_engine: Engines
 
 
 def get_default_config():
@@ -52,6 +53,7 @@ def get_default_config():
         data_path=os.environ.get("DATA_PATH", "data"),
         token_jwt_secret=os.getenv("JWT_SECRET", None),
         min_search_length=3,
+        default_engine="duckdb",
     )
 
 
@@ -142,7 +144,6 @@ class Config:
     version: Optional[int] = 1
     api_method: Union[Literal["get", "post"], List[Literal["get", "post"]]] = "get"
     params: Optional[List[Union[Param, str]]] = None
-    engine: Engines = "duckdb"
     timestamp: Optional[datetime] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
     options: Optional[Union[Option, None]] = None
@@ -170,7 +171,6 @@ class Config:
         name = config["name"]
         tag = config["tag"]
         version = config.get("version", 1)
-        engine = config.get("engine", "duckdb")
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))
         params = config.get("params")
         datasource = config["datasource"]
@@ -204,9 +204,6 @@ class Config:
         if select:
             select = [Column(name=c.get("name"), alias=c.get("alias")) for c in select]
 
-        if not engine:
-            engine = "duckdb"
-
         if name == "*":
             assert uri.endswith("/*")
             folder = uri.rstrip("/*")
@@ -235,7 +232,6 @@ class Config:
                             cls(
                                 name=it.name,
                                 tag=tag,
-                                engine=engine,  # type: ignore
                                 version=version,
                                 api_method=api_method,
                                 search=search_config,
@@ -264,7 +260,6 @@ class Config:
                     tag=tag,
                     version=version,
                     search=search_config,
-                    engine=engine,  # type: ignore
                     api_method=api_method,
                     params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),

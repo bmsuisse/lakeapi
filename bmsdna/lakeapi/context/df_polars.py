@@ -146,8 +146,6 @@ class PolarsExecutionContext(ExecutionContext):
                     uri,
                     pyarrow_options={"partitions": partitions},
                 )
-            case "parquet_withdecimal":  # differentiation no longer needed
-                df = pl.scan_parquet(uri)
             case "parquet":
                 df = pl.scan_parquet(uri)
             case "arrow":
