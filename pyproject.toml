@@ -54,6 +54,7 @@ pytest-cov = "^4.0.0"
 pytest-benchmark = "^4.0.0"
 pandas = "^2.0.1"
 pytest-monitor = "^1.6.5"
+coverage = {extras = ["toml"], version = "^7.2.7"}
 
 
 
@@ -80,3 +81,12 @@ useradd = ["ruamel.yaml"]
 [tool.poetry.scripts]
 validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli", extras = ["schema"] }
 add_lakeapi_user = { callable = "bmsdna.lakeapi.tools.useradd:useradd_cli", extras = ["useradd"] }
+
+[tool.coverage.report]
+exclude_lines =[ "pragma: no cover",
+"if TYPE_CHECKING:",
+"if __name__ == .__main__.:",
+"@(abc.)?abstractmethod",
+"raise AssertionError",
+"raise NotImplementedError"
+]
