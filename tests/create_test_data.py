@@ -96,7 +96,8 @@ if __name__ == "__main__":
     os.makedirs(pathlib.Path(csv_path).parent, exist_ok=True)
     df_fruits.to_csv(csv_path)
     df_fruits.to_csv("tests/data/startest/fruits_csv.csv")
-
+    os.makedirs("tests/data/avro", exist_ok=True)
+    pl.from_pandas(df_fruits).write_avro("tests/data/avro/fruits.avro")
     json_path = "tests/data/json/fruits.json"
     delete_folder(json_path)
     os.makedirs(pathlib.Path(json_path).parent, exist_ok=True)
