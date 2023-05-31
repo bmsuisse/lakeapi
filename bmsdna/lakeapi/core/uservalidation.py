@@ -32,9 +32,15 @@ async def is_correct(hash: str, pwd_str: str):
 def add_user_middlware(app: FastAPI, basic_config: BasicConfig, users: Sequence[UserConfig]):
     @app.middleware("http")
     async def get_username(request: Request, call_next):
+        import json
+
         credentials = await HTTPBasic(auto_error=False)(request)
         if credentials is None:
-            return Response(status_code=401, headers={"WWW-Authenticate": "Basic"}, content="No credentials provided")
+            return Response(
+                status_code=401,
+                headers={"WWW-Authenticate": "Basic"},
+                content=json.dumps({"detail": "Not authenticated"}),
+            )
 
         global userhashmap
         userhashmap = userhashmap or {
@@ -43,7 +49,9 @@ def add_user_middlware(app: FastAPI, basic_config: BasicConfig, users: Sequence[
 
         if not credentials.username.casefold() in userhashmap.keys():
             return Response(
-                status_code=401, headers={"WWW-Authenticate": "Basic"}, content="Incorrect email or password"
+                status_code=401,
+                headers={"WWW-Authenticate": "Basic"},
+                content=json.dumps({"detail": "Incorrect email or password"}),
             )
         pwd_str = credentials.password
         hash = userhashmap[credentials.username.casefold()]
