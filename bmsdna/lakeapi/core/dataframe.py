@@ -100,7 +100,7 @@ class Dataframe:
 
     @property
     def tablename(self):
-        if self.version  in ["1", "v1"]:
+        if self.version in ["1", "v1"]:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
 
@@ -152,10 +152,10 @@ async def get_partition_filter(param, deltaMeta, param_def):
             col_for_partitioning = partcol
             prefix_len = int(partcol[len(colname + "_md5_prefix_") :])
             if isinstance(value, (List, Tuple)):
-                hashvl = [hashlib.md5(v.encode("utf8")).hexdigest() for v in value]
+                hashvl = [hashlib.md5(str(v).encode("utf8")).hexdigest() for v in value]
                 value_for_partitioning = [hvl[:prefix_len] for hvl in hashvl]
             else:
-                hashvl = hashlib.md5(value.encode("utf8")).hexdigest()
+                hashvl = hashlib.md5(str(value).encode("utf8")).hexdigest()
                 value_for_partitioning = hashvl[:prefix_len]
             if op not in operators:
                 col_for_partitioning = None
@@ -164,10 +164,10 @@ async def get_partition_filter(param, deltaMeta, param_def):
             col_for_partitioning = partcol
             modulo_len = int(partcol[len(colname + "_md5_mod_") :])
             if isinstance(value, (List, Tuple)):
-                hashvl = [int(hashlib.md5(v.encode("utf8")).hexdigest(), 16) for v in value]
+                hashvl = [int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16) for v in value]
                 value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
             else:
-                hashvl = int(hashlib.md5(value.encode("utf8")).hexdigest(), 16)
+                hashvl = int(hashlib.md5(str(value).encode("utf8")).hexdigest(), 16)
                 value_for_partitioning = hashvl % modulo_len
             if op not in operators:
                 col_for_partitioning = None
