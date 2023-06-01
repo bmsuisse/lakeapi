@@ -176,6 +176,9 @@ class PolarsExecutionContext(ExecutionContext):
             df = df.collect()
         return PolarsResultData(df, self.sql_context)
 
+    def list_tables(self) -> ResultData:
+        return self.execute_sql("SHOW TABLES")
+
     def __enter__(self):
         return self
 
