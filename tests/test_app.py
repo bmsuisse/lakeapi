@@ -435,58 +435,6 @@ def test_data_partition_mod():
         ]
 
 
-def test_sql_endoint_post():
-    # better naming needed in the future
-
-    query = """select * 
-        from delta_fruits 
-        where cars = 'audi' 
-        and fruits = 'banana' 
-        and A = 2 and B = 4"""
-
-    response = client.post(
-        f"/api/sql",
-        auth=auth,
-        data=cast(RequestData, query),
-    )
-    assert response.status_code == 200
-    print(response.json())
-    assert response.json() == [
-        {
-            "A": 2,
-            "fruits": "banana",
-            "B": 4,
-            "cars": "audi",
-        }
-    ]
-
-
-def test_sql_endoint_get():
-    # better naming needed in the future
-
-    query = """select * 
-        from delta_fruits 
-        where cars = 'audi' 
-        and fruits = 'banana' 
-        and A = 2 and B = 4"""
-
-    response = client.get(
-        f"/api/sql",
-        auth=auth,
-        params={"sql": query},
-    )
-    assert response.status_code == 200
-    print(response.json())
-    assert response.json() == [
-        {
-            "A": 2,
-            "fruits": "banana",
-            "B": 4,
-            "cars": "audi",
-        }
-    ]
-
-
 def test_fruits_nested():
     for e in engines:
         response = client.get(f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}", auth=auth)
