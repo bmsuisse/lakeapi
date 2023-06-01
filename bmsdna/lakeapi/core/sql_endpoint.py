@@ -14,7 +14,8 @@ duckcon: Optional[duckdb.DuckDBPyConnection] = None
 def init_duck_con(con: DuckDbExecutionContextBase, basic_config: BasicConfig, configs: Configs):
     for cfg in configs:
         df = Dataframe(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
-        con.register_dataframe(df.tablename, df.uri, df.config.file_type, None)
+        if df.file_exists():
+            con.register_dataframe(df.tablename, df.uri, df.config.file_type, None)
 
 
 def get_duckdb_con(basic_config: BasicConfig, configs: Configs):
@@ -51,7 +52,7 @@ def create_sql_endpoint(
     ):
         con = get_duckdb_con(basic_config, configs)
         return (
-            con.execute_sql("SELECT table_name, table_type from information_schema.tables where schema_name='main'")
+            con.execute_sql("SELECT table_name, table_type from information_schema.tables where table_schema='main'")
             .to_arrow_table()
             .to_pylist()
         )
