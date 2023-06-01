@@ -1,6 +1,6 @@
 import inspect
 from pathlib import Path
-from typing import Any, List, Literal, Optional, Type, Union, cast
+from typing import Any, Callable, List, Literal, Optional, Type, Union, cast
 from typing_extensions import TypedDict, NotRequired, Required
 import duckdb
 import polars as pl
@@ -46,21 +46,6 @@ from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 logger = get_logger(__name__)
-
-
-def get_delta_folders(rootdir) -> dict[str, Path]:
-    paths = [p.parent for p in Path(rootdir).rglob("*/_delta_log/")]
-    return {p.parent.name + "_" + p.name: p for p in paths}
-
-
-def register_duckdb_views(con: duckdb.DuckDBPyConnection, paths: dict[str, Path]):
-    for name, path in paths.items():
-        try:
-            dt = DeltaTable(path.absolute())
-            con.register(name, dt.to_pyarrow_dataset())
-        except PyDeltaTableError as e:
-            logger.warning(f"Could not register view for {name}. Error: {e}")
-            pass
 
 
 async def get_partitions(dataframe: Dataframe, params: BaseModel, config: Config) -> Optional[list]:
@@ -387,86 +372,3 @@ def create_config_endpoint(
             except Exception as err:
                 logger.error("Error in creating response", exc_info=err)
                 raise HTTPException(status_code=500)
-
-
-duckcon: Optional[duckdb.DuckDBPyConnection] = None
-
-
-def create_sql_endpoint(router: APIRouter, basic_config: BasicConfig, configs: Configs):
-    paths = get_delta_folders(basic_config.data_path)
-
-    @router.on_event("shutdown")
-    async def shutdown_event():
-        global duckcon
-        if duckcon is not None:
-            duckcon.close()
-
-    @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")
-    async def get_sql_tables(
-        request: Request,
-        background_tasks: BackgroundTasks,
-        Accept: Union[str, None] = Header(default=None),
-        format: Optional[OutputFileType] = "json",
-    ):
-        try:
-            return [table for table in paths]
-        except Exception as err:
-            raise HTTPException(status_code=500, detail=str(err))
-
-    @router.post(
-        "/api/sql",
-        tags=["sql"],
-        operation_id="post_sql_endpoint",
-    )
-    async def get_sql_post(
-        request: Request,
-        background_tasks: BackgroundTasks,
-        Accept: Union[str, None] = Header(default=None),
-        format: Optional[OutputFileType] = "json",
-    ):
-        try:
-            body = await request.body()
-            from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
-
-            global duckcon
-            if duckcon is None:
-                duckcon = duckdb.connect()
-                register_duckdb_views(duckcon, paths)
-            context = DuckDbExecutionContextBase(duckcon)
-            df = context.execute_sql(body.decode("utf-8"))
-
-            return await create_response(
-                request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
-            )
-        except Exception as err:
-            logger.error(err)
-            raise HTTPException(status_code=500, detail=str(err))
-
-    @router.get(
-        "/api/sql",
-        tags=["sql"],
-        operation_id="get_sql_endpoint",
-    )
-    async def get_sql_get(
-        request: Request,
-        background_tasks: BackgroundTasks,
-        sql: str,
-        Accept: Union[str, None] = Header(default=None),
-        format: Optional[OutputFileType] = "json",
-    ):
-        try:
-            from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
-
-            global duckcon
-            if duckcon is None:
-                duckcon = duckdb.connect()
-                register_duckdb_views(duckcon, paths)
-            context = DuckDbExecutionContextBase(duckcon)
-
-            df = context.execute_sql(sql)
-            return await create_response(
-                request.url, format or request.headers["Accept"], df, context, basic_config=basic_config
-            )
-        except Exception as err:
-            logger.error(err)
-            raise HTTPException(status_code=500, detail=str(err))

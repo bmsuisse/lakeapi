@@ -40,14 +40,6 @@ endpoints = Literal["query", "meta", "request", "sql"]
 cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 
-def get_table_name_from_uri(uri: str):
-    parts = uri.split("/")
-    try:
-        return parts[-2].replace(".", "_") + "_" + parts[-1].replace(".", "_")
-    except IndexError:
-        return uri
-
-
 class Dataframe:
     def __init__(
         self,
@@ -94,7 +86,7 @@ class Dataframe:
 
             df = df.select(
                 Star(
-                    table=pypika.Table(get_table_name_from_uri(self.config.uri)),
+                    table=pypika.Table(self.tablename),
                 )
             )
         return df
@@ -108,7 +100,9 @@ class Dataframe:
 
     @property
     def tablename(self):
-        return self.version + "_" + self.tag + "_" + self.name + "_" + get_table_name_from_uri(self.config.uri)
+        if self.version  in ["1", "v1"]:
+            return self.tag + "_" + self.name
+        return self.tag + "_" + self.name + "_" + self.version
 
     def get_df(
         self,

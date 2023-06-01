@@ -17,6 +17,7 @@ from typing import (
     TypedDict,
     Union,
     cast,
+    TYPE_CHECKING,
 )
 from typing_extensions import TypedDict, NotRequired, Required
 from fastapi import APIRouter, Request
@@ -29,6 +30,8 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
 
+if TYPE_CHECKING:
+    from bmsdna.lakeapi.context.df_base import ExecutionContext
 logger = get_logger(__name__)
 
 
@@ -39,6 +42,7 @@ class BasicConfig:
     data_path: str
     min_search_length: int
     default_engine: Engines
+    prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
 
 
 def get_default_config():
@@ -48,6 +52,7 @@ def get_default_config():
         data_path=os.environ.get("DATA_PATH", "data"),
         min_search_length=3,
         default_engine="duckdb",
+        prepare_sql_db_hook=None,
     )
 
 
