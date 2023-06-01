@@ -16,16 +16,22 @@ def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_c
             basic_config.data_path,
             uri,
         )
-        from deltalake import DeltaTable
+        if not os.path.exists(os.path.join(delta_uri, "_delta_log")):
+            return paramslist
+        from deltalake import DeltaTable, PyDeltaTableError
 
-        part_cols = DeltaTable(delta_uri).metadata().partition_columns
-        if part_cols and len(part_cols) > 0:
-            all_names = [(p.colname or p.name).lower() for p in paramslist]
-            new_params = list(paramslist)
-            for pc in part_cols:
-                if pc.lower() not in all_names and not should_hide_colname(pc):
-                    from bmsdna.lakeapi.core.types import Param
+        try:
+            part_cols = DeltaTable(delta_uri).metadata().partition_columns
+            if part_cols and len(part_cols) > 0:
+                all_names = [(p.colname or p.name).lower() for p in paramslist]
+                new_params = list(paramslist)
+                for pc in part_cols:
+                    if pc.lower() not in all_names and not should_hide_colname(pc):
+                        from bmsdna.lakeapi.core.types import Param
 
-                    new_params.append(Param(pc, operators=["="], colname=pc))
-            return new_params
+                        new_params.append(Param(pc, operators=["="], colname=pc))
+                return new_params
+        except PyDeltaTableError as err:
+            return paramslist  # this is not critical here
+
     return paramslist
