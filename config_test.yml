@@ -301,6 +301,16 @@ tables:
       uri: b/not_existing.parquet
       file_type: parquet
 
+  - name: not_existing2
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: b/not_existing
+      file_type: delta
+
   - name: "*" # We're lazy and want to expose all in that folder
     tag: startest
     version: 1
