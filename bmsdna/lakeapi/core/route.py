@@ -21,8 +21,8 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
         get_response_model,
         create_detailed_meta_endpoint,
         create_config_endpoint,
-        create_sql_endpoint,
     )
+    from bmsdna.lakeapi.core.sql_endpoint import create_sql_endpoint
 
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
