@@ -1,18 +1,16 @@
+from bmsdna.lakeapi.context.df_base import ExecutionContext
 from bmsdna.lakeapi.core.types import Engines
-from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
-from bmsdna.lakeapi.context.df_polars import PolarsExecutionContext
 
 
-def get_context_by_engine(engine: Engines):
+def get_context_by_engine(engine: Engines) -> ExecutionContext:
     match engine.lower():
         case "duckdb":
             from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
-            ExecutionContext = DuckDbExecutionContext
+            return DuckDbExecutionContext()
         case "polars":
             from bmsdna.lakeapi.context.df_polars import PolarsExecutionContext
 
-            ExecutionContext = PolarsExecutionContext
+            return PolarsExecutionContext()
         case _:
             raise Exception(f"Unknown engine {engine}")
-    return ExecutionContext

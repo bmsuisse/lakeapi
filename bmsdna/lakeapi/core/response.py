@@ -141,6 +141,7 @@ async def create_response(
     content: ResultData,
     context: ExecutionContext,
     basic_config: BasicConfig,
+    close_context=False,
 ):
     headers = {}
 
@@ -166,7 +167,8 @@ async def create_response(
     import asyncio
 
     async def remove():
-        context.close()
+        if close_context:
+            context.close()
         await anyio.sleep(3)
 
         os.remove(path)

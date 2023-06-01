@@ -212,12 +212,17 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
         return super().register_dataframe(name, uri, file_type, partitions)
 
+    def list_tables(self) -> ResultData:
+        return self.execute_sql(
+            "SELECT table_name as name, table_type from information_schema.tables where table_schema='main'"
+        )
+
     def __enter__(self):
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args, **kwargs):
         if self.res_con:
-            self.res_con.__exit__(*args)
+            self.res_con.__exit__(*args, **kwargs)
 
 
 class DuckDbExecutionContext(DuckDbExecutionContextBase):
@@ -232,9 +237,9 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
         self.con.execute("SET enable_object_cache=true")
         return self
 
-    def __exit__(self, *args):
-        super().__exit__(*args)
-        self.con.__exit__(*args)
+    def __exit__(self, *args, **kwargs):
+        super().__exit__(*args, **kwargs)
+        self.con.__exit__(*args, **kwargs)
 
     def close(self):
         self.con.close()

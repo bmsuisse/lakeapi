@@ -105,6 +105,14 @@ class ExecutionContext(ABC):
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
 
+    @abstractmethod
+    def __enter__(self) -> "ExecutionContext":
+        ...
+
+    @abstractmethod
+    def __exit__(self, *args, **kwargs):
+        ...
+
     def get_pyarrow_dataset(
         self,
         uri: str,
@@ -203,4 +211,8 @@ class ExecutionContext(ABC):
 
     @abstractmethod
     def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
+        ...
+
+    @abstractmethod
+    def list_tables(self) -> ResultData:
         ...
