@@ -3,10 +3,12 @@ import os
 from enum import Enum
 from typing import Union
 from uuid import uuid4
+import tempfile
 
 import time
 import pyarrow as pa
 from fastapi import BackgroundTasks
+from fastapi.concurrency import run_in_threadpool
 from starlette.datastructures import URL
 from starlette.responses import FileResponse
 
@@ -156,25 +158,27 @@ async def create_response(
     ]:
         content_dispositiont_type = "inline"
         filename = None
-    path = os.path.join(basic_config.temp_folder_path, str(uuid4()) + extension)
+
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=extension)
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    additional_files = write_frame(url=url, content=content, format=format, out=path, basic_config=basic_config)
+    additional_files = write_frame(url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config)
 
     tasks = BackgroundTasks()
 
-    def remove():
+    async def remove():
+        import asyncio
         if close_context:
             context.close()
-        time.sleep(3)
+        await asyncio.sleep(5)
 
-        os.remove(path)
+        temp_file.close()
         for f in additional_files:
             os.remove(f)
 
-    tasks.add_task(remove)
+    await run_in_threadpool(remove) 
 
     fr = FileResponseWCharset(
-        path=path,
+        path=temp_file.name,
         headers=headers,
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,
