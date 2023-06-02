@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Union
 from uuid import uuid4
 import tempfile
-import asyncio
+import anyio
 
 import pyarrow as pa
 from fastapi import BackgroundTasks
@@ -168,13 +168,13 @@ async def create_response(
     async def remove():
         if close_context:
             context.close()
-        await asyncio.sleep(5)
+        await anyio.sleep(5)
 
         temp_file.close()
         for f in additional_files:
             os.remove(f)
 
-    await run_in_threadpool(remove) 
+    await anyio.to_thread.run_sync(remove)
 
     fr = FileResponseWCharset(
         path=temp_file.name,
