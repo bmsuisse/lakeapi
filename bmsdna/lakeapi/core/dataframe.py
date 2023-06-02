@@ -39,7 +39,7 @@ endpoints = Literal["query", "meta", "request", "sql"]
 
 cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
-df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
+df_cache: dict[str, pyarrow.Table] = {}
 
 
 class Dataframe:
@@ -115,28 +115,19 @@ class Dataframe:
             query = pypika.Query.from_(self.tablename)
             self.query = self._prep_df(query, endpoint=endpoint)
             global df_cache
-            mod_date: datetime | None = None
-            if self.config.in_memory:
-                mod_date = self.sql_context.get_modified_date(self.uri, self.config.file_type)
-                if self.config.in_memory and self.tablename in df_cache:
-                    cache_date, df_t = df_cache[self.tablename]
-                    if mod_date <= cache_date:
-                        self.sql_context.register_arrow(self.tablename, df_t)
-                        self.df = self.sql_context.execute_sql(self.query)
-                    else:
-                        df_cache.pop(self.tablename)
-
-            if self.df is None:
+            if self.config.in_memory and self.tablename in df_cache:
+                df_t = df_cache[self.tablename]
+                self.sql_context.register_arrow(self.tablename, df_t)
+            else:
                 self.sql_context.register_dataframe(
                     self.tablename,
                     self.uri,
                     self.config.file_type,
                     partitions=partitions,
                 )
-                self.df = self.sql_context.execute_sql(self.query)
+            self.df = self.sql_context.execute_sql(self.query)
             if self.config.in_memory and not self.tablename in df_cache:
-                assert mod_date is not None
-                df_cache[self.tablename] = mod_date, self.df.to_arrow_table()
+                df_cache[self.tablename] = self.df.to_arrow_table()
 
         return self.df  # type: ignore
 
