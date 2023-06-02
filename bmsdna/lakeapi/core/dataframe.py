@@ -21,7 +21,7 @@ import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 
-from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, GroupByConfig, GroupByExpConfig, Param
+from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
@@ -38,6 +38,8 @@ endpoints = Literal["query", "meta", "request", "sql"]
 
 
 cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+
+df_cache: dict[str, pyarrow.Table] = {}
 
 
 class Dataframe:
@@ -110,18 +112,22 @@ class Dataframe:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            path = self.uri
-
-            tname = self.tablename
-            df = self.sql_context.register_dataframe(
-                tname,
-                path,
-                self.config.file_type,
-                partitions=partitions,
-            )
-            query = pypika.Query.from_(tname)
+            query = pypika.Query.from_(self.tablename)
             self.query = self._prep_df(query, endpoint=endpoint)
+            global df_cache
+            if self.config.in_memory and self.tablename in df_cache:
+                df_t = df_cache[self.tablename]
+                self.sql_context.register_arrow(self.tablename, df_t)
+            else:
+                self.sql_context.register_dataframe(
+                    self.tablename,
+                    self.uri,
+                    self.config.file_type,
+                    partitions=partitions,
+                )
             self.df = self.sql_context.execute_sql(self.query)
+            if self.config.in_memory and not self.tablename in df_cache:
+                df_cache[self.tablename] = self.df.to_arrow_table()
 
         return self.df  # type: ignore
 

@@ -116,10 +116,6 @@ class PolarsExecutionContext(ExecutionContext):
 
         ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
 
-        if isinstance(ds, pl.DataFrame):
-            ds = ds.lazy()
-
-        ds = pl.scan_ds(ds)
         self.sql_context.register(name, ds)
 
     def close(self):

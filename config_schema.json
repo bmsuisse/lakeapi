@@ -17,7 +17,7 @@
             "$ref": "#/$defs/AppConfig"
         }
     },
-    "required": ["users", "tables", "app"],
+    "required": ["tables", "users", "app"],
     "$defs": {
         "Config": {
             "type": "object",
@@ -69,16 +69,6 @@
                 "cache_expiration_time_seconds": {
                     "type": ["integer", "null"]
                 },
-                "options": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
-                        {
-                            "$ref": "#/$defs/Option"
-                        }
-                    ]
-                },
                 "allow_get_all_pages": {
                     "type": ["boolean", "null"]
                 },
@@ -127,6 +117,9 @@
                     "items": {
                         "$ref": "#/$defs/Filter"
                     }
+                },
+                "in_memory": {
+                    "type": "boolean"
                 },
                 "cache_expiration_time_seconds": {
                     "type": ["integer", "null"]
@@ -229,12 +222,6 @@
                     "type": ["string", "null"]
                 }
             }
-        },
-        "Option": {
-            "type": "object",
-            "required": [],
-            "additionalProperties": false,
-            "properties": {}
         },
         "SearchConfig": {
             "type": "object",
