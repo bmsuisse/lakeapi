@@ -1,15 +1,12 @@
-import io
-import json
 import mimetypes
 import os
 from enum import Enum
 from typing import Union
 from uuid import uuid4
 
-import anyio
+import time
 import pyarrow as pa
 from fastapi import BackgroundTasks
-from starlette.background import BackgroundTask
 from starlette.datastructures import URL
 from starlette.responses import FileResponse
 
@@ -165,10 +162,10 @@ async def create_response(
 
     tasks = BackgroundTasks()
 
-    async def remove():
+    def remove():
         if close_context:
             context.close()
-        await anyio.sleep(3)
+        time.sleep(3)
 
         os.remove(path)
         for f in additional_files:
