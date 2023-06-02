@@ -164,7 +164,6 @@ async def create_response(
     additional_files = write_frame(url=url, content=content, format=format, out=path, basic_config=basic_config)
 
     tasks = BackgroundTasks()
-    import asyncio
 
     async def remove():
         if close_context:
