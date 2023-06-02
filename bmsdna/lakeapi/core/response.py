@@ -4,8 +4,8 @@ from enum import Enum
 from typing import Union
 from uuid import uuid4
 import tempfile
+import asyncio
 
-import time
 import pyarrow as pa
 from fastapi import BackgroundTasks
 from fastapi.concurrency import run_in_threadpool
@@ -166,7 +166,6 @@ async def create_response(
     tasks = BackgroundTasks()
 
     async def remove():
-        import asyncio
         if close_context:
             context.close()
         await asyncio.sleep(5)
