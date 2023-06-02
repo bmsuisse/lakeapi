@@ -92,34 +92,6 @@ class Column:
 
 
 @dataclass
-class GroupByExpConfig:
-    # expression: str
-    col: str = ""
-    func: Optional[PolaryTypeFunction] = None
-    alias: Optional[str] = None
-
-    @classmethod
-    def from_dict(cls, config: Dict):
-        return cls(col=config["col"], func=config.get("func"), alias=config.get("alias"))
-
-
-@dataclass
-class GroupByConfig:
-    by: List[str]
-    expressions: List[GroupByExpConfig]
-
-
-@dataclass
-class Join:
-    uri: str
-    left_on: str
-    right_on: str
-    file_type: FileTypes = "delta"
-    how: JoinStrategy = "inner"
-    suffix: str = "_right"
-
-
-@dataclass
 class DatasourceConfig:
     uri: str
     file_type: FileTypes = "delta"
@@ -127,12 +99,8 @@ class DatasourceConfig:
     exclude: Optional[List[str]] = None
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
+    in_memory: bool = False
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
-
-
-@dataclass
-class Option:
-    ...
 
 
 @dataclass
@@ -145,7 +113,6 @@ class Config:
     params: Optional[List[Union[Param, str]]] = None
     timestamp: Optional[datetime] = None
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
-    options: Optional[Union[Option, None]] = None
     allow_get_all_pages: Optional[bool] = False
     search: Optional[List[SearchConfig]] = None
     engine: Optional[Engines] = None
@@ -218,16 +185,17 @@ class Config:
                     if res_name not in table_names and (
                         (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
                     ):
-                        datasource = DatasourceConfig(
+                        datasource_obj = DatasourceConfig(
                             uri=folder + "/" + it.name,
                             file_type=file_type,
                             select=select,
                             exclude=exclude,
+                            in_memory=datasource.get("in_memory", False),
                             sortby=sortby,
                             filters=None,
                             cache_expiration_time_seconds=cache_expiration_time_seconds,
                         )
-                        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
+                        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
                         ls.append(
                             cls(
                                 name=it.name,
@@ -238,22 +206,23 @@ class Config:
                                 search=search_config,
                                 params=new_params,  # type: ignore
                                 allow_get_all_pages=config.get("allow_get_all_pages", False),
-                                datasource=datasource,
+                                datasource=datasource_obj,
                                 cache_expiration_time_seconds=cache_expiration_time_seconds,
                             )
                         )
             return ls
         else:
-            datasource = DatasourceConfig(
+            datasource_obj = DatasourceConfig(
                 uri=uri,
                 file_type=file_type,
                 select=select,
                 exclude=exclude,
+                in_memory=datasource.get("in_memory", False),
                 sortby=sortby,
                 filters=None,
                 cache_expiration_time_seconds=cache_expiration_time_seconds,
             )
-            new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource.uri)
+            new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
 
             return [
                 cls(
@@ -265,7 +234,7 @@ class Config:
                     engine=config.get("engine", None),
                     params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
-                    datasource=datasource,
+                    datasource=datasource_obj,
                     cache_expiration_time_seconds=cache_expiration_time_seconds,
                 )
             ]

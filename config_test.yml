@@ -32,6 +32,7 @@ tables:
           - fruits
           - cars
     datasource:
+      in_memory: true
       uri: delta/fruits
       file_type: delta
 
