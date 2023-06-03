@@ -5,7 +5,6 @@ from typing import Union
 from uuid import uuid4
 import tempfile
 import anyio
-import asyncio
 
 import pyarrow as pa
 from fastapi import BackgroundTasks
