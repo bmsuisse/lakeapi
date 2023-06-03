@@ -284,8 +284,7 @@ def create_config_endpoint(
 
         logger.info(f"Engine: {engine}")
 
-
-        with  get_context_by_engine(engine) as context:
+        with get_context_by_engine(engine) as context:
             realdataframe = Dataframe(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
@@ -341,7 +340,6 @@ def create_config_endpoint(
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
 
-
             if len(searches) > 0 and config.search is not None:
                 import pypika.queries
                 import pypika.terms
@@ -367,7 +365,12 @@ def create_config_endpoint(
 
             try:
                 return await create_response(
-                    request.url, format or request.headers["Accept"], df2, context, basic_config=basic_config, close_context=True
+                    request.url,
+                    format or request.headers["Accept"],
+                    df2,
+                    context,
+                    basic_config=basic_config,
+                    close_context=True,
                 )
             except Exception as err:
                 logger.error("Error in creating response", exc_info=err)

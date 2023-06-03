@@ -131,7 +131,6 @@ class FileResponseWCharset(FileResponse):
         super().__init__(*args, **kwargs)
 
 
-
 async def create_response(
     url: URL,
     accept: str,
@@ -157,14 +156,18 @@ async def create_response(
         content_dispositiont_type = "inline"
         filename = None
 
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=extension)
+    temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    additional_files = write_frame(url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config)
+    additional_files = write_frame(
+        url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config
+    )
 
     def clean_up():
         if close_context:
             context.close()
+            logger.debug("closed context")
         temp_file.close()
+
         for f in additional_files:
             os.remove(f)
 
