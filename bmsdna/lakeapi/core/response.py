@@ -2,13 +2,10 @@ import mimetypes
 import os
 from enum import Enum
 from typing import Union
-from uuid import uuid4
 import tempfile
-import anyio
 
 import pyarrow as pa
 from fastapi import BackgroundTasks
-from fastapi.concurrency import run_in_threadpool
 from starlette.datastructures import URL
 from starlette.responses import FileResponse
 
@@ -134,6 +131,7 @@ class FileResponseWCharset(FileResponse):
         super().__init__(*args, **kwargs)
 
 
+
 async def create_response(
     url: URL,
     accept: str,
@@ -165,16 +163,15 @@ async def create_response(
 
     tasks = BackgroundTasks()
 
-    async def remove():
+    def clean_up():
         if close_context:
             context.close()
-        await anyio.sleep(5)
 
         temp_file.close()
         for f in additional_files:
-            os.remove(f)
+            os.unlink(f)
 
-    await anyio.to_thread.run_sync(remove)
+    tasks.add_task(clean_up)
 
     fr = FileResponseWCharset(
         path=temp_file.name,
