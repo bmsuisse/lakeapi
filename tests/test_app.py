@@ -462,3 +462,20 @@ def test_sortby():
         assert jsd[1]["randomdata"] <= jsd[2]["randomdata"]
         assert jsd[2]["randomdata"] <= jsd[3]["randomdata"]
         assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]
+
+
+
+def test_performance():
+    import numpy as np
+    for e in engines:
+
+        response_time = []
+        for i in range(100):
+            start = time.time()
+            response = client.get(f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={e}", auth=auth)
+            end = time.time()
+            response_time.append(end - start)
+            assert response.status_code == 200
+
+        assert np.max(response_time) < 1.0
+        
