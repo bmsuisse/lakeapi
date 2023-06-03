@@ -7,7 +7,10 @@ from deltalake import write_deltalake
 import shutil
 import pandas as pd
 from hashlib import md5
-from .utils import create_rows_faker
+try:
+    from .utils import create_rows_faker
+except ImportError:
+    from utils import create_rows_faker
 
 
 dir_path = pathlib.Path(os.path.dirname(os.path.realpath(__file__))).parent

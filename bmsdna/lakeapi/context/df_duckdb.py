@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 
 
-ENABLE_COPY_TO = True
+ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
 
 class DuckDBResultData(ResultData):
