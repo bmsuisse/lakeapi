@@ -477,6 +477,11 @@ def test_performance():
             response_time.append(end - start)
             assert response.status_code == 200
 
-        assert np.max(response_time) < 3.0
-        assert np.mean(response_time) < 1.0
+        mx = np.max(response_time)
+        mn = np.min(response_time)
+
+        print(f"Engine {e} max: {mx} min: {mn} mean: {np.mean(response_time)}")
+
+        assert mx < 2.0
+        assert mn < 1.0
         
