@@ -166,7 +166,7 @@ async def create_response(
             context.close()
         temp_file.close()
         for f in additional_files:
-            os.unlink(f)
+            os.remove(f)
 
     fr = FileResponseWCharset(
         path=temp_file.name,
