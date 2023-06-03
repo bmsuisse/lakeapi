@@ -464,11 +464,10 @@ def test_sortby():
         assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]
 
 
-
 def test_performance():
     import numpy as np
-    for e in engines:
 
+    for e in engines:
         response_time = []
         for i in range(100):
             start = time.time()
@@ -478,4 +477,3 @@ def test_performance():
             assert response.status_code == 200
 
         assert np.max(response_time) < 1.0
-        
