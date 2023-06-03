@@ -5,7 +5,7 @@ from typing import Union
 import tempfile
 
 import pyarrow as pa
-from fastapi import BackgroundTasks
+from starlette.background import BackgroundTask
 from starlette.datastructures import URL
 from starlette.responses import FileResponse
 
@@ -161,17 +161,12 @@ async def create_response(
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
     additional_files = write_frame(url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config)
 
-    tasks = BackgroundTasks()
-
     def clean_up():
         if close_context:
             context.close()
-
         temp_file.close()
         for f in additional_files:
             os.unlink(f)
-
-    tasks.add_task(clean_up)
 
     fr = FileResponseWCharset(
         path=temp_file.name,
@@ -179,7 +174,7 @@ async def create_response(
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,
         filename=filename,
-        background=tasks,
+        background=BackgroundTask(clean_up),
         charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
     )
     return fr

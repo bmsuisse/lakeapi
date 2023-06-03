@@ -341,6 +341,7 @@ def create_config_endpoint(
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
 
+
             if len(searches) > 0 and config.search is not None:
                 import pypika.queries
                 import pypika.terms
