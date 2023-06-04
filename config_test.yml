@@ -36,6 +36,31 @@ tables:
       uri: delta/fruits
       file_type: delta
 
+  - name: fruits_sortby_asc
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: delta/fruits
+      file_type: delta
+      sortby:
+        - by: B
+
+  - name: fruits_sortby_desc
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: delta/fruits
+      file_type: delta
+      sortby:
+        - by: A
+          direction: desc
+
   - name: fruits_partition
     tag: test
     version: 1

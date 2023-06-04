@@ -44,6 +44,35 @@ def test_fruits_limit_1():
         ]
 
 
+
+def test_fruits_sort_asc():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 5,
+                "fruits": "banana",
+                "B": 1,
+                "cars": "beetle",
+            }
+        ]
+
+
+def test_fruits_sort_desc():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fruits_sortby_desc?limit=1&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 9,
+                "fruits": "ananas",
+                "B": 9,
+                "cars": "fiat",
+            }
+        ]
+
+
 def test_fruits_offset_1():
     for e in engines:  # polars does not support offset
         response = client.get(

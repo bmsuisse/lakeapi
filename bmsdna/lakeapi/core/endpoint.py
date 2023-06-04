@@ -316,7 +316,7 @@ def create_config_endpoint(
                 for s in config.datasource.sortby:
                     new_query = new_query.orderby(
                         s.by,
-                        ord=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
+                        order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
                     )
             if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
                 jsonify_complex = True
