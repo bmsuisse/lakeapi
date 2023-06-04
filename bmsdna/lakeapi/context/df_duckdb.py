@@ -18,6 +18,7 @@ from bmsdna.lakeapi.core.config import SearchConfig
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
+
 class DuckDBResultData(ResultData):
     def __init__(
         self,
