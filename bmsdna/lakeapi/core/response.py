@@ -166,7 +166,7 @@ async def create_response(
         if close_context:
             context.close()
             logger.debug("closed context")
-        temp_file.close()   
+        temp_file.close()
 
         for f in additional_files:
             os.remove(f)

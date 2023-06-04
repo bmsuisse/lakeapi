@@ -44,7 +44,6 @@ def test_fruits_limit_1():
         ]
 
 
-
 def test_fruits_sort_asc():
     for e in engines:
         response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}", auth=auth)
@@ -491,4 +490,3 @@ def test_sortby():
         assert jsd[1]["randomdata"] <= jsd[2]["randomdata"]
         assert jsd[2]["randomdata"] <= jsd[3]["randomdata"]
         assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]
-
