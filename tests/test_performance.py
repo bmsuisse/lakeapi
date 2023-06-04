@@ -37,7 +37,7 @@ def test_async_execution():
 
     async def main():
         tasks = []
-        for _ in range(1000):
+        for _ in range(10_000):
             for e in engines:
                 task = asyncio.create_task(call_api(e))
                 tasks.append(task)
