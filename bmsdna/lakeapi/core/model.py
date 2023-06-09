@@ -1,3 +1,5 @@
+# pyright: reportUndefinedVariable=false, reportGeneralTypeIssues=false
+
 import datetime
 from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
 from bmsdna.lakeapi.context.df_base import ResultData
@@ -17,7 +19,7 @@ cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer
 
 def _make_model(v, name):
     if type(v) is dict:
-        return create_model(name, **{k: _make_model(v, k) for k, v in v.items()}), ...
+        return create_model(name, **{k: _make_model(v, k) for k, v in v.items()}), ... # type: ignore
     return type(v), None
 
 
@@ -78,7 +80,7 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
         }
         return (
             Union[
-                create_model(model_ns + ("_" + field_name if field_name else ""), **res, __base__=TypeBaseModel),
+                create_model(model_ns + ("_" + field_name if field_name else ""), **res, __base__=TypeBaseModel), # type: ignore
                 None,
             ],
             None,
@@ -160,7 +162,7 @@ def create_parameter_model(
                 Optional[str],
                 None,
             )
-        query_model = create_model(name + "Parameter", **query_params)
+        query_model = create_model(name + "Parameter", **query_params) # type: ignore
         return query_model
     return empty_model
 
@@ -178,4 +180,4 @@ def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:
         if not should_hide_colname(k)
     }
 
-    return create_model(name, **props, __base__=TypeBaseModel)
+    return create_model(name, **props, __base__=TypeBaseModel) # type: ignore
