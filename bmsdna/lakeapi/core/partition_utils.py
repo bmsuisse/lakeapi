@@ -18,7 +18,8 @@ def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_c
         )
         if not os.path.exists(os.path.join(delta_uri, "_delta_log")):
             return paramslist
-        from deltalake import DeltaTable, PyDeltaTableError
+        from deltalake import DeltaTable
+        from deltalake.exceptions import DeltaError
 
         try:
             part_cols = DeltaTable(delta_uri).metadata().partition_columns
@@ -31,7 +32,7 @@ def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_c
 
                         new_params.append(Param(pc, operators=["="], colname=pc))
                 return new_params
-        except PyDeltaTableError as err:
+        except DeltaError as err:
             return paramslist  # this is not critical here
 
     return paramslist

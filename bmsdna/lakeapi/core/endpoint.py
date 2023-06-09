@@ -9,7 +9,8 @@ import pypika
 import pypika.queries as fn
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
-from deltalake import DeltaTable, Metadata, PyDeltaTableError
+from deltalake import DeltaTable, Metadata
+from deltalake.exceptions import DeltaError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
