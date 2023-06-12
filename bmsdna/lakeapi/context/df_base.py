@@ -121,8 +121,8 @@ class ExecutionContext(ABC):
     ) -> Optional[pa.dataset.Dataset | pa.Table]:
         match file_type:
             case "parquet":
-                import pyarrow.parquet as pq
-                return pq.ParquetDataset(uri, coerce_int96_timestamp_unit="us")
+                import pyarrow.dataset as ds
+                return pa.dataset.dataset(uri, format=ds.ParquetFileFormat(read_options={"coerce_int96_timestamp_unit": "us"}))
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 return pa.dataset.dataset(uri, format=file_type)
             case "ndjson" | "json":

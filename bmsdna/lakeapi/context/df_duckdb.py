@@ -209,6 +209,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if file_type == "ndjson":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
             return
+        if file_type == "parquet":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_parquet('{uri}')")
+            return
+        if file_type == "csv":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
+            return
         return super().register_dataframe(name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
