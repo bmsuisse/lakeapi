@@ -66,25 +66,25 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
-        full_query = f"CREATE TEMP TABLE {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000); DROP TABLE {uuidstr}"
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP TABLE {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP TABLE {uuidstr}"
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_csv(self, file_name: str, *, separator: str):
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP TABLE {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP TABLE {uuidstr}"
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_json(self, file_name: str):
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP TABLE {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr})  TO '{file_name}' (FORMAT JSON, Array True); DROP TABLE {uuidstr}"
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr})  TO '{file_name}' (FORMAT JSON, Array True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
 
