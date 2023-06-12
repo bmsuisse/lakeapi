@@ -180,7 +180,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
             < modified_date.astimezone(timezone.utc)
             or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
-            < datetime.fromisoformat("2023-05-19T00:00Z")  # before duckdb upgrade
+            < datetime.fromisoformat("2023-05-19").astimezone(timezone.utc)  # before duckdb upgrade
         ):
             persistance_file_name_temp = persistance_file_name + "_temp"
             if os.path.exists(persistance_file_name_temp):
@@ -203,11 +203,18 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def register_dataframe(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):
+        self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
             return
         if file_type == "ndjson":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
+            return
+        if file_type == "parquet":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_parquet('{uri}')")
+            return
+        if file_type == "csv":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
             return
         return super().register_dataframe(name, uri, file_type, partitions)
 

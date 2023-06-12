@@ -140,7 +140,7 @@ class PolarsExecutionContext(ExecutionContext):
 
                 df = pl.scan_delta2(  # type: ignore
                     uri,
-                    pyarrow_options={"partitions": partitions},
+                    pyarrow_options={"partitions": partitions, "parquet_read_options":{"coerce_int96_timestamp_unit": "us"}}
                 )
             case "parquet":
                 df = pl.scan_parquet(uri)
