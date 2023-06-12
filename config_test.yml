@@ -254,6 +254,16 @@ tables:
       uri: parquet/fake.parquet
       file_type: parquet
 
+  - name: fake_parquet_ns
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: parquet/fake_ns.parquet
+      file_type: parquet
+
   - name: fake_duckdb
     tag: test
     version: 1

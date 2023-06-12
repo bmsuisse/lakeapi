@@ -131,3 +131,10 @@ if __name__ == "__main__":
     delete_folder(arrow_path)
     os.makedirs(pathlib.Path(arrow_path).parent, exist_ok=True)
     df_faker.to_feather(arrow_path)
+
+    df_ns = df_faker.copy()
+    from faker import Faker
+
+    fakeit = Faker()
+    df_ns["ts"] = pl.Series("ts", [fakeit.date_time() for _ in range(0, df_ns.shape[0])], pl.Datetime(time_unit="ns"))
+    df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")

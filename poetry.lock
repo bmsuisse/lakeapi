@@ -438,6 +438,7 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "deltalake-0.10.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1aef72679268324e7cc556f03969b92235076b6edcecae7a2f85ac930b5fb9b9"},
+    {file = "deltalake-0.10.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:91e801b78e298946950b07bf0573e4cf012d6259ac294bcac662b6d746f95596"},
     {file = "deltalake-0.10.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:437f8ee9f28a9cd8454e8700c3dd88f5ad33c2ec9a7192356b55b23fee50259c"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f532b3c3dc8437fc26279a296bc576bdf79b167e1d4864847ca7c5ec7b3915b6"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42212ee879735d476772a9c1d1ca3e43ef15893a301796baffe94db3578e98ca"},
@@ -539,17 +540,17 @@ python-dateutil = ">=2.4"
 
 [[package]]
 name = "fastapi"
-version = "0.96.0"
+version = "0.96.1"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "fastapi-0.96.0-py3-none-any.whl", hash = "sha256:b8e11fe81e81eab4e1504209917338e0b80f783878a42c2b99467e5e1019a1e9"},
-    {file = "fastapi-0.96.0.tar.gz", hash = "sha256:71232d47c2787446991c81c41c249f8a16238d52d779c0e6b43927d3773dbe3c"},
+    {file = "fastapi-0.96.1-py3-none-any.whl", hash = "sha256:22d773ce95f14f04f8f37a0c8998fc163e67af83b65510d2879de6cbaaa10215"},
+    {file = "fastapi-0.96.1.tar.gz", hash = "sha256:5c1d243030e63089ccfc0aec69c2da6d619943917727e8e82ee502358d5119bf"},
 ]
 
 [package.dependencies]
-pydantic = ">=1.6.2,<1.7 || >1.7,<1.7.1 || >1.7.1,<1.7.2 || >1.7.2,<1.7.3 || >1.7.3,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0"
+pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0"
 starlette = ">=0.27.0,<0.28.0"
 
 [package.extras]
@@ -820,18 +821,18 @@ files = [
 
 [[package]]
 name = "platformdirs"
-version = "3.5.1"
+version = "3.5.3"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.5.1-py3-none-any.whl", hash = "sha256:e2378146f1964972c03c085bb5662ae80b2b8c06226c54b2ff4aa9483e8a13a5"},
-    {file = "platformdirs-3.5.1.tar.gz", hash = "sha256:412dae91f52a6f84830f39a8078cecd0e866cb72294a5c66808e74d5e88d251f"},
+    {file = "platformdirs-3.5.3-py3-none-any.whl", hash = "sha256:0ade98a4895e87dc51d47151f7d2ec290365a585151d97b4d8d6312ed6132fed"},
+    {file = "platformdirs-3.5.3.tar.gz", hash = "sha256:e48fabd87db8f3a7df7150a4a5ea22c546ee8bc39bc2473244730d4b56d2cc4e"},
 ]
 
 [package.extras]
-docs = ["furo (>=2023.3.27)", "proselint (>=0.13)", "sphinx (>=6.2.1)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4)", "pytest-mock (>=3.10)"]
+docs = ["furo (>=2023.5.20)", "proselint (>=0.13)", "sphinx (>=7.0.1)", "sphinx-autodoc-typehints (>=1.23,!=1.23.4)"]
+test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.3.1)", "pytest-cov (>=4.1)", "pytest-mock (>=3.10)"]
 
 [[package]]
 name = "pluggy"
@@ -850,17 +851,17 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "polars"
-version = "0.18.1"
+version = "0.18.2"
 description = "Blazingly fast DataFrame library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "polars-0.18.1-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1b9bb3a7711f7a4d805e8a4327c643983f5a55dfe727f27faff17c458100f4d3"},
-    {file = "polars-0.18.1-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:18d9c1b7d9d287bead14010cf91882ff5ab139867fe0411fb72600fabc60553a"},
-    {file = "polars-0.18.1-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ab8c4f7a031cd38e33d653d1efee0f4f1aa2ae14a935c7d817559a8d4718778a"},
-    {file = "polars-0.18.1-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:592b9df3e3ddee0a6f78ff27138d62a1c7b962304dedada409babb1823face7d"},
-    {file = "polars-0.18.1-cp37-abi3-win_amd64.whl", hash = "sha256:27cf52a673935ecbc6085808c81780bd439b226d34d1b61fee1e8b8ad5c6f9a7"},
-    {file = "polars-0.18.1.tar.gz", hash = "sha256:0022e594569a57c17776f1e5b39bf45f43462398a10697879800e25289812379"},
+    {file = "polars-0.18.2-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:14d3aa34814abfa1adefbce7f65407a0de9fc46de8afe08c3db3253d08329e2e"},
+    {file = "polars-0.18.2-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:3008987572ef7c5693eb3b3809c2df69958b2856dfbc65f631eaa4be33d6ea54"},
+    {file = "polars-0.18.2-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:906bbf60c77033892e7efbcdebd657ee5b14797e18004277b8866f9e3e200caa"},
+    {file = "polars-0.18.2-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5707467919d0371d1ef87e5963920b82534245a5ea3681e110885c0867e9c3b5"},
+    {file = "polars-0.18.2-cp37-abi3-win_amd64.whl", hash = "sha256:a3e29f7b17cf7345d552e817d049becde59824cb0dda0f98fe08355582d6ee73"},
+    {file = "polars-0.18.2.tar.gz", hash = "sha256:de1dc24c2ff7eb9ac379161501a1b1777c5febdcad341532495c0fc1651968c0"},
 ]
 
 [package.extras]
@@ -1097,13 +1098,13 @@ files = [
 
 [[package]]
 name = "pytest"
-version = "7.3.1"
+version = "7.3.2"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.3.1-py3-none-any.whl", hash = "sha256:3799fa815351fea3a5e96ac7e503a96fa51cc9942c3753cda7651b93c1cfa362"},
-    {file = "pytest-7.3.1.tar.gz", hash = "sha256:434afafd78b1d78ed0addf160ad2b77a30d35d4bdf8af234fe621919d9ed15e3"},
+    {file = "pytest-7.3.2-py3-none-any.whl", hash = "sha256:cdcbd012c9312258922f8cd3f1b62a6580fdced17db6014896053d47cddf9295"},
+    {file = "pytest-7.3.2.tar.gz", hash = "sha256:ee990a3cc55ba808b80795a79944756f315c67c12b56abd3ac993a7b8c17030b"},
 ]
 
 [package.dependencies]
@@ -1115,7 +1116,7 @@ pluggy = ">=0.12,<2.0"
 tomli = {version = ">=1.0.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
-testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
+testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
 
 [[package]]
 name = "pytest-benchmark"

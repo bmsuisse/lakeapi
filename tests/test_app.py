@@ -338,6 +338,13 @@ def test_fake_parquet():
         assert len(response.json()) == 10
 
 
+def test_fake_parquet_ns():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert len(response.json()) == 10
+
+
 def test_fake_csv():
     for e in engines:
         response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
