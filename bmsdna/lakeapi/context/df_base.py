@@ -119,29 +119,30 @@ class ExecutionContext(ABC):
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ) -> Optional[pa.dataset.Dataset | pa.Table]:
-        if file_type in ["parquet", "ipc", "arrow", "feather", "csv", "orc"]:
-            ds = pa.dataset.dataset(uri, format=file_type)
-        elif file_type in ["ndjson", "json"]:
-            import pandas
+        match file_type:
+            case "parquet":
+                import pyarrow.parquet as pq
+                return pq.ParquetDataset(uri, coerce_int96_timestamp_unit="us")
+            case "ipc" | "arrow" | "feather" | "csv" | "orc":
+                return pa.dataset.dataset(uri, format=file_type)
+            case "ndjson" | "json":
+                import pandas
 
-            pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
+                pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
 
-            return pyarrow.Table.from_pandas(pd)
-        elif file_type == "avro":
-            import polars as pl
+                return pyarrow.Table.from_pandas(pd)
+            case "avro":
+                import polars as pl
 
-            pd = pl.read_avro(uri).to_arrow()
-            return pd
-        elif file_type == "delta":
-            dt = DeltaTable(
-                uri,
-            )
-
-            ds = dt.to_pyarrow_dataset(partitions=partitions)
-
-        else:
-            raise Exception(f"Not supported file type {file_type}")
-        return ds
+                pd = pl.read_avro(uri).to_arrow()
+                return pd
+            case "delta":
+                dt = DeltaTable(
+                    uri,
+                )
+                return dt.to_pyarrow_dataset(partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"})
+            case _:
+                raise Exception(f"Not supported file type {file_type}")
 
     @abstractmethod
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
