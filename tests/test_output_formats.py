@@ -58,5 +58,6 @@ def test_data_arrow_stream():
         with open(temp_fn, "wb") as f:
             f.write(response.content)
         with pa.OSFile(temp_fn, "rb") as fl:
-            with pa.ipc.open_file(fl) as reader:
+            with pa.ipc.open_stream(fl) as reader:
                 df = reader.read_pandas()
+                assert df["A"][0] == 2
