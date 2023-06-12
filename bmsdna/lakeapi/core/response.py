@@ -111,9 +111,9 @@ def write_frame(
     elif format in (OutputFormats.ARROW_IPC, OutputFormats.ARROW_STREAM):
         with content.to_arrow_recordbatch() as batches:
             with pa.OSFile(out, "wb") as sink:
-                with pa.ipc.new_file(sink, batches.schema) as writer:
+                with pa.ipc.new_stream(sink, batches.schema) as writer:
                     for batch in batches:
-                        writer.write(batch)
+                        writer.write_batch(batch)
 
     elif format == OutputFormats.ND_JSON:
         content.write_nd_json(out)
