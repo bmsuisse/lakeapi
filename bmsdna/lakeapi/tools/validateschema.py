@@ -3,7 +3,6 @@ import json
 import yaml
 from python2jsonschema import get_json_schema_for_type
 from bmsdna.lakeapi.core.config import Config, YamlData
-import os
 
 
 def validate_schema(schema_file: str, yaml_file: str):

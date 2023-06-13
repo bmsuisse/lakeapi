@@ -1,4 +1,3 @@
-import inspect
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request

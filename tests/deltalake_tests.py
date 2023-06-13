@@ -1,6 +1,6 @@
 import pyarrow as pa
 import duckdb
-from threading import Thread, active_count
+from threading import active_count
 from uuid import uuid4
 import os
 import psutil

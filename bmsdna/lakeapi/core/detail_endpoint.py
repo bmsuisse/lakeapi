@@ -1,6 +1,4 @@
-import inspect
-from pathlib import Path
-from typing import Any, Callable, List, Literal, Optional, Type, Union, cast
+from typing import Optional, cast
 from typing_extensions import TypedDict, NotRequired, Required
 import duckdb
 import polars as pl

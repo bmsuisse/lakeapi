@@ -1,10 +1,8 @@
-from datetime import datetime
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
-import threading
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import pypika.queries

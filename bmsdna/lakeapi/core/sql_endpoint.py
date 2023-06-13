@@ -1,4 +1,4 @@
-from typing import Any, Optional, Callable, Union
+from typing import Optional, Union
 import duckdb
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
 from bmsdna.lakeapi.context.df_base import ExecutionContext

@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
