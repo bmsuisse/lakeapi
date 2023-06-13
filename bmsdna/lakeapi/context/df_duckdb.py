@@ -17,10 +17,12 @@ from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 
-ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "1") == "1"
+ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
+
 
 def _get_temp_table_name():
-    return "temp_" + str(uuid4()).replace("-","")
+    return "temp_" + str(uuid4()).replace("-", "")
+
 
 class DuckDBResultData(ResultData):
     def __init__(
@@ -80,7 +82,7 @@ class DuckDBResultData(ResultData):
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
-    def write_csv(self, file_name: str, *, separator: str):        
+    def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
         query = get_sql(self.original_sql)
@@ -88,7 +90,7 @@ class DuckDBResultData(ResultData):
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
-    def write_json(self, file_name: str):        
+    def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
         query = get_sql(self.original_sql)
