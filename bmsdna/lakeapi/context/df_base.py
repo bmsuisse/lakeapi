@@ -42,7 +42,7 @@ class ResultData(ABC):
         ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self) -> pa.RecordBatchReader:
+    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader:
         ...
 
     @abstractmethod
@@ -122,7 +122,10 @@ class ExecutionContext(ABC):
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
-                return pa.dataset.dataset(uri, format=ds.ParquetFileFormat(read_options={"coerce_int96_timestamp_unit": "us"}))
+
+                return pa.dataset.dataset(
+                    uri, format=ds.ParquetFileFormat(read_options={"coerce_int96_timestamp_unit": "us"})
+                )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 return pa.dataset.dataset(uri, format=file_type)
             case "ndjson" | "json":
@@ -140,7 +143,9 @@ class ExecutionContext(ABC):
                 dt = DeltaTable(
                     uri,
                 )
-                return dt.to_pyarrow_dataset(partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"})
+                return dt.to_pyarrow_dataset(
+                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                )
             case _:
                 raise Exception(f"Not supported file type {file_type}")
 

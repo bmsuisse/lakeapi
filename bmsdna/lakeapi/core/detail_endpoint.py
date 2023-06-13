@@ -1,0 +1,184 @@
+import inspect
+from pathlib import Path
+from typing import Any, Callable, List, Literal, Optional, Type, Union, cast
+from typing_extensions import TypedDict, NotRequired, Required
+import duckdb
+import polars as pl
+import pyarrow as pa
+import pypika
+import pypika.queries as fn
+from aiocache import Cache, cached
+from aiocache.serializers import PickleSerializer
+from deltalake import DeltaTable, Metadata
+from deltalake.exceptions import DeltaError
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+)
+from pydantic import BaseModel
+from pypika.queries import QueryBuilder
+
+from bmsdna.lakeapi.context import get_context_by_engine
+from bmsdna.lakeapi.context.df_base import ResultData, get_sql
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
+from bmsdna.lakeapi.core.dataframe import (
+    Dataframe,
+    filter_df_based_on_params,
+    filter_partitions_based_on_params,
+)
+from bmsdna.lakeapi.core.log import get_logger
+from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
+from bmsdna.lakeapi.core.partition_utils import should_hide_colname
+from bmsdna.lakeapi.core.response import create_response
+from bmsdna.lakeapi.core.types import (
+    OutputFileType,
+    Engines,
+)
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+
+
+from bmsdna.lakeapi.core.types import MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
+
+from typing import Optional
+
+
+def _to_dict(tblmeta: Optional[Metadata]):
+    if not tblmeta:
+        return None
+    return {
+        "name": tblmeta.name,
+        "description": tblmeta.description,
+        "partition_columns": tblmeta.partition_columns,
+        "configuration": tblmeta.configuration,
+    }
+
+
+def create_detailed_meta_endpoint(
+    metamodel: Optional[ResultData], config: Config, configs: Configs, router: APIRouter, basic_config: BasicConfig
+):
+    route = config.route + "/metadata_detail"
+    has_complex = True
+    if metamodel is not None:
+        has_complex = any((pa.types.is_nested(t) for t in metamodel.arrow_schema().types))
+
+    @router.get(
+        route,
+        tags=["metadata", "metadata:" + config.tag],
+        operation_id=config.tag + "_" + config.name,
+        name=config.name + "_metadata",
+    )
+    def get_detailed_metadata(
+        req: Request,
+        jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+    ) -> MetadataDetailResult:
+        import json
+
+        req.state.lake_api_basic_config = basic_config
+        from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
+
+        with DuckDbExecutionContext() as context:
+            realdataframe = Dataframe(
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+            )
+
+            if not realdataframe.file_exists():
+                raise HTTPException(404)
+            partition_columns = []
+            partition_values = None
+            delta_tbl = None
+            df = realdataframe.get_df(None)
+            if config.datasource.file_type == "delta":
+                delta_tbl = DeltaTable(realdataframe.uri)
+                partition_columns = delta_tbl.metadata().partition_columns
+                partition_columns = [
+                    c for c in partition_columns if not should_hide_colname(c)
+                ]  # also hide those from metadata detail
+                if len(partition_columns) > 0:
+                    qb: QueryBuilder = (
+                        df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
+                    )
+                    partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
+            schema = df.arrow_schema()
+            str_cols = [
+                name
+                for name in schema.names
+                if (pa.types.is_string(schema.field(name).type) or pa.types.is_large_string(schema.field(name).type))
+                and not should_hide_colname(name)
+            ]
+            complex_str_cols = (
+                [
+                    name
+                    for name in schema.names
+                    if (pa.types.is_struct(schema.field(name).type) or pa.types.is_list(schema.field(name).type))
+                    and not should_hide_colname(name)
+                ]
+                if jsonify_complex
+                else []
+            )
+            str_lengths_df = (
+                (
+                    context.execute_sql(
+                        df.query_builder().select(
+                            *(
+                                [fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
+                                + [
+                                    fn.Function(
+                                        "MAX",
+                                        fn.Function("LEN", context.json_function(fn.Field(sc), assure_string=True)),
+                                    ).as_(sc)
+                                    for sc in complex_str_cols
+                                ]
+                            )
+                        )
+                    )
+                    .to_arrow_table()
+                    .to_pylist()
+                )
+                if len(str_cols) > 0 or len(complex_str_cols) > 0
+                else [{}]
+            )
+            str_lengths = str_lengths_df[0]
+
+            def _recursive_get_type(t: pa.DataType) -> MetadataSchemaFieldType:
+                is_complex = pa.types.is_nested(t)
+
+                return MetadataSchemaFieldType(
+                    type_str=str(pa.string()) if is_complex and jsonify_complex else str(t),
+                    orig_type_str=str(t),
+                    fields=[
+                        MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
+                        for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
+                    ]
+                    if pa.types.is_struct(t) and not jsonify_complex
+                    else None,
+                    inner=_recursive_get_type(t.value_type)
+                    if pa.types.is_list(t)
+                    or pa.types.is_large_list(t)
+                    or pa.types.is_fixed_size_list(t)
+                    and t.value_type is not None
+                    and not jsonify_complex
+                    else None,
+                )
+
+            schema = df.arrow_schema()
+            return MetadataDetailResult(
+                partition_values=partition_values,
+                partition_columns=partition_columns,
+                max_string_lengths=str_lengths,
+                data_schema=[
+                    MetadataSchemaField(
+                        name=n, type=_recursive_get_type(schema.field(n).type), max_str_length=str_lengths.get(n, None)
+                    )
+                    for n in schema.names
+                    if not should_hide_colname(n)
+                ],
+                delta_meta=_to_dict(delta_tbl.metadata() if delta_tbl else None),
+                delta_schema=json.loads(delta_tbl.schema().to_json()) if delta_tbl else None,
+                parameters=config.params,  # type: ignore
+                search=config.search,
+            )

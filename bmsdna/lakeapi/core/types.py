@@ -109,6 +109,7 @@ class MetadataSchemaFieldType(BaseModel):
 class MetadataSchemaField(BaseModel):
     name: str
     type: MetadataSchemaFieldType
+    max_str_length: Optional[int] = None
 
 
 @dataclass

@@ -19,9 +19,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
 
     from bmsdna.lakeapi.core.endpoint import (
         get_response_model,
-        create_detailed_meta_endpoint,
         create_config_endpoint,
     )
+    from bmsdna.lakeapi.core.detail_endpoint import create_detailed_meta_endpoint
     from bmsdna.lakeapi.core.sql_endpoint import create_sql_endpoint
 
     all_lake_api_routers.append((basic_config, configs))
