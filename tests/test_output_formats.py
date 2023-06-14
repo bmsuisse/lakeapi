@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
-import time
-from datetime import datetime
 import sys
 import pyarrow as pa
 import polars as pl

@@ -1,6 +1,6 @@
 import pyarrow as pa
 import duckdb
-from threading import Thread, active_count
+from threading import active_count
 from uuid import uuid4
 import os
 import psutil
@@ -51,7 +51,3 @@ while i < 100:
         count = active_count()
         rss = process.memory_info().rss
         print(f"NR Threads: {count}. RAM: {rss/1000/1000} MB")
-        con.unregister("fake")
-        
-        for fs in con.list_filesystems():
-            con.unregister_filesystem(fs)

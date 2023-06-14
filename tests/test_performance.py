@@ -2,7 +2,6 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import time
-from datetime import datetime
 import sys
 import pyarrow as pa
 import polars as pl
@@ -10,7 +9,6 @@ import pytest
 import pandas as pd
 from urllib.parse import quote
 from httpx._types import RequestData
-from typing import cast
 import asyncio
 
 sys.path.append(".")

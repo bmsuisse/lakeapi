@@ -1,6 +1,5 @@
 import polars as pl
 from deltalake import write_deltalake, DeltaTable
-import os
 import pyarrow as pa
 from polars import LazyFrame, DataFrame
 from typing import cast, Any, Optional

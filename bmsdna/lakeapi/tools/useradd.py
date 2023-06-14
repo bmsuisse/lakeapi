@@ -1,5 +1,5 @@
 import argon2
-from typing import cast, List, Optional
+from typing import cast, Optional
 import secrets
 import string
 
