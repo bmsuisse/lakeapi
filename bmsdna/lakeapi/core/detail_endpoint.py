@@ -79,7 +79,7 @@ def create_detailed_meta_endpoint(
         req.state.lake_api_basic_config = basic_config
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
-        with DuckDbExecutionContext() as context:
+        with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
             realdataframe = Dataframe(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )

@@ -93,6 +93,15 @@ def is_complex_type(schema: pa.Schema, col_name: str):
     return pa.types.is_nested(f.type)
 
 
+def split_csv(csv_str: str) -> list[str]:
+    import csv
+
+    reader = csv.reader([csv_str], delimiter=",", quotechar='"')
+    for i in reader:
+        return i
+    raise ValueError("cannot happen")
+
+
 def create_config_endpoint(
     metamodel: Optional[ResultData],
     apimethod: Literal["get", "post"],
@@ -149,7 +158,7 @@ def create_config_endpoint(
 
         logger.info(f"Engine: {engine}")
 
-        with get_context_by_engine(engine) as context:
+        with get_context_by_engine(engine, chunk_size=config.chunk_size or basic_config.default_chunk_size) as context:
             realdataframe = Dataframe(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
@@ -174,7 +183,9 @@ def create_config_endpoint(
 
             columns = exclude_cols(df.columns())
             if select:
-                columns = [c for c in columns if c in select.split(",")]
+                columns = [
+                    c for c in columns if c in split_csv(select)
+                ]  # split , is a bit naive, we might want to support real CSV with quotes here
             if config.datasource.exclude and len(config.datasource.exclude) > 0:
                 columns = [c for c in columns if c not in config.datasource.exclude]
             if config.datasource.sortby and len(searches) == 0:

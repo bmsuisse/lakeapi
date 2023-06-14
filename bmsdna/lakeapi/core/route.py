@@ -27,7 +27,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     router = APIRouter()
     metadata = []
 
-    with DuckDbExecutionContext() as context:
+    with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
         for config in configs:
             methods = (
                 cast(list[Literal["get", "post"]], [config.api_method])
@@ -105,7 +105,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         config.version_str, config.tag, config.name, config.datasource, context, basic_config
                     )
                     if realdataframe.file_exists():
-                        with get_context_by_engine(basic_config.default_engine) as ctx:
+                        with get_context_by_engine(
+                            basic_config.default_engine, basic_config.default_chunk_size
+                        ) as ctx:
                             ctx.init_search(realdataframe.tablename, config.search)
 
         return router

@@ -15,7 +15,10 @@ if TYPE_CHECKING:
 
 
 class PolarsResultData(ResultData):
-    def __init__(self, df: "Union[polars.DataFrame, polars.LazyFrame]", sql_context: "polars.SQLContext"):
+    def __init__(
+        self, df: "Union[polars.DataFrame, polars.LazyFrame]", sql_context: "polars.SQLContext", chunk_size: int
+    ):
+        super().__init__(chunk_size=chunk_size)
         self.df = df
         self.random_name = "tbl_" + str(uuid4())
         self.registred_df = False
@@ -103,8 +106,8 @@ class PolarsResultData(ResultData):
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(self, sql_context: "Optional[polars.SQLContext]" = None):
-        super().__init__()
+    def __init__(self, chunk_size: int, sql_context: "Optional[polars.SQLContext]" = None):
+        super().__init__(chunk_size=chunk_size)
         import polars as pl
 
         self.sql_context = sql_context or pl.SQLContext()
@@ -138,7 +141,10 @@ class PolarsExecutionContext(ExecutionContext):
 
                 df = pl.scan_delta2(  # type: ignore
                     uri,
-                    pyarrow_options={"partitions": partitions, "parquet_read_options":{"coerce_int96_timestamp_unit": "us"}}
+                    pyarrow_options={
+                        "partitions": partitions,
+                        "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
+                    },
                 )
             case "parquet":
                 df = pl.scan_parquet(uri)
@@ -168,7 +174,7 @@ class PolarsExecutionContext(ExecutionContext):
         df = self.sql_context.execute(get_sql(sql))
         if isinstance(df, pl.LazyFrame):
             df = df.collect()
-        return PolarsResultData(df, self.sql_context)
+        return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SHOW TABLES")
