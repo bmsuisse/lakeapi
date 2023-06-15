@@ -423,27 +423,13 @@ def test_data_partition():
             auth=auth,
         )
         assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+        assert response.json() == [{"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "my_empty_col": None}]
         response = client.get(
             f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
             auth=auth,
         )
         assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            }
-        ]
+        assert response.json() == [{"A": 9, "fruits": "ananas", "B": 9, "cars": "fiat", "my_empty_col": None}]
 
 
 def test_data_partition_mod():
