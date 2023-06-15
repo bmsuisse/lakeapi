@@ -29,8 +29,9 @@ class DuckDBResultData(ResultData):
         self,
         original_sql: Union[pypika.queries.QueryBuilder, str],
         con: duckdb.DuckDBPyConnection,
+        chunk_size: int,
     ) -> None:
-        super().__init__()
+        super().__init__(chunk_size=chunk_size)
         self.original_sql = original_sql
         self.con = con
         self._arrow_schema = None
@@ -129,8 +130,8 @@ class Match25Term(pypika.terms.Term):
 
 
 class DuckDbExecutionContextBase(ExecutionContext):
-    def __init__(self, con: duckdb.DuckDBPyConnection):
-        super().__init__()
+    def __init__(self, con: duckdb.DuckDBPyConnection, chunk_size: int):
+        super().__init__(chunk_size=chunk_size)
         self.con = con
         self.res_con = None
         self.persistance_file_name = None
@@ -151,8 +152,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
             self.res_con = duckdb.connect(self.persistance_file_name, read_only=True)
-            return DuckDBResultData(sql, self.res_con)
-        return DuckDBResultData(sql, con=self.con)
+            return DuckDBResultData(sql, self.res_con, self.chunk_size)
+        return DuckDBResultData(sql, con=self.con, chunk_size=self.chunk_size)
 
     def search_score_function(
         self,
@@ -243,8 +244,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
 
 class DuckDbExecutionContext(DuckDbExecutionContextBase):
-    def __init__(self):
-        super().__init__(duckdb.connect())
+    def __init__(self, chunk_size: int):
+        super().__init__(duckdb.connect(), chunk_size=chunk_size)
 
     def __enter__(self):
         super().__enter__()

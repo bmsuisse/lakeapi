@@ -29,6 +29,10 @@ def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) 
 
 
 class ResultData(ABC):
+    def __init__(self, chunk_size: int) -> None:
+        super().__init__()
+        self.chunk_size = chunk_size
+
     @abstractmethod
     def columns(self) -> List[str]:
         ...
@@ -66,7 +70,7 @@ class ResultData(ABC):
     def write_nd_json(self, file_name: str):
         import polars as pl
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
         with open(file_name, mode="wb") as f:
             for batch in batches:
                 t = pl.from_arrow(batch)
@@ -80,7 +84,7 @@ class ResultData(ABC):
     def write_parquet(self, file_name: str):
         import pyarrow.parquet as paparquet
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
 
         with paparquet.ParquetWriter(file_name, batches.schema) as writer:
             for batch in batches:
@@ -90,7 +94,7 @@ class ResultData(ABC):
         import pyarrow.csv as pacsv
         import decimal
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
             file_name,
             batches.schema,
@@ -101,9 +105,10 @@ class ResultData(ABC):
 
 
 class ExecutionContext(ABC):
-    def __init__(self) -> None:
+    def __init__(self, chunk_size: int) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
+        self.chunk_size = chunk_size
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":

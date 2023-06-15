@@ -77,7 +77,7 @@ def write_frame(
     if format == OutputFormats.AVRO:
         import polars as pl
 
-        ds = pl.from_arrow(content.to_arrow_recordbatch())
+        ds = pl.from_arrow(content.to_arrow_recordbatch(content.chunk_size))
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
     elif format == OutputFormats.CSV:
@@ -107,16 +107,16 @@ def write_frame(
 
     elif format == OutputFormats.XML:
         content.to_pandas().to_xml(out, index=False, parser="etree")
-    
+
     elif format == OutputFormats.ARROW_IPC:
-        with content.to_arrow_recordbatch() as batches:
+        with content.to_arrow_recordbatch(content.chunk_size) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_file(sink, batches.schema) as writer:
                     for batch in batches:
                         writer.write(batch)
 
     elif format == OutputFormats.ARROW_STREAM:
-        with content.to_arrow_recordbatch() as batches:
+        with content.to_arrow_recordbatch(content.chunk_size) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_stream(sink, batches.schema) as writer:
                     for batch in batches:
