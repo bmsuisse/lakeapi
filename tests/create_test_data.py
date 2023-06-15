@@ -73,7 +73,9 @@ if __name__ == "__main__":
     )
 
     fruits_partition = df_fruits.copy()
-
+    fruits_partition["my_empty_col"] = pd.Series(
+        data=[None for _ in range(0, fruits_partition.shape[0])], dtype="string"
+    )
     fruits_partition["fruits_partition"] = fruits_partition["fruits"]
     fruits_partition["cars_md5_prefix_2"] = [
         md5(val.encode("UTF-8")).hexdigest()[:2] for val in fruits_partition["cars"]
