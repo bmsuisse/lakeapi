@@ -221,6 +221,10 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - Easily expose entire folders by using a "\*" wildcard in both the name and the datasource.uri config, see example in the config above
 - Good test coverage
 
+## Further projects
+
+- [lakeapi2sql](https://github.com/bmsuisse/lakeapi2sql) Allows you to read from lake api and write to MS SQL Server
+
 ## Work in progress
 
 Please note that this is a work in progress, changes will be made and things may break. Especially at this early stage.
