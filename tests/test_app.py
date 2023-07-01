@@ -255,6 +255,18 @@ def test_fruits_in():
         assert len(response.json()) == 4
 
 
+
+def test_fruits_in_zero():
+    for e in engines:
+        response = client.post(
+            f"/api/v1/test/fruits?limit=1000",
+            json={"A_in": [0, 9]},
+            auth=auth,
+        )
+        assert response.status_code == 200
+        assert len(response.json()) == 2
+
+
 def test_fruits_combi():
     for e in engines:
         response = client.post(
