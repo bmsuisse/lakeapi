@@ -252,7 +252,19 @@ def test_fruits_in():
             auth=auth,
         )
         assert response.status_code == 200
-        assert len(response.json()) == 3
+        assert len(response.json()) == 4
+
+
+
+def test_fruits_in_zero():
+    for e in engines:
+        response = client.post(
+            f"/api/v1/test/fruits?limit=1000",
+            json={"A_in": [0, 9]},
+            auth=auth,
+        )
+        assert response.status_code == 200
+        assert len(response.json()) == 2
 
 
 def test_fruits_combi():
@@ -269,6 +281,39 @@ def test_fruits_combi():
                 "fruits": "banana",
                 "B": 4,
                 "cars": "audi",
+            }
+        ]
+
+def test_fruits_combi_int():
+    for e in engines:
+
+        response = client.post(
+            f"/api/v1/test/fruits?limit=1000",
+            json={"combiint": [{"A": 0, "cars": "lamborghini", "B": 5}]},
+            auth=auth,  
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 0,
+                "fruits": "apple",
+                "B": 5,
+                "cars": "lamborghini",
+            }
+        ]
+
+        response = client.post(
+            f"/api/v1/test/fruits?limit=1000",
+            json={"combiint": [{"A": 1, "cars": "beetle", "B": 5}]},
+            auth=auth,  
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 1,
+                "fruits": "banana",
+                "B": 5,
+                "cars": "beetle",
             }
         ]
 

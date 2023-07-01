@@ -23,6 +23,10 @@ tables:
         operators:
           - "="
           - in
+      - name: A
+        operators:
+          - "="
+          - in
       - name: pk
         combi:
           - fruits
@@ -31,6 +35,11 @@ tables:
         combi:
           - fruits
           - cars
+      - name: combiint
+        combi:
+          - A
+          - cars
+          - B
     datasource:
       in_memory: true
       uri: delta/fruits
