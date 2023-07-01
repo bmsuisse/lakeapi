@@ -31,6 +31,10 @@ tables:
         combi:
           - fruits
           - cars
+      - name: combiint
+        combi:
+          - A
+          - cars
     datasource:
       in_memory: true
       uri: delta/fruits
