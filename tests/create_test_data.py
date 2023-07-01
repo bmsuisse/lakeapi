@@ -44,10 +44,10 @@ if __name__ == "__main__":
 
     df_fruits = store_df_as_delta(
         {
-            "A": [1, 2, 3, 4, 5, 9, 0],
-            "fruits": ["banana", "banana", "apple", "apple", "banana", "ananas", "apple"],
-            "B": [5, 4, 3, 2, 1, 9, 0],
-            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "fiat", "lamborghini"],
+            "A": [1, 2, 3, 4, 5, 0, 9],
+            "fruits": ["banana", "banana", "apple", "apple", "banana", "apple", "ananas"],
+            "B": [5, 4, 3, 2, 1, 5, 9],
+            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "lamborghini", "fiat"],
         },
         "delta/fruits",
     )
