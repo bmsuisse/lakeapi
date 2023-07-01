@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
-import time
-from datetime import datetime
 import sys
 import pyarrow as pa
 import polars as pl
@@ -45,3 +43,19 @@ def test_data_xml():
         response = client.get(f"/api/v1/test/fruits?limit=1&format=xml&cars=audi&%24engine={e}", auth=auth)
         assert response.status_code == 200
         assert response.text.startswith("<")
+
+
+def test_data_arrow_stream():
+    for e in engines:
+        # csv 4 excel is a really ... strange... format
+        response = client.get(f"/api/v1/test/fruits?limit=1&format=arrow-stream&cars=audi&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        import tempfile
+
+        temp_fn = tempfile.mktemp()
+        with open(temp_fn, "wb") as f:
+            f.write(response.content)
+        with pa.OSFile(temp_fn, "rb") as fl:
+            with pa.ipc.open_stream(fl) as reader:
+                df = reader.read_pandas()
+                assert df["A"][0] == 2

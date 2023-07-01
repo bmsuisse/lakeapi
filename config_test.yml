@@ -92,6 +92,7 @@ tables:
         - name: fruits
         - name: B
         - name: cars
+        - name: my_empty_col
 
   - name: fruits_partition_mod
     tag: test
@@ -256,6 +257,16 @@ tables:
       - post
     datasource:
       uri: parquet/fake.parquet
+      file_type: parquet
+
+  - name: fake_parquet_ns
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: parquet/fake_ns.parquet
       file_type: parquet
 
   - name: fake_duckdb

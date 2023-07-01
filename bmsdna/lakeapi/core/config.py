@@ -1,14 +1,11 @@
-import ast
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import (
     Any,
-    Awaitable,
     Callable,
     Dict,
-    Iterable,
     List,
     Literal,
     Optional,
@@ -42,6 +39,7 @@ class BasicConfig:
     data_path: str
     min_search_length: int
     default_engine: Engines
+    default_chunk_size: int
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
 
 
@@ -52,6 +50,7 @@ def get_default_config():
         data_path=os.environ.get("DATA_PATH", "data"),
         min_search_length=3,
         default_engine="duckdb",
+        default_chunk_size=10000,
         prepare_sql_db_hook=None,
     )
 
@@ -116,6 +115,7 @@ class Config:
     allow_get_all_pages: Optional[bool] = False
     search: Optional[List[SearchConfig]] = None
     engine: Optional[Engines] = None
+    chunk_size: Optional[int] = None
 
     def __post_init__(self):
         self.version_str = (
@@ -202,6 +202,7 @@ class Config:
                                 tag=tag,
                                 version=version,
                                 engine=config.get("engine", None),
+                                chunk_size=config.get("chunk_size", None),
                                 api_method=api_method,
                                 search=search_config,
                                 params=new_params,  # type: ignore
@@ -232,6 +233,7 @@ class Config:
                     search=search_config,
                     api_method=api_method,
                     engine=config.get("engine", None),
+                    chunk_size=config.get("chunk_size", None),
                     params=new_params,  # type: ignore
                     allow_get_all_pages=config.get("allow_get_all_pages", False),
                     datasource=datasource_obj,

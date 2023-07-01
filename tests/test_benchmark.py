@@ -4,14 +4,9 @@ import sys
 sys.path.append(".")
 from .utils import get_app
 
-from datetime import datetime
-import timeit
 import duckdb
-from datetime import datetime
 import pandas as pd
 import pytest
-import time
-import os
 
 client = TestClient(get_app())
 

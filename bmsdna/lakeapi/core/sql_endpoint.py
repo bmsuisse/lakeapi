@@ -1,4 +1,4 @@
-from typing import Any, Optional, Callable, Union
+from typing import Optional, Union
 import duckdb
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
 from bmsdna.lakeapi.context.df_base import ExecutionContext
@@ -21,7 +21,7 @@ def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Con
 def get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
     global sql_contexts
     if not engine in sql_contexts:
-        sql_contexts[engine] = get_context_by_engine(engine)
+        sql_contexts[engine] = get_context_by_engine(engine, basic_config.default_chunk_size)
         init_duck_con(sql_contexts[engine], basic_config, configs)
         if basic_config.prepare_sql_db_hook is not None:
             basic_config.prepare_sql_db_hook(sql_contexts[engine])

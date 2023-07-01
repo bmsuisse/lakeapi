@@ -15,16 +15,23 @@ import pypika
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
+from uuid import uuid4
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
+
+
+def _get_temp_table_name():
+    return "temp_" + str(uuid4()).replace("-", "")
+
 
 class DuckDBResultData(ResultData):
     def __init__(
         self,
         original_sql: Union[pypika.queries.QueryBuilder, str],
         con: duckdb.DuckDBPyConnection,
+        chunk_size: int,
     ) -> None:
-        super().__init__()
+        super().__init__(chunk_size=chunk_size)
         self.original_sql = original_sql
         self.con = con
         self._arrow_schema = None
@@ -63,28 +70,33 @@ class DuckDBResultData(ResultData):
         if not ENABLE_COPY_TO:
             return super().write_parquet(file_name)
         query = get_sql(self.original_sql)
-        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000)"
+        uuidstr = _get_temp_table_name()
+        # temp table required because of https://github.com/duckdb/duckdb/issues/7616
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_nd_json(file_name)
         query = get_sql(self.original_sql)
-        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON)"
+        uuidstr = _get_temp_table_name()
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
         query = get_sql(self.original_sql)
-        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True)"
+        uuidstr = _get_temp_table_name()
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
     def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
         query = get_sql(self.original_sql)
-        full_query = f"COPY ({query}) TO '{file_name}' (FORMAT JSON, Array True)"
+        uuidstr = _get_temp_table_name()
+        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr})  TO '{file_name}' (FORMAT JSON, Array True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
 
 
@@ -118,8 +130,8 @@ class Match25Term(pypika.terms.Term):
 
 
 class DuckDbExecutionContextBase(ExecutionContext):
-    def __init__(self, con: duckdb.DuckDBPyConnection):
-        super().__init__()
+    def __init__(self, con: duckdb.DuckDBPyConnection, chunk_size: int):
+        super().__init__(chunk_size=chunk_size)
         self.con = con
         self.res_con = None
         self.persistance_file_name = None
@@ -140,8 +152,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
             self.res_con = duckdb.connect(self.persistance_file_name, read_only=True)
-            return DuckDBResultData(sql, self.res_con)
-        return DuckDBResultData(sql, con=self.con)
+            return DuckDBResultData(sql, self.res_con, self.chunk_size)
+        return DuckDBResultData(sql, con=self.con, chunk_size=self.chunk_size)
 
     def search_score_function(
         self,
@@ -180,7 +192,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
             < modified_date.astimezone(timezone.utc)
             or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
-            < datetime.fromisoformat("2023-05-19T00:00Z")  # before duckdb upgrade
+            < datetime.fromisoformat("2023-05-19").astimezone(timezone.utc)  # before duckdb upgrade
         ):
             persistance_file_name_temp = persistance_file_name + "_temp"
             if os.path.exists(persistance_file_name_temp):
@@ -203,11 +215,18 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def register_dataframe(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):
+        self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
             return
         if file_type == "ndjson":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
+            return
+        if file_type == "parquet":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_parquet('{uri}')")
+            return
+        if file_type == "csv":
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
             return
         return super().register_dataframe(name, uri, file_type, partitions)
 
@@ -225,8 +244,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
 
 class DuckDbExecutionContext(DuckDbExecutionContextBase):
-    def __init__(self):
-        super().__init__(duckdb.connect())
+    def __init__(self, chunk_size: int):
+        super().__init__(duckdb.connect(), chunk_size=chunk_size)
 
     def __enter__(self):
         super().__enter__()

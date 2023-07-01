@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
@@ -29,6 +29,10 @@ def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) 
 
 
 class ResultData(ABC):
+    def __init__(self, chunk_size: int) -> None:
+        super().__init__()
+        self.chunk_size = chunk_size
+
     @abstractmethod
     def columns(self) -> List[str]:
         ...
@@ -42,7 +46,7 @@ class ResultData(ABC):
         ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self) -> pa.RecordBatchReader:
+    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader:
         ...
 
     @abstractmethod
@@ -66,7 +70,7 @@ class ResultData(ABC):
     def write_nd_json(self, file_name: str):
         import polars as pl
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
         with open(file_name, mode="wb") as f:
             for batch in batches:
                 t = pl.from_arrow(batch)
@@ -80,7 +84,7 @@ class ResultData(ABC):
     def write_parquet(self, file_name: str):
         import pyarrow.parquet as paparquet
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
 
         with paparquet.ParquetWriter(file_name, batches.schema) as writer:
             for batch in batches:
@@ -90,7 +94,7 @@ class ResultData(ABC):
         import pyarrow.csv as pacsv
         import decimal
 
-        batches = self.to_arrow_recordbatch()
+        batches = self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
             file_name,
             batches.schema,
@@ -101,9 +105,10 @@ class ResultData(ABC):
 
 
 class ExecutionContext(ABC):
-    def __init__(self) -> None:
+    def __init__(self, chunk_size: int) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
+        self.chunk_size = chunk_size
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -119,29 +124,35 @@ class ExecutionContext(ABC):
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ) -> Optional[pa.dataset.Dataset | pa.Table]:
-        if file_type in ["parquet", "ipc", "arrow", "feather", "csv", "orc"]:
-            ds = pa.dataset.dataset(uri, format=file_type)
-        elif file_type in ["ndjson", "json"]:
-            import pandas
+        match file_type:
+            case "parquet":
+                import pyarrow.dataset as ds
 
-            pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
+                return pa.dataset.dataset(
+                    uri, format=ds.ParquetFileFormat(read_options={"coerce_int96_timestamp_unit": "us"})
+                )
+            case "ipc" | "arrow" | "feather" | "csv" | "orc":
+                return pa.dataset.dataset(uri, format=file_type)
+            case "ndjson" | "json":
+                import pandas
 
-            return pyarrow.Table.from_pandas(pd)
-        elif file_type == "avro":
-            import polars as pl
+                pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
 
-            pd = pl.read_avro(uri).to_arrow()
-            return pd
-        elif file_type == "delta":
-            dt = DeltaTable(
-                uri,
-            )
+                return pyarrow.Table.from_pandas(pd)
+            case "avro":
+                import polars as pl
 
-            ds = dt.to_pyarrow_dataset(partitions=partitions)
-
-        else:
-            raise Exception(f"Not supported file type {file_type}")
-        return ds
+                pd = pl.read_avro(uri).to_arrow()
+                return pd
+            case "delta":
+                dt = DeltaTable(
+                    uri,
+                )
+                return dt.to_pyarrow_dataset(
+                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                )
+            case _:
+                raise Exception(f"Not supported file type {file_type}")
 
     @abstractmethod
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):

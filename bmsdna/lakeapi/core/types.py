@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Any, List, Literal, cast
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
-from typing import Type, Optional, TYPE_CHECKING
+from typing import Type, Optional
 from typing_extensions import TypedDict
 from polars.datatypes.convert import DataTypeMappings
 from pydantic import BaseModel
@@ -109,6 +109,7 @@ class MetadataSchemaFieldType(BaseModel):
 class MetadataSchemaField(BaseModel):
     name: str
     type: MetadataSchemaFieldType
+    max_str_length: Optional[int] = None
 
 
 @dataclass

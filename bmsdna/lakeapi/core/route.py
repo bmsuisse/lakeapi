@@ -1,4 +1,3 @@
-import inspect
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
@@ -19,16 +18,16 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
 
     from bmsdna.lakeapi.core.endpoint import (
         get_response_model,
-        create_detailed_meta_endpoint,
         create_config_endpoint,
     )
+    from bmsdna.lakeapi.core.detail_endpoint import create_detailed_meta_endpoint
     from bmsdna.lakeapi.core.sql_endpoint import create_sql_endpoint
 
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
 
-    with DuckDbExecutionContext() as context:
+    with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
         for config in configs:
             methods = (
                 cast(list[Literal["get", "post"]], [config.api_method])
@@ -106,7 +105,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         config.version_str, config.tag, config.name, config.datasource, context, basic_config
                     )
                     if realdataframe.file_exists():
-                        with get_context_by_engine(basic_config.default_engine) as ctx:
+                        with get_context_by_engine(
+                            basic_config.default_engine, basic_config.default_chunk_size
+                        ) as ctx:
                             ctx.init_search(realdataframe.tablename, config.search)
 
         return router

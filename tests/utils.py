@@ -1,6 +1,5 @@
 from fastapi import Depends, FastAPI, Request
 import dataclasses
-import os
 from faker import Faker
 import random
 

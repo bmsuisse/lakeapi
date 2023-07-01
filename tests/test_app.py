@@ -1,7 +1,5 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
-import time
-from datetime import datetime
 import sys
 import pyarrow as pa
 import polars as pl
@@ -9,7 +7,6 @@ import pytest
 import pandas as pd
 from urllib.parse import quote
 from httpx._types import RequestData
-from typing import cast
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -356,6 +353,13 @@ def test_fake_parquet():
         assert len(response.json()) == 10
 
 
+def test_fake_parquet_ns():
+    for e in engines:
+        response = client.get(f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}", auth=auth)
+        assert response.status_code == 200
+        assert len(response.json()) == 10
+
+
 def test_fake_csv():
     for e in engines:
         response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
@@ -412,6 +416,16 @@ def test_all_metadata():
     assert len(jsd["parameters"]) == 2
 
 
+def test_metadata_no_hidden():
+    response = client.get(f"/api/v1/test/fruits_partition/metadata_detail", auth=auth)
+    assert response.status_code == 200
+    jsd = response.json()
+    prm_names = [p["name"] for p in jsd["parameters"]]
+    assert "cars_md5_prefix_2" not in prm_names
+    field_names = [f["name"] for f in jsd["data_schema"]]
+    assert "cars_md5_prefix_2" not in field_names
+
+
 def test_auth_metadata():
     response = client.get(f"/metadata")
     assert response.status_code == 401
@@ -427,27 +441,13 @@ def test_data_partition():
             auth=auth,
         )
         assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+        assert response.json() == [{"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "my_empty_col": None}]
         response = client.get(
             f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
             auth=auth,
         )
         assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            }
-        ]
+        assert response.json() == [{"A": 9, "fruits": "ananas", "B": 9, "cars": "fiat", "my_empty_col": None}]
 
 
 def test_data_partition_mod():
