@@ -237,13 +237,14 @@ async def concat_expr(
 async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
+        logger.info(f"key = {ck}, value = {cv}, columns = {columns}")
         if (columns and not ck in columns) and not ck in prmdef.combi:
             pass
         else:
             if inner_expr is None:
-                inner_expr = pypika.Field(ck) == cv if cv else pypika.Field(ck).isnull()
+                inner_expr = pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull()
             else:
-                inner_expr = inner_expr & (pypika.Field(ck) == cv if cv else pypika.Field(ck).isnull())
+                inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
     return inner_expr
 
 

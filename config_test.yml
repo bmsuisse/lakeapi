@@ -35,6 +35,7 @@ tables:
         combi:
           - A
           - cars
+          - B
     datasource:
       in_memory: true
       uri: delta/fruits
