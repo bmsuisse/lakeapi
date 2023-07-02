@@ -27,6 +27,7 @@ def naive_json_1(res: ds.Dataset, fn: str):  # This works, no matter how often e
                 f.write(json.dumps(i, default=str))
         f.write("]")
 
+
 if os.path.exists("out"):
     shutil.rmtree("out")
 os.makedirs("out", exist_ok=True)
@@ -34,8 +35,9 @@ i = 0
 while i < 100:
     print(f"{i} run")
     i += 1
-  
+
     import pyarrow.fs as fs
+
     dt = deltalake.DeltaTable(
         "tests/data/delta/fake",
     )
@@ -45,5 +47,3 @@ while i < 100:
     rss = process.memory_info().rss
     print(f"before Naive impl: NR Threads: {count}. RAM: {rss/1000/1000} MB")
     naive_json_1(dss, f"out/{str(uuid4())}.json")
-
-        

@@ -3,8 +3,6 @@ from typing import Any, List, Literal, cast
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 from typing import Type, Optional
-from typing_extensions import TypedDict
-from polars.datatypes.convert import DataTypeMappings
 from pydantic import BaseModel
 
 

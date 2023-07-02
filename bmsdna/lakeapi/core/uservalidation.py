@@ -2,7 +2,6 @@ from typing import Sequence
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from bmsdna.lakeapi.core.yaml import get_yaml
 from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS

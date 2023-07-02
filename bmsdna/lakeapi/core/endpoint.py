@@ -1,14 +1,9 @@
 from typing import List, Literal, Optional, Type, Union
-from typing_extensions import TypedDict, NotRequired, Required
-import duckdb
-import polars as pl
 import pyarrow as pa
 import pypika
-import pypika.queries as fn
+from deltalake import DeltaTable
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
-from deltalake import DeltaTable, Metadata
-from deltalake.exceptions import DeltaError
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -19,13 +14,12 @@ from fastapi import (
     Request,
 )
 from pydantic import BaseModel
-from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
-from bmsdna.lakeapi.core.dataframe import (
-    Dataframe,
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
+from bmsdna.lakeapi.core.datasource import (
+    Datasource,
     filter_df_based_on_params,
     filter_partitions_based_on_params,
 )
@@ -44,10 +38,10 @@ cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer
 logger = get_logger(__name__)
 
 
-async def get_partitions(dataframe: Dataframe, params: BaseModel, config: Config) -> Optional[list]:
+async def get_partitions(datasource: Datasource, params: BaseModel, config: Config) -> Optional[list]:
     parts = (
         await filter_partitions_based_on_params(
-            DeltaTable(dataframe.uri).metadata(),
+            DeltaTable(datasource.uri).metadata(),
             params.dict(exclude_unset=True) if params else {},
             config.params or [],
         )
@@ -152,14 +146,14 @@ def create_config_endpoint(
         format: Optional[OutputFileType] = "json",
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
     ):  # type: ignore
-        logger.info(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
+        logger.debug(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
         engine = engine or basic_config.default_engine
 
-        logger.info(f"Engine: {engine}")
+        logger.debug(f"Engine: {engine}")
 
         with get_context_by_engine(engine, chunk_size=config.chunk_size or basic_config.default_chunk_size) as context:
-            realdataframe = Dataframe(
+            realdataframe = Datasource(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
             parts = await get_partitions(realdataframe, params, config)
@@ -235,7 +229,7 @@ def create_config_endpoint(
 
                 new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
 
-            logger.info(f"Query: {get_sql(new_query)}")
+            logger.debug(f"Query: {get_sql(new_query)}")
 
             df2 = context.execute_sql(new_query)
 

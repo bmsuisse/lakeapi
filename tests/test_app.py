@@ -255,7 +255,6 @@ def test_fruits_in():
         assert len(response.json()) == 4
 
 
-
 def test_fruits_in_zero():
     for e in engines:
         response = client.post(
@@ -284,13 +283,14 @@ def test_fruits_combi():
             }
         ]
 
+
+
 def test_fruits_combi_int():
     for e in engines:
-
         response = client.post(
             f"/api/v1/test/fruits?limit=1000",
             json={"combiint": [{"A": 0, "cars": "lamborghini", "B": 5}]},
-            auth=auth,  
+            auth=auth,
         )
         assert response.status_code == 200
         assert response.json() == [
@@ -305,7 +305,7 @@ def test_fruits_combi_int():
         response = client.post(
             f"/api/v1/test/fruits?limit=1000",
             json={"combiint": [{"A": 1, "cars": "beetle", "B": 5}]},
-            auth=auth,  
+            auth=auth,
         )
         assert response.status_code == 200
         assert response.json() == [

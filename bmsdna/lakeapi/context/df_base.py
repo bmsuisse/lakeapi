@@ -10,6 +10,7 @@ import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 import pypika.terms
 
+
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -209,7 +210,7 @@ class ExecutionContext(ABC):
 
         return datetime.fromtimestamp(os.path.getmtime(uri), tz=timezone.utc)
 
-    def register_dataframe(
+    def register_datasource(
         self,
         name: str,
         uri: str,

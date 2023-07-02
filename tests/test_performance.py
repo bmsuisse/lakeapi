@@ -1,4 +1,3 @@
-
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import time
@@ -19,12 +18,13 @@ engines = ("duckdb", "polars")
 
 
 def test_async_execution():
-
     # simulate a lot of async requests and guarantee that the execution is under 1 second
 
     async def call_api_1(engine, format):
         start = time.time()
-        response = client.get(f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}", auth=auth
+        )
         end = time.time()
         assert response.status_code == 200
 
@@ -32,10 +32,12 @@ def test_async_execution():
         print(f"Engine {engine} took {duration} seconds with format {format}")
         assert end - start < 0.75
 
-
     async def call_api_2(engine, format):
         start = time.time()
-        response = client.get(f"/api/v1/test/fruits_partition?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits_partition?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}",
+            auth=auth,
+        )
         end = time.time()
         assert response.status_code == 200
 
@@ -45,7 +47,10 @@ def test_async_execution():
 
     async def call_api_3(engine, format):
         start = time.time()
-        response = client.get(f"/api/v1/test/fruits_sortby_desc?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits_sortby_desc?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}",
+            auth=auth,
+        )
         end = time.time()
         assert response.status_code == 200
 
@@ -55,7 +60,10 @@ def test_async_execution():
 
     async def call_api_4(engine, format):
         start = time.time()
-        response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits_sortby_asc?limit=10000&format=json&cars=audi&%24engine={engine}&format={format}",
+            auth=auth,
+        )
         end = time.time()
         assert response.status_code == 200
 
