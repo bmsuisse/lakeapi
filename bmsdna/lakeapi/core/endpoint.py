@@ -1,6 +1,7 @@
 from typing import List, Literal, Optional, Type, Union
 import pyarrow as pa
 import pypika
+import pypika.functions as fn
 from deltalake import DeltaTable
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
