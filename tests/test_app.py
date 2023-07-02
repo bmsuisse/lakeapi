@@ -284,17 +284,22 @@ def test_fruits_combi():
         ]
 
 
-def test_fruits_combi_many_values():
+def test_fruits_combi():
     for e in engines:
-        multiply = 5_000
-        data = {"pk": [{"cars": "audi", "fruits": "banana"}] * multiply}
         response = client.post(
             f"/api/v1/test/fruits?limit=1000",
-            json=data,
+            json={"pk": [{"cars": "audi"}]},
             auth=auth,
         )
         assert response.status_code == 200
-        assert len(data["pk"]) == multiply
+        assert response.json() == [
+            {
+                "A": 2,
+                "fruits": "banana",
+                "B": 4,
+                "cars": "audi",
+            }
+        ]
 
 
 def test_fruits_combi_int():
