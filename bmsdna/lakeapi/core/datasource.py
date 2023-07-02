@@ -246,8 +246,10 @@ async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
                 inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
     return inner_expr
 
+
 def flatten(l):
     return [item for sublist in l for item in sublist]
+
 
 @cache
 async def filter_df_based_on_params(
@@ -273,12 +275,11 @@ async def filter_df_based_on_params(
             null_string = "###%$**###"
             combi_params = [c for c in prmdef.combi]
             search_keys = [(",".join([str(v.get(c, null_string)) for c in combi_params])) for v in value]
-            concats = flatten(list(zip([fn.Field(c) for c in combi_params], [","]*len(combi_params))))[:-1]
+            concats = flatten(list(zip([fn.Field(c) for c in combi_params], [","] * len(combi_params))))[:-1]
             expr = F.Concat(*concats).as_("__combi_field_search").isin(search_keys)
-            
+
             if expr is not None:
                 exprs.append(expr)
-
 
         elif columns and not colname in columns:
             pass
