@@ -35,9 +35,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 else config.api_method
             )
             try:
-                from bmsdna.lakeapi.core.dataframe import Dataframe
+                from bmsdna.lakeapi.core.datasource import Datasource
 
-                realdataframe = Dataframe(
+                realdataframe = Datasource(
                     config.version_str, config.tag, config.name, config.datasource, context, basic_config
                 )
                 if not realdataframe.file_exists():
@@ -99,9 +99,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
         def _persist_search_endpoints() -> None:
             for config in configs:
                 if config.search:
-                    from bmsdna.lakeapi.core.dataframe import Dataframe
+                    from bmsdna.lakeapi.core.datasource import Datasource
 
-                    realdataframe = Dataframe(
+                    realdataframe = Datasource(
                         config.version_str, config.tag, config.name, config.datasource, context, basic_config
                     )
                     if realdataframe.file_exists():

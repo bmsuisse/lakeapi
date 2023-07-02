@@ -1,19 +1,10 @@
 from typing import Optional, cast
-from typing_extensions import TypedDict, NotRequired, Required
-import duckdb
-import polars as pl
 import pyarrow as pa
 import pypika
 import pypika.queries as fn
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
 from deltalake import DeltaTable, Metadata
-from deltalake.exceptions import DeltaError
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
-    Depends,
-    Header,
     HTTPException,
     Query,
     Request,
@@ -24,22 +15,9 @@ from pypika.queries import QueryBuilder
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
-from bmsdna.lakeapi.core.dataframe import (
-    Dataframe,
-    filter_df_based_on_params,
-    filter_partitions_based_on_params,
-)
-from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
+from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
-from bmsdna.lakeapi.core.response import create_response
-from bmsdna.lakeapi.core.types import (
-    OutputFileType,
-    Engines,
-)
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
-
-
 from bmsdna.lakeapi.core.types import MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
 
 from typing import Optional
@@ -80,7 +58,7 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
         with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
-            realdataframe = Dataframe(
+            realdataframe = Datasource(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
 

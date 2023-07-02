@@ -1,9 +1,8 @@
 from typing import Optional, Union
-import duckdb
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
-from bmsdna.lakeapi.core.dataframe import Dataframe
+from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.types import OutputFileType
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
@@ -13,9 +12,9 @@ sql_contexts: dict[str, ExecutionContext] = {}
 
 def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
     for cfg in configs:
-        df = Dataframe(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
+        df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
         if df.file_exists():
-            con.register_dataframe(df.tablename, df.uri, df.config.file_type, None)
+            con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
 
 
 def get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):

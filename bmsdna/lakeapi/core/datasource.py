@@ -11,9 +11,7 @@ from typing import (
     cast,
     get_args,
 )
-
 import pyarrow as pa
-import pyarrow.parquet as pq
 import pyarrow.parquet
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
@@ -29,6 +27,7 @@ from pypika.queries import QueryBuilder
 import pypika.queries as fn
 from datetime import datetime
 
+
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
@@ -39,7 +38,7 @@ cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer
 df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
 
 
-class Dataframe:
+class Datasource:
     def __init__(
         self,
         version: str,
@@ -124,7 +123,7 @@ class Dataframe:
                         df_cache.pop(self.tablename)
 
             if self.df is None:
-                self.sql_context.register_dataframe(
+                self.sql_context.register_datasource(
                     self.tablename,
                     self.uri,
                     self.config.file_type,
@@ -237,7 +236,7 @@ async def concat_expr(
 async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
-        logger.info(f"key = {ck}, value = {cv}, columns = {columns}")
+        logger.debug(f"key = {ck}, value = {cv}, columns = {columns}")
         if (columns and not ck in columns) and not ck in prmdef.combi:
             pass
         else:

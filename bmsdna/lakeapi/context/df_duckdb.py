@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 
+
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
 
@@ -212,7 +213,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             os.rename(persistance_file_name_temp, persistance_file_name)
         self.persistance_file_name = persistance_file_name
 
-    def register_dataframe(
+    def register_datasource(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):
         self.modified_dates[name] = self.get_modified_date(uri, file_type)
@@ -228,7 +229,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if file_type == "csv":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
             return
-        return super().register_dataframe(name, uri, file_type, partitions)
+        return super().register_datasource(name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(
