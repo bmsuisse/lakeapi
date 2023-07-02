@@ -247,6 +247,10 @@ async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     return inner_expr
 
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
 @cache
 async def filter_df_based_on_params(
     params: dict[str, Any],
@@ -266,20 +270,16 @@ async def filter_df_based_on_params(
         colname = prmdef.colname or prmdef.name
 
         if prmdef.combi:
-            outer_expr: Optional[pypika.Criterion] = None
-            tasks = []
-            for e in value:
-                task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
-                tasks.append(task)
-            results = await asyncio.gather(*tasks)
-            for inner_expr in results:
-                if inner_expr is not None:
-                    if outer_expr is None:
-                        outer_expr = inner_expr
-                    else:
-                        outer_expr = outer_expr | (inner_expr)
-            if outer_expr is not None:
-                exprs.append(outer_expr)
+            from pypika import functions as F
+
+            null_string = "###%$**###"
+            combi_params = [c for c in prmdef.combi]
+            search_keys = [(",".join([str(v.get(c, null_string)) for c in combi_params])) for v in value]
+            concats = flatten(list(zip([fn.Field(c) for c in combi_params], [","] * len(combi_params))))[:-1]
+            expr = F.Concat(*concats).as_("__combi_field_search").isin(search_keys)
+
+            if expr is not None:
+                exprs.append(expr)
 
         elif columns and not colname in columns:
             pass
