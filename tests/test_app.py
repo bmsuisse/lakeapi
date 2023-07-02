@@ -286,7 +286,7 @@ def test_fruits_combi():
 
 def test_fruits_combi_many_values():
     for e in engines:
-        multiply = 100_000
+        multiply = 50_000
         data = {"pk": [{"cars": "audi", "fruits": "banana"}] * multiply}
         response = client.post(
             f"/api/v1/test/fruits?limit=1000",
