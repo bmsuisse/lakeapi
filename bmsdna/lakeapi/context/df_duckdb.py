@@ -254,6 +254,7 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
         self.con.execute("SET memory_limit='200MB'")
         self.con.execute("SET threads =2")
         self.con.execute("SET enable_object_cache=true")
+        self.con.execute("SET default_null_order='nulls_first'")  # align with polars
         return self
 
     def __exit__(self, *args, **kwargs):
