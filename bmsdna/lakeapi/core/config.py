@@ -232,7 +232,7 @@ class Config:
                 ls = []
                 for it in os.scandir(root_folder):
                     config_sub = config.copy()
-                    config_sub["name"] = name.replace("/*", "/" + it.name)
+                    config_sub["name"] = it.name
                     config_sub["datasource"]["uri"] = config["datasource"]["uri"].replace("/*", "/" + it.name)
                     tbl_name = (config_sub.get("version", 1), config_sub["tag"], config_sub["name"])
                     file_type = config_sub["datasource"].get("file_type", "delta")
