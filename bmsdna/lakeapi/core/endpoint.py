@@ -146,14 +146,15 @@ def create_config_endpoint(
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
         format: Optional[OutputFileType] = "json",
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+        chunk_size: int | None = Query(title="$chunk_size", include_in_schema=False, default=None),
     ):  # type: ignore
         logger.debug(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
         engine = engine or basic_config.default_engine
 
         logger.debug(f"Engine: {engine}")
-
-        with get_context_by_engine(engine, chunk_size=config.chunk_size or basic_config.default_chunk_size) as context:
+        real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
+        with get_context_by_engine(engine, chunk_size=real_chunk_size) as context:
             realdataframe = Datasource(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
