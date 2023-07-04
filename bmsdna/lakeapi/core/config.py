@@ -134,8 +134,8 @@ class Config:
     def _from_dict(cls, config: Dict, basic_config: BasicConfig):
         name = config["name"]
         tag = config["tag"]
-        datasource = config.get("datasource", {})
-        file_type = datasource.get("file_type", "delta")
+        datasource: dict[str, Any] = config.get("datasource", {})
+        file_type: FileTypes = datasource.get("file_type", "delta")
         uri = datasource.get("uri", tag + "/" + name)
         if config.get("config_from_delta"):
             assert file_type == "delta"
@@ -144,13 +144,17 @@ class Config:
                 logger.warning(f"Not a real delta path: {real_path}")
             else:
                 import deltalake
+                import json
 
-                dt = deltalake.DeltaTable(real_path)
-                cfg = dt.metadata().configuration.get("lakeapi.config", {})
-                config = config | cfg  # simple merge. in that case we expect config to be in delta mainly
-                datasource = config.get(
-                    "datasource", {"uri": uri, "file_type": file_type}
-                )  # get data source again, could have select, columns etc
+                try:
+                    dt = deltalake.DeltaTable(real_path)
+                    cfg = json.loads(dt.metadata().configuration.get("lakeapi.config", "{}"))
+                    config = config | cfg  # simple merge. in that case we expect config to be in delta mainly
+                    datasource = config.get(
+                        "datasource", {"uri": uri, "file_type": file_type}
+                    )  # get data source again, could have select, columns etc
+                except json.JSONDecodeError as err:
+                    logger.warning(f"Not correct json: {real_path}\n{err}")
 
         version = config.get("version", 1)
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))

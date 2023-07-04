@@ -58,6 +58,7 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
 
         with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
+            assert config.datasource is not None
             realdataframe = Datasource(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )

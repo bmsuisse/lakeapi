@@ -46,7 +46,7 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
             params.dict(exclude_unset=True) if params else {},
             config.params or [],
         )
-        if config.datasource.file_type == "delta"
+        if not config.datasource or config.datasource.file_type == "delta"
         else None
     )
     return parts
@@ -155,6 +155,7 @@ def create_config_endpoint(
         logger.debug(f"Engine: {engine}")
         real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
         with get_context_by_engine(engine, chunk_size=real_chunk_size) as context:
+            assert config.datasource is not None
             realdataframe = Datasource(
                 config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
