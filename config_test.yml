@@ -371,9 +371,6 @@ tables:
     version: 1
     api_method:
       - get
-    datasource:
-      uri: startest/fruits
-      file_type: delta
 
   - name: complex_fruits
     tag: complexer
