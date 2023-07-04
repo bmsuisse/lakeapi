@@ -378,13 +378,7 @@ tables:
     datasource:
       uri: delta/struct_fruits
       file_type: delta
-    params:
-      - name: fruits
-        operators: ["not in", "in", "contains", "not contains", "<>"]
-      - name: cars
-        operators: ["not in", "in", "contains", "not contains", "<>"]
-      - name: B
-        operators: [">", "<", "<=", ">=", "between", "not between"]
+    config_from_delta: true
 
 # --------------------------------
 # User / Password

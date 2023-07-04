@@ -7,6 +7,7 @@ from deltalake import write_deltalake
 import shutil
 import pandas as pd
 from hashlib import md5
+import json
 
 try:
     from .utils import create_rows_faker
@@ -28,12 +29,28 @@ def delete_folder(path):
 
 
 def store_df_as_delta(
-    data: dict[str, list[Any]] | pd.DataFrame, data_path: str, partition_by: Optional[list[str]] = None
+    data: dict[str, list[Any]] | pd.DataFrame,
+    data_path: str,
+    partition_by: Optional[list[str]] = None,
+    *,
+    configuration: Optional[dict[str, str | dict | list]] = None,
 ):
     dfp = data if isinstance(data, pd.DataFrame) else pl.DataFrame(data).to_pandas()
     delta_path = "tests/data/" + data_path
     delete_folder(delta_path)
-    write_deltalake(delta_path, dfp, mode="overwrite", partition_by=partition_by)
+
+    def _str_or_json(v: str | dict | list):
+        if isinstance(v, str):
+            return v
+        return json.dumps(v)
+
+    write_deltalake(
+        delta_path,
+        dfp,
+        mode="overwrite",
+        partition_by=partition_by,
+        configuration={k: _str_or_json(v) for k, v in configuration.items()} if configuration is not None else None,
+    )
     return dfp
 
 
@@ -70,6 +87,15 @@ if __name__ == "__main__":
             "vitamines": [["A", "B12"], [], ["C", "B12"], ["D", "B12", "C"], ["C"], ["E", "B12"]],
         },
         "delta/struct_fruits",
+        configuration={
+            "lakeapi.config": {
+                "params": [
+                    {"name": "fruits", "operators": ["not in", "in", "contains", "not contains", "<>"]},
+                    {"name": "cars", "operators": ["not in", "in", "contains", "not contains", "<>"]},
+                    {"name": "B", "operators": [">", "<", "<=", ">=", "between", "not between"]},
+                ]
+            }
+        },
     )
 
     fruits_partition = df_fruits.copy()
