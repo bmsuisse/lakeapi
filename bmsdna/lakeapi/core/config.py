@@ -104,7 +104,8 @@ class DatasourceConfig:
 class Config:
     name: str
     tag: str
-    datasource: DatasourceConfig
+    datasource: Optional[DatasourceConfig] = None
+    config_from_delta: Optional[bool] = False
     version: Optional[int] = 1
     api_method: Union[Literal["get", "post"], List[Literal["get", "post"]]] = "get"
     params: Optional[List[Union[Param, str]]] = None
@@ -130,18 +131,35 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def from_dict(
-        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]
-    ) -> List["Config"]:
+    def _from_dict(cls, config: Dict, basic_config: BasicConfig):
         name = config["name"]
         tag = config["tag"]
+        datasource: dict[str, Any] = config.get("datasource", {})
+        file_type: FileTypes = datasource.get("file_type", "delta")
+        uri = datasource.get("uri", tag + "/" + name)
+        if config.get("config_from_delta"):
+            assert file_type == "delta"
+            real_path = os.path.join(basic_config.data_path, uri)
+            if not os.path.exists(os.path.join(real_path, "_delta_log")):
+                logger.warning(f"Not a real delta path: {real_path}")
+            else:
+                import deltalake
+                import json
+
+                try:
+                    dt = deltalake.DeltaTable(real_path)
+                    cfg = json.loads(dt.metadata().configuration.get("lakeapi.config", "{}"))
+                    config = config | cfg  # simple merge. in that case we expect config to be in delta mainly
+                    datasource = config.get(
+                        "datasource", {"uri": uri, "file_type": file_type}
+                    )  # get data source again, could have select, columns etc
+                except json.JSONDecodeError as err:
+                    logger.warning(f"Not correct json: {real_path}\n{err}")
+
         version = config.get("version", 1)
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))
         params = config.get("params")
-        datasource = config["datasource"]
-        uri = datasource["uri"]
         assert isinstance(uri, str)
-        file_type = cast(FileTypes, datasource.get("file_type", "delta") if datasource else "delta")
         columns = datasource.get("columns") if datasource else None
         select = datasource.get("select") if datasource else None
         exclude = datasource.get("exclude") if datasource else None
@@ -169,7 +187,41 @@ class Config:
         if select:
             select = [Column(name=c.get("name"), alias=c.get("alias")) for c in select]
 
+        datasource_obj = DatasourceConfig(
+            uri=uri,
+            file_type=file_type,
+            select=select,
+            exclude=exclude,
+            in_memory=datasource.get("in_memory", False),
+            sortby=sortby,
+            filters=None,
+            cache_expiration_time_seconds=cache_expiration_time_seconds,
+        )
+        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
+
+        return cls(
+            name=name,
+            tag=tag,
+            version=version,
+            search=search_config,
+            api_method=api_method,
+            engine=config.get("engine", None),
+            chunk_size=config.get("chunk_size", None),
+            params=new_params,  # type: ignore
+            allow_get_all_pages=config.get("allow_get_all_pages", False),
+            datasource=datasource_obj,
+            cache_expiration_time_seconds=cache_expiration_time_seconds,
+        )
+
+    @classmethod
+    def from_dict(
+        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]
+    ) -> List["Config"]:
+        name = config["name"]
+        tag = config["tag"]
+
         if name == "*":
+            uri = config.get("datasource", {}).get("uri", tag + "/*")
             assert uri.endswith("/*")
             folder = uri.rstrip("/*")
             root_folder = os.path.join(basic_config.data_path, folder)
@@ -179,65 +231,19 @@ class Config:
             else:
                 ls = []
                 for it in os.scandir(root_folder):
-                    res_name = (version, tag, it.name)
-                    if res_name not in table_names and (
+                    config_sub = config.copy()
+                    config_sub["name"] = it.name
+                    config_sub["datasource"]["uri"] = config["datasource"]["uri"].replace("/*", "/" + it.name)
+                    tbl_name = (config_sub.get("version", 1), config_sub["tag"], config_sub["name"])
+                    file_type = config_sub["datasource"].get("file_type", "delta")
+                    res_name = config_sub
+                    if tbl_name not in table_names and (
                         (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
                     ):
-                        datasource_obj = DatasourceConfig(
-                            uri=folder + "/" + it.name,
-                            file_type=file_type,
-                            select=select,
-                            exclude=exclude,
-                            in_memory=datasource.get("in_memory", False),
-                            sortby=sortby,
-                            filters=None,
-                            cache_expiration_time_seconds=cache_expiration_time_seconds,
-                        )
-                        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
-                        ls.append(
-                            cls(
-                                name=it.name,
-                                tag=tag,
-                                version=version,
-                                engine=config.get("engine", None),
-                                chunk_size=config.get("chunk_size", None),
-                                api_method=api_method,
-                                search=search_config,
-                                params=new_params,  # type: ignore
-                                allow_get_all_pages=config.get("allow_get_all_pages", False),
-                                datasource=datasource_obj,
-                                cache_expiration_time_seconds=cache_expiration_time_seconds,
-                            )
-                        )
+                        ls.append(cls._from_dict(config_sub, basic_config))
             return ls
         else:
-            datasource_obj = DatasourceConfig(
-                uri=uri,
-                file_type=file_type,
-                select=select,
-                exclude=exclude,
-                in_memory=datasource.get("in_memory", False),
-                sortby=sortby,
-                filters=None,
-                cache_expiration_time_seconds=cache_expiration_time_seconds,
-            )
-            new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
-
-            return [
-                cls(
-                    name=name,
-                    tag=tag,
-                    version=version,
-                    search=search_config,
-                    api_method=api_method,
-                    engine=config.get("engine", None),
-                    chunk_size=config.get("chunk_size", None),
-                    params=new_params,  # type: ignore
-                    allow_get_all_pages=config.get("allow_get_all_pages", False),
-                    datasource=datasource_obj,
-                    cache_expiration_time_seconds=cache_expiration_time_seconds,
-                )
-            ]
+            return [cls._from_dict(config, basic_config)]
 
     async def to_dict(self) -> dict:
         return self.__dict__

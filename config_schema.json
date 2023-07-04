@@ -19,16 +19,15 @@
     },
     "required": [
         "app",
-        "users",
-        "tables"
+        "tables",
+        "users"
     ],
     "$defs": {
         "Config": {
             "type": "object",
             "required": [
                 "name",
-                "tag",
-                "datasource"
+                "tag"
             ],
             "additionalProperties": false,
             "properties": {
@@ -39,7 +38,20 @@
                     "type": "string"
                 },
                 "datasource": {
-                    "$ref": "#/$defs/DatasourceConfig"
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/DatasourceConfig"
+                        }
+                    ]
+                },
+                "config_from_delta": {
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
                 },
                 "version": {
                     "type": [
