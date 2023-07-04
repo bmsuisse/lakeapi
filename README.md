@@ -219,6 +219,7 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - jsonify_complex parameter to convert structs/lists to json, the client cannot handle structs/lists
 - Metadata endpoints to retrieve data types, string lengths and more
 - Easily expose entire folders by using a "\*" wildcard in both the name and the datasource.uri config, see example in the config above
+- Config in delta table as json, by using the lakeapi.config Table property. Example in the tests. This allows to have the config for the lakeapi along with your data
 - Good test coverage
 
 ## Work in progress
