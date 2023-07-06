@@ -94,6 +94,26 @@ dev = ["cogapp", "pre-commit", "pytest", "wheel"]
 tests = ["pytest"]
 
 [[package]]
+name = "arrow-odbc"
+version = "1.1.1"
+description = "Read the data of an ODBC data source as sequence of Apache Arrow record batches."
+optional = false
+python-versions = "*"
+files = [
+    {file = "arrow_odbc-1.1.1-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:4cb32172a583d09ac3e4f49c96ad72ea269efe20326bf96d9ce41fd386e6a35e"},
+    {file = "arrow_odbc-1.1.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fcd4880e43bd9ccd09c26a8710c6c8fa2b61870fb3df9f53d735506f13d5edae"},
+    {file = "arrow_odbc-1.1.1-py3-none-win_amd64.whl", hash = "sha256:bf9d6f4a5021e7594b23adbf2339da3ba06ad058874e576c77733fa2f90e68d1"},
+    {file = "arrow_odbc-1.1.1.tar.gz", hash = "sha256:a69f2199f0acaf16b6efcbc5683602940ae7d0bbf1e8283ff62dc285f17b9e8b"},
+]
+
+[package.dependencies]
+cffi = "*"
+pyarrow = "*"
+
+[package.extras]
+test = ["pytest (<8.0.0)"]
+
+[[package]]
 name = "attrs"
 version = "23.1.0"
 description = "Classes Without Boilerplate"
@@ -174,7 +194,7 @@ files = [
 name = "cffi"
 version = "1.15.1"
 description = "Foreign Function Interface for Python calling C code."
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "cffi-1.15.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:a66d3508133af6e8548451b25058d5812812ec3798c886bf38ed24a98216fab2"},
@@ -438,6 +458,7 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "deltalake-0.10.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1aef72679268324e7cc556f03969b92235076b6edcecae7a2f85ac930b5fb9b9"},
+    {file = "deltalake-0.10.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:91e801b78e298946950b07bf0573e4cf012d6259ac294bcac662b6d746f95596"},
     {file = "deltalake-0.10.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:437f8ee9f28a9cd8454e8700c3dd88f5ad33c2ec9a7192356b55b23fee50259c"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f532b3c3dc8437fc26279a296bc576bdf79b167e1d4864847ca7c5ec7b3915b6"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42212ee879735d476772a9c1d1ca3e43ef15893a301796baffe94db3578e98ca"},
@@ -1023,7 +1044,7 @@ typer = ">=0.4.1,<0.10.0"
 name = "pycparser"
 version = "2.21"
 description = "C parser in Python"
-optional = true
+optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
     {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
@@ -1646,4 +1667,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "51d0b51514d07b7dc9c2c1a035827af7ae5391abcec3b614754f348e14d649b9"
+content-hash = "5370079d809d7857d7c9fe49a6a73adaaed7041c08d73ef9a2d0b2319a3b2062"
