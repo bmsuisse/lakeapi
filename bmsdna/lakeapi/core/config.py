@@ -17,7 +17,7 @@ from typing import (
     TYPE_CHECKING,
 )
 from typing_extensions import TypedDict, NotRequired, Required
-
+import copy
 import yaml
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 
@@ -231,7 +231,7 @@ class Config:
             else:
                 ls = []
                 for it in os.scandir(root_folder):
-                    config_sub = config.copy()
+                    config_sub = copy.deepcopy(config)  # important! deepcopy required for subobjects like datasource
                     config_sub["name"] = it.name
                     config_sub["datasource"]["uri"] = config["datasource"]["uri"].replace("/*", "/" + it.name)
                     tbl_name = (config_sub.get("version", 1), config_sub["tag"], config_sub["name"])
