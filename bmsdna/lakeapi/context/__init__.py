@@ -12,5 +12,10 @@ def get_context_by_engine(engine: Engines, chunk_size: int) -> ExecutionContext:
             from bmsdna.lakeapi.context.df_polars import PolarsExecutionContext
 
             return PolarsExecutionContext(chunk_size=chunk_size)
+        case "odbc":
+            from bmsdna.lakeapi.context.df_odbc import ODBCExecutionContext
+
+            return ODBCExecutionContext(chunk_size=chunk_size)
+
         case _:
             raise Exception(f"Unknown engine {engine}")
