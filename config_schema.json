@@ -18,9 +18,9 @@
         }
     },
     "required": [
-        "app",
+        "users",
         "tables",
-        "users"
+        "app"
     ],
     "$defs": {
         "Config": {
@@ -119,7 +119,8 @@
                 "engine": {
                     "enum": [
                         "duckdb",
-                        "polars"
+                        "polars",
+                        "odbc"
                     ]
                 },
                 "chunk_size": {
@@ -149,7 +150,8 @@
                         "avro",
                         "csv",
                         "json",
-                        "ndjson"
+                        "ndjson",
+                        "odbc"
                     ]
                 },
                 "select": {
@@ -175,6 +177,12 @@
                     "items": {
                         "$ref": "#/$defs/Filter"
                     }
+                },
+                "table_name": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
                 },
                 "in_memory": {
                     "type": "boolean"

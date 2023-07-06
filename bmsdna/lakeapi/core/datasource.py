@@ -100,6 +100,8 @@ class Datasource:
 
     @property
     def tablename(self):
+        if self.config.table_name:
+            return self.config.table_name
         if self.version in ["1", "v1"]:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
