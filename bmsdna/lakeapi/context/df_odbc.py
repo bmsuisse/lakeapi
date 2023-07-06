@@ -99,7 +99,6 @@ class ODBCResultData(ResultData):
 class ODBCExecutionContext(ExecutionContext):
     def __init__(self, chunk_size: int):
         super().__init__(chunk_size=chunk_size)
-        self.con = con
         self.res_con = None
         self.datasources = dict()
         self.persistance_file_name = None
@@ -117,7 +116,11 @@ class ODBCExecutionContext(ExecutionContext):
             str,
         ],
     ) -> ODBCResultData:
-        return ODBCResultData(sql, chunk_size=self.chunk_size)
+        # todo: get correct connection string somehow
+        assert len(self.datasources) == 1
+        return ODBCResultData(
+            sql, chunk_size=self.chunk_size, connection_string=self.datasources[next(self.datasources.keys())]
+        )
 
     def json_function(self, term: pypika.terms.Term, assure_string=False):
         raise NotImplementedError(
