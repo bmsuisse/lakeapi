@@ -385,7 +385,7 @@ tables:
     api_method: post
     engine: odbc
     datasource:
-      uri: DAta Source=crhdacedwh003.crhsd.local,1433;owjeoijfewj ; DRIVER={}
+      uri: DAta Source=blubb,1433;owjeoijfewj ; DRIVER={}
       file_type: odbc
       table_name: dbo.storrh
 
