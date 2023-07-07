@@ -37,6 +37,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
             try:
                 from bmsdna.lakeapi.core.datasource import Datasource
 
+                assert config.datasource is not None
                 realdataframe = Datasource(
                     config.version_str, config.tag, config.name, config.datasource, context, basic_config
                 )
@@ -101,6 +102,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 if config.search:
                     from bmsdna.lakeapi.core.datasource import Datasource
 
+                    assert config.datasource is not None
                     realdataframe = Datasource(
                         config.version_str, config.tag, config.name, config.datasource, context, basic_config
                     )

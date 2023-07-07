@@ -12,6 +12,7 @@ sql_contexts: dict[str, ExecutionContext] = {}
 
 def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
     for cfg in configs:
+        assert cfg.datasource is not None
         df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
         if df.file_exists():
             con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
