@@ -144,6 +144,6 @@ class MetadataDetailResult(BaseModel):
     search: Optional[List[Any]] = None
 
 
-MetadataSchemaFieldType.update_forward_refs()
-MetadataSchemaField.update_forward_refs()
-MetadataDetailResult.update_forward_refs()
+MetadataSchemaFieldType.model_rebuild()
+MetadataSchemaField.model_rebuild()
+MetadataDetailResult.model_rebuild()
