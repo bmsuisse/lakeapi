@@ -16,6 +16,7 @@ import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
+from ibis.backends.mssql import Backend
 
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
@@ -46,12 +47,13 @@ class BatchReaderWrap:
 class ODBCResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[QueryBuilder, str],
         connection_string: str,
         chunk_size: int,
     ) -> None:
         super().__init__(chunk_size=chunk_size)
         self.original_sql = original_sql
+        # todo: expand environment variables in connection string
         self.connection_string = connection_string
         self._arrow_schema = None
         self._df = None
@@ -59,7 +61,7 @@ class ODBCResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> QueryBuilder:
         return pypika.Query.from_(self.original_sql)
 
     def arrow_schema(self) -> pa.Schema:
@@ -98,7 +100,7 @@ class ODBCResultData(ResultData):
 
 class ODBCExecutionContext(ExecutionContext):
     def __init__(self, chunk_size: int):
-        super().__init__(chunk_size=chunk_size)
+        super().__init__(chunk_size=chunk_size, backend=)
         self.res_con = None
         self.datasources = dict()
         self.persistance_file_name = None
@@ -112,7 +114,7 @@ class ODBCExecutionContext(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            QueryBuilder,
             str,
         ],
     ) -> ODBCResultData:

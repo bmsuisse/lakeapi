@@ -7,11 +7,7 @@ from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 import duckdb
 import pyarrow.dataset
-import pypika.queries
-import pypika.terms
-import pypika.functions
-import pypika.enums
-import pypika
+from ibis.backends.duckdb import Backend
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -28,7 +24,7 @@ def _get_temp_table_name():
 class DuckDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[QueryBuilder, str],
         con: duckdb.DuckDBPyConnection,
         chunk_size: int,
     ) -> None:
@@ -41,7 +37,7 @@ class DuckDBResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> QueryBuilder:
         return pypika.Query.from_(self.original_sql)
 
     def arrow_schema(self) -> pa.Schema:
@@ -132,7 +128,7 @@ class Match25Term(pypika.terms.Term):
 
 class DuckDbExecutionContextBase(ExecutionContext):
     def __init__(self, con: duckdb.DuckDBPyConnection, chunk_size: int):
-        super().__init__(chunk_size=chunk_size)
+        super().__init__(chunk_size=chunk_size, backend=Backend())
         self.con = con
         self.res_con = None
         self.persistance_file_name = None
@@ -147,7 +143,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            QueryBuilder,
             str,
         ],
     ) -> DuckDBResultData:

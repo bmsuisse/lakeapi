@@ -27,7 +27,7 @@ class PolarsResultData(ResultData):
     def columns(self):
         return self.df.columns
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> QueryBuilder:
         import polars as pl
 
         if not self.registred_df:
@@ -165,7 +165,7 @@ class PolarsExecutionContext(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            QueryBuilder,
             str,
         ],
     ) -> PolarsResultData:

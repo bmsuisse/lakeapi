@@ -9,13 +9,14 @@ import pypika.queries
 import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 import pypika.terms
-
+from bmsdna.lakeapi.query import QueryBuilder
+from ibis.backends.base import BaseBackend
 
 if TYPE_CHECKING:
     import pandas as pd
 
 
-def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) -> str:
+def get_sql(backend: BaseBackend, sql_or_pypika: str | QueryBuilder, limit_zero=False) -> str:
     if limit_zero:
         sql_or_pypika = (
             sql_or_pypika.limit(0)
@@ -24,9 +25,7 @@ def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) 
         )
     if isinstance(sql_or_pypika, str):
         return sql_or_pypika
-    if len(sql_or_pypika._selects) == 0:
-        return sql_or_pypika.select("*").get_sql()
-    return sql_or_pypika.get_sql()
+    return backend.compile(sql_or_pypika)
 
 
 class ResultData(ABC):
@@ -51,7 +50,7 @@ class ResultData(ABC):
         ...
 
     @abstractmethod
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> QueryBuilder:
         ...
 
     def write_json(self, file_name: str):
@@ -106,10 +105,11 @@ class ResultData(ABC):
 
 
 class ExecutionContext(ABC):
-    def __init__(self, chunk_size: int) -> None:
+    def __init__(self, chunk_size: int, backend: BaseBackend) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
         self.chunk_size = chunk_size
+        self.backend = backend
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -222,7 +222,7 @@ class ExecutionContext(ABC):
         self.register_arrow(name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
+    def execute_sql(self, sql: Union[QueryBuilder, str]) -> ResultData:
         ...
 
     @abstractmethod
