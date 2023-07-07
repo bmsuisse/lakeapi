@@ -6,7 +6,7 @@ from bmsdna.lakeapi.context.df_base import ResultData
 from aiocache import Cache, cached
 from aiocache.serializers import PickleSerializer
 from fastapi import Query
-from pydantic import BaseModel, create_model
+from pydantic import ConfigDict, BaseModel, create_model
 from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
@@ -168,8 +168,7 @@ def create_parameter_model(
 
 
 class TypeBaseModel(BaseModel):
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:
