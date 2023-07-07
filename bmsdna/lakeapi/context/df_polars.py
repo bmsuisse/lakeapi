@@ -63,7 +63,7 @@ class PolarsResultData(ResultData):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect(streaming=True)
+            self.df = self.df.collect()
         return self.df.to_pandas()
 
     def to_arrow_table(self):
@@ -87,21 +87,21 @@ class PolarsResultData(ResultData):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect(streaming=True)
+            self.df = self.df.collect()
         self.df.write_parquet(file_name, use_pyarrow=True)
 
     def write_json(self, file_name: str):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect(streaming=True)
+            self.df = self.df.collect()
         self.df.write_json(file_name, pretty=False, row_oriented=True)
 
     def write_nd_json(self, file_name: str):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect(streaming=True)
+            self.df = self.df.collect()
         self.df.write_ndjson(file_name)
 
 
