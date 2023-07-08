@@ -137,9 +137,8 @@ class PolarsExecutionContext(ExecutionContext):
         self.modified_dates[name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
-                from bmsdna.lakeapi.polars_extensions.delta import scan_delta2
 
-                df = pl.scan_delta2(  # type: ignore
+                df = pl.scan_delta(  # type: ignore
                     uri,
                     pyarrow_options={
                         "partitions": partitions,
