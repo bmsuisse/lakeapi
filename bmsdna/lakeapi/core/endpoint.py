@@ -43,7 +43,7 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
     parts = (
         await filter_partitions_based_on_params(
             DeltaTable(datasource.uri).metadata(),
-            params.dict(exclude_unset=True) if params else {},
+            params.model_dump(exclude_unset=True) if params else {},
             config.params or [],
         )
         if not config.datasource or config.datasource.file_type == "delta"
@@ -61,7 +61,7 @@ def remove_search(prm_dict: dict, config: Config):
 
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
-        remove_search(params.dict(exclude_unset=True) if params else {}, config),
+        remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
         columns,
     )
@@ -148,7 +148,7 @@ def create_config_endpoint(
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         chunk_size: int | None = Query(title="$chunk_size", include_in_schema=False, default=None),
     ):  # type: ignore
-        logger.debug(f"{params.dict(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
+        logger.debug(f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
         engine = engine or basic_config.default_engine
 
@@ -172,7 +172,7 @@ def create_config_endpoint(
                 search_dict = {c.name.lower(): c for c in config.search}
                 searches = {
                     k: (v, search_dict[k.lower()])
-                    for k, v in params.dict(exclude_unset=True).items()
+                    for k, v in params.model_dump(exclude_unset=True).items()
                     if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
                 }
 
