@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
-from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
+from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 import pyarrow.dataset
@@ -14,18 +14,45 @@ import pypika.terms
 if TYPE_CHECKING:
     import pandas as pd
 
+FLAVORS = Literal["ansi", "mssql"]
 
-def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) -> str:
+
+def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False, flavor: FLAVORS = "ansi") -> str:
     if limit_zero:
         sql_or_pypika = (
             sql_or_pypika.limit(0)
             if not isinstance(sql_or_pypika, str)
-            else "SELECT * FROM (" + sql_or_pypika + ") s LIMIT 0 "
+            else (  # why not just support limit/offset like everyone else, microsoft?
+                "SELECT * FROM (" + sql_or_pypika + ") s LIMIT 0 "
+                if flavor == "ansi"
+                else "SELECT top 0 * FROM (" + sql_or_pypika + ") s "
+            )
         )
     if isinstance(sql_or_pypika, str):
         return sql_or_pypika
     if len(sql_or_pypika._selects) == 0:
-        return sql_or_pypika.select("*").get_sql()
+        sql_or_pypika = sql_or_pypika.select("*")
+    assert not isinstance(sql_or_pypika, str)
+    if flavor == "mssql" and sql_or_pypika._limit or sql_or_pypika._offset:
+        old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
+        old_offset = sql_or_pypika._offset
+        no_limit = sql_or_pypika.limit(None).offset(None)
+        sql_no_limit = no_limit.get_sql()
+        if old_offset is None:
+            if sql_no_limit.upper().startswith("SELECT"):
+                return "SELECT TOP " + str(old_limit) + sql_no_limit[len("SELECT") :]
+            return f" SELECT TOP {old_limit} * from ({sql_no_limit}) s1"
+        else:
+            assert sql_no_limit.upper().startswith("SELECT")
+            return (
+                sql_no_limit
+                + " OFFSET "
+                + str(old_offset)
+                + " ROWS FETCH NEXT "
+                + str(old_limit or 100000)
+                + " ROWS ONLY"
+            )
+
     return sql_or_pypika.get_sql()
 
 

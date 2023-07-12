@@ -4,7 +4,7 @@ from deltalake import DeltaTable
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData, get_sql
 import arrow_odbc
 import pyarrow.dataset
 import pypika.queries
@@ -55,6 +55,7 @@ class ODBCResultData(ResultData):
         self.connection_string = connection_string
         self._arrow_schema = None
         self._df = None
+        self.flavor: FLAVORS = "mssql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
 
     def columns(self):
         return self.arrow_schema().names
@@ -65,7 +66,7 @@ class ODBCResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
+        query = get_sql(self.original_sql, limit_zero=True, flavor=self.flavor)
         batches = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
@@ -76,7 +77,7 @@ class ODBCResultData(ResultData):
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql)
+            query = get_sql(self.original_sql, flavor=self.flavor)
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
                 query, connection_string=self.connection_string, batch_size=self.chunk_size
             )
@@ -91,7 +92,7 @@ class ODBCResultData(ResultData):
         return self.df
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, flavor=self.flavor)
         res = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
