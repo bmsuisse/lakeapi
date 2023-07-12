@@ -15,9 +15,11 @@ import pypika
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
+from bmsdna.lakeapi.query import QueryBuilder
 from uuid import uuid4
 from ibis.backends.mssql import Backend
 
+sql_backend = Backend()
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
@@ -62,24 +64,28 @@ class ODBCResultData(ResultData):
         return self.arrow_schema().names
 
     def query_builder(self) -> QueryBuilder:
-        return pypika.Query.from_(self.original_sql)
+        assert not isinstance(self.original_sql, str)
+        return self.original_sql
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
-        self._arrow_schema = arrow_odbc.read_arrow_batches_from_odbc(
+        query = get_sql(sql_backend, self.original_sql, limit_zero=True)
+        res = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
-        ).schema
+        )
+        assert res is not None
+        self._arrow_schema = res.schema
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql)
+            query = get_sql(sql_backend, self.original_sql)
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
                 query, connection_string=self.connection_string, batch_size=self.chunk_size
             )
+            assert batch_reader is not None
             self._df = pa.Table.from_batches(batch_reader, batch_reader.schema)
         return self._df
 
@@ -90,17 +96,17 @@ class ODBCResultData(ResultData):
         return self.df
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        query = get_sql(self.original_sql)
-        return BatchReaderWrap(
-            arrow_odbc.read_arrow_batches_from_odbc(
-                query, connection_string=self.connection_string, batch_size=self.chunk_size
-            )
+        query = get_sql(sql_backend, self.original_sql)
+        br = arrow_odbc.read_arrow_batches_from_odbc(
+            query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
+        assert br is not None
+        return BatchReaderWrap(br)
 
 
 class ODBCExecutionContext(ExecutionContext):
     def __init__(self, chunk_size: int):
-        super().__init__(chunk_size=chunk_size, backend=)
+        super().__init__(chunk_size=chunk_size, backend=sql_backend)
         self.res_con = None
         self.datasources = dict()
         self.persistance_file_name = None

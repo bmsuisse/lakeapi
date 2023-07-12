@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 
+from bmsdna.lakeapi.query import QueryBuilder
+
+duck_backend = Backend()
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
@@ -38,19 +41,20 @@ class DuckDBResultData(ResultData):
         return self.arrow_schema().names
 
     def query_builder(self) -> QueryBuilder:
-        return pypika.Query.from_(self.original_sql)
+        assert not isinstance(self.original_sql, str)
+        return self.original_sql
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
+        query = get_sql(duck_backend, self.original_sql, limit_zero=True)
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql)
+            query = get_sql(duck_backend, self.original_sql)
             self._df = self.con.execute(query)
         return self._df
 
@@ -66,7 +70,7 @@ class DuckDBResultData(ResultData):
     def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_parquet(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(duck_backend, self.original_sql)
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000); DROP VIEW {uuidstr}"
@@ -75,7 +79,7 @@ class DuckDBResultData(ResultData):
     def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_nd_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(duck_backend, self.original_sql)
         uuidstr = _get_temp_table_name()
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
@@ -83,7 +87,7 @@ class DuckDBResultData(ResultData):
     def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
-        query = get_sql(self.original_sql)
+        query = get_sql(duck_backend, self.original_sql)
         uuidstr = _get_temp_table_name()
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
@@ -91,7 +95,7 @@ class DuckDBResultData(ResultData):
     def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(duck_backend, self.original_sql)
         uuidstr = _get_temp_table_name()
         full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr})  TO '{file_name}' (FORMAT JSON, Array True); DROP VIEW {uuidstr}"
         self.con.execute(full_query)
