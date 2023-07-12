@@ -66,9 +66,11 @@ class ODBCResultData(ResultData):
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit_zero=True)
-        self._arrow_schema = arrow_odbc.read_arrow_batches_from_odbc(
+        batches = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
-        ).schema
+        )
+        assert batches is not None
+        self._arrow_schema = batches.schema
         return self._arrow_schema
 
     @property
@@ -78,6 +80,7 @@ class ODBCResultData(ResultData):
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
                 query, connection_string=self.connection_string, batch_size=self.chunk_size
             )
+            assert batch_reader is not None
             self._df = pa.Table.from_batches(batch_reader, batch_reader.schema)
         return self._df
 
@@ -89,11 +92,11 @@ class ODBCResultData(ResultData):
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
         query = get_sql(self.original_sql)
-        return BatchReaderWrap(
-            arrow_odbc.read_arrow_batches_from_odbc(
-                query, connection_string=self.connection_string, batch_size=self.chunk_size
-            )
+        res = arrow_odbc.read_arrow_batches_from_odbc(
+            query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
+        assert res is not None
+        return BatchReaderWrap(res)
 
 
 class ODBCExecutionContext(ExecutionContext):
@@ -119,7 +122,7 @@ class ODBCExecutionContext(ExecutionContext):
         # todo: get correct connection string somehow
         assert len(self.datasources) == 1
         return ODBCResultData(
-            sql, chunk_size=self.chunk_size, connection_string=self.datasources[next(self.datasources.keys())]
+            sql, chunk_size=self.chunk_size, connection_string=self.datasources[list(self.datasources.keys())[0]]
         )
 
     def json_function(self, term: pypika.terms.Term, assure_string=False):
