@@ -19,8 +19,8 @@
     },
     "required": [
         "users",
-        "tables",
-        "app"
+        "app",
+        "tables"
     ],
     "$defs": {
         "Config": {
@@ -120,7 +120,8 @@
                     "enum": [
                         "duckdb",
                         "polars",
-                        "odbc"
+                        "odbc",
+                        "sqlite"
                     ]
                 },
                 "chunk_size": {
