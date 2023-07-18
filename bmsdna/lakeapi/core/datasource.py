@@ -59,7 +59,7 @@ class Datasource:
 
     @property
     def uri(self):
-        if "://" in self.config.uri or self.config.file_type == "odbc":
+        if "://" in self.config.uri or self.config.file_type in ["odbc", "sqlite"]:
             return self.config.uri
         return os.path.join(
             self.basic_config.data_path,

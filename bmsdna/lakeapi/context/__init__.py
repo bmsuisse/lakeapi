@@ -17,5 +17,10 @@ def get_context_by_engine(engine: Engines, chunk_size: int) -> ExecutionContext:
 
             return ODBCExecutionContext(chunk_size=chunk_size)
 
+        case "sqlite":
+            from bmsdna.lakeapi.context.df_sqlite import SqliteExecutionContext
+
+            return SqliteExecutionContext(chunk_size=chunk_size)
+
         case _:
             raise Exception(f"Unknown engine {engine}")

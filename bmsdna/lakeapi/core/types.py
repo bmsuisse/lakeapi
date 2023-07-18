@@ -6,7 +6,7 @@ from typing import Type, Optional
 from pydantic import BaseModel
 
 
-Engines = Literal["duckdb", "polars", "odbc"]
+Engines = Literal["duckdb", "polars", "odbc", "sqlite"]
 
 
 FileTypes = Literal["delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson", "odbc"]
