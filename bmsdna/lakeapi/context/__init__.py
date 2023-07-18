@@ -27,14 +27,17 @@ def get_context_by_engine(engine: Engines, chunk_size: int) -> ExecutionContext:
 
 
 class ExecutionContextManager:
-    def __init__(self, default_engine: str):
-        self.default_engine = default_engine
-        self.contexts: [str, ExecutionContext] = dict()
+    default_engine: Engines
 
-    def get_context(self, engine: str | None, chunk_size: int):
-        real_engine = engine or self.default_engine
+    def __init__(self, default_engine: Engines, default_chunk_size: int):
+        self.default_engine = default_engine
+        self.contexts: dict[str, ExecutionContext] = dict()
+        self.default_chunk_size = default_chunk_size
+
+    def get_context(self, engine: Engines | None, chunk_size: int | None = None):
+        real_engine: Engines = engine or self.default_engine
         if real_engine not in self.contexts:
-            self.contexts[real_engine] = get_context_by_engine(real_engine, chunk_size)
+            self.contexts[real_engine] = get_context_by_engine(real_engine, chunk_size or self.default_chunk_size)
         return self.contexts[real_engine]
 
     def __enter__(self, *args, **kwargs):

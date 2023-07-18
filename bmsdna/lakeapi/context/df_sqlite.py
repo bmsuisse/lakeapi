@@ -119,4 +119,4 @@ class SqliteExecutionContext(ExecutionContext):
     def __exit__(self, *args, **kwargs):
         for _, v in self.connections.items():
             v.close()
-        self.connections = None
+        self.connections = dict()

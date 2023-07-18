@@ -40,7 +40,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     config.tag,
                     config.name,
                     config.datasource,
-                    sql_context=_get_context(config.engine),
+                    sql_context=mgr.get_context(config.engine),
                     basic_config=basic_config,
                 )
                 if not realdataframe.file_exists():
