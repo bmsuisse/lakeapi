@@ -1,7 +1,7 @@
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
-from bmsdna.lakeapi.context import get_context_by_engine, ExecutionContext
+from bmsdna.lakeapi.context import get_context_by_engine, ExecutionContext, ExecutionContextManager
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger
@@ -14,14 +14,6 @@ all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
 
 def init_routes(configs: Configs, basic_config: BasicConfig):
-    contexts: dict[str, ExecutionContext] = dict()
-
-    def _get_context(name: str | None):
-        real_name = name or basic_config.default_engine
-        if not real_name in contexts:
-            contexts[real_name] = get_context_by_engine(real_name, basic_config.default_chunk_size)
-        return contexts[real_name]
-
     from bmsdna.lakeapi.core.endpoint import (
         get_response_model,
         create_config_endpoint,
@@ -32,7 +24,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
-    try:
+    with ExecutionContextManager(basic_config.default_engine, basic_config.default_chunk_size) as mgr:
         for config in configs:
             methods = (
                 cast(list[Literal["get", "post"]], [config.api_method])
@@ -121,6 +113,3 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                             ctx.init_search(realdataframe.tablename, config.search)
 
         return router
-    finally:
-        for k, v in contexts.items():
-            v.__exit__()
