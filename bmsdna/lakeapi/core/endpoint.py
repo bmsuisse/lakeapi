@@ -143,14 +143,14 @@ def create_config_endpoint(
         offset: Optional[int] = 0,
         select: Union[str, None] = Query(title="$select", alias="$select", default=None, include_in_schema=False),
         distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines | None = Query(title="$engine", alias="$engine", default=None, include_in_schema=False),
         format: Optional[OutputFileType] = "json",
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         chunk_size: int | None = Query(title="$chunk_size", include_in_schema=False, default=None),
     ):  # type: ignore
         logger.debug(f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
-        engine = engine or basic_config.default_engine
+        engine = engine or config.engine or basic_config.default_engine
 
         logger.debug(f"Engine: {engine}")
         real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size

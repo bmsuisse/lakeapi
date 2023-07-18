@@ -57,7 +57,9 @@ def create_detailed_meta_endpoint(
         req.state.lake_api_basic_config = basic_config
         from bmsdna.lakeapi.context import get_context_by_engine
 
-        with get_context_by_engine(basic_config.default_engine, basic_config.default_chunk_size) as context:
+        with get_context_by_engine(
+            config.engine or basic_config.default_engine, basic_config.default_chunk_size
+        ) as context:
             assert config.datasource is not None
             realdataframe = Datasource(
                 config.version_str,
