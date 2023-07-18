@@ -388,6 +388,10 @@ tables:
       uri: chinook.db
       file_type: sqlite
       table_name: customers
+    params:
+      - Country
+      - name: CustomerId
+        operators: [">", "=", "<=", "<"]
 
 # --------------------------------
 # User / Password

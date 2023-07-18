@@ -66,7 +66,7 @@ class ODBCResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True, flavor=self.flavor)
+        query = get_sql(self.original_sql, limit=0, flavor=self.flavor)
         batches = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )

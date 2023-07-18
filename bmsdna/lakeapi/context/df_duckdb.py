@@ -47,7 +47,7 @@ class DuckDBResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
+        query = get_sql(self.original_sql, limit=0)
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 

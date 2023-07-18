@@ -17,15 +17,17 @@ if TYPE_CHECKING:
 FLAVORS = Literal["ansi", "mssql"]
 
 
-def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False, flavor: FLAVORS = "ansi") -> str:
-    if limit_zero:
+def get_sql(
+    sql_or_pypika: str | pypika.queries.QueryBuilder, limit: int | None = None, flavor: FLAVORS = "ansi"
+) -> str:
+    if limit is not None:
         sql_or_pypika = (
-            sql_or_pypika.limit(0)
+            sql_or_pypika.limit(limit)
             if not isinstance(sql_or_pypika, str)
             else (  # why not just support limit/offset like everyone else, microsoft?
-                "SELECT * FROM (" + sql_or_pypika + ") s LIMIT 0 "
+                f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
                 if flavor == "ansi"
-                else "SELECT top 0 * FROM (" + sql_or_pypika + ") s "
+                else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
             )
         )
     if isinstance(sql_or_pypika, str):

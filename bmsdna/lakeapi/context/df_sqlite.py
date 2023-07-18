@@ -40,7 +40,7 @@ class SqliteResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
+        query = get_sql(self.original_sql, limit=10)  # limit of at least 1 is needed for sqlite!
         with self.connection.cursor() as cur:
             cur.execute(query)
             self._arrow_schema = cur.fetch_arrow_table().schema
