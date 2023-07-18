@@ -139,6 +139,7 @@ class ExecutionContext(ABC):
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
         self.chunk_size = chunk_size
+        self.len_func = "LEN"
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -147,6 +148,7 @@ class ExecutionContext(ABC):
     @abstractmethod
     def __exit__(self, *args, **kwargs):
         ...
+
 
     def get_pyarrow_dataset(
         self,

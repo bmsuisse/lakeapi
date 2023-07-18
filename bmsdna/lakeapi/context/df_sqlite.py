@@ -72,6 +72,7 @@ class SqliteExecutionContext(ExecutionContext):
         self.res_con = None
         self.connections: dict[str, Connection] = dict()
         self.persistance_file_name = None
+        self.len_func = "length"
 
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         raise NotImplementedError("Cannot read arrow in remote sql")

@@ -109,11 +109,16 @@ def create_detailed_meta_endpoint(
                     context.execute_sql(
                         df.query_builder().select(
                             *(
-                                [fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
+                                [
+                                    fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                                    for sc in str_cols
+                                ]
                                 + [
                                     fn.Function(
                                         "MAX",
-                                        fn.Function("LEN", context.json_function(fn.Field(sc), assure_string=True)),
+                                        fn.Function(
+                                            context.len_func, context.json_function(fn.Field(sc), assure_string=True)
+                                        ),
                                     ).as_(sc)
                                     for sc in complex_str_cols
                                 ]

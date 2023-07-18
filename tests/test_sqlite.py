@@ -23,3 +23,11 @@ def test_filter_country():
     assert response.status_code == 200
     tables = response.json()
     assert len(tables) == 4
+
+
+def test_metadata_detail():
+    response = client.get(
+        f"/api/v1/sqlite/sqlite_customers/metadata_detail",
+        auth=auth,
+    )
+    assert response.status_code == 200
