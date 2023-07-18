@@ -259,7 +259,7 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
 
     def __exit__(self, *args, **kwargs):
         super().__exit__(*args, **kwargs)
-        self.con.__exit__(*args, **kwargs)
+        self.con.close()
 
     def close(self):
         self.con.close()

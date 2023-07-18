@@ -59,7 +59,7 @@ class Datasource:
 
     @property
     def uri(self):
-        if "://" in self.config.uri or self.config.file_type in ["odbc", "sqlite"]:
+        if "://" in self.config.uri or self.config.file_type in ["odbc"]:
             return self.config.uri
         return os.path.join(
             self.basic_config.data_path,
@@ -67,6 +67,8 @@ class Datasource:
         )
 
     def file_exists(self):
+        if self.config.file_type in ["odbc", "sqlite"]:
+            return True  # the uri is not really a file here
         if not os.path.exists(self.uri):
             return False
         if self.config.file_type == "delta" and not os.path.exists(os.path.join(self.uri, "_delta_log")):

@@ -1,7 +1,7 @@
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
-from bmsdna.lakeapi.context import get_context_by_engine
+from bmsdna.lakeapi.context import get_context_by_engine, ExecutionContext
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger
@@ -14,7 +14,13 @@ all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
 
 def init_routes(configs: Configs, basic_config: BasicConfig):
-    from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
+    contexts: dict[str, ExecutionContext] = dict()
+
+    def _get_context(name: str | None):
+        real_name = name or basic_config.default_engine
+        if not real_name in contexts:
+            contexts[real_name] = get_context_by_engine(real_name, basic_config.default_chunk_size)
+        return contexts[real_name]
 
     from bmsdna.lakeapi.core.endpoint import (
         get_response_model,
@@ -26,8 +32,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
-
-    with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
+    try:
         for config in configs:
             methods = (
                 cast(list[Literal["get", "post"]], [config.api_method])
@@ -39,7 +44,12 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
 
                 assert config.datasource is not None
                 realdataframe = Datasource(
-                    config.version_str, config.tag, config.name, config.datasource, context, basic_config
+                    config.version_str,
+                    config.tag,
+                    config.name,
+                    config.datasource,
+                    sql_context=_get_context(config.engine),
+                    basic_config=basic_config,
                 )
                 if not realdataframe.file_exists():
                     logger.warning(
@@ -103,13 +113,14 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     from bmsdna.lakeapi.core.datasource import Datasource
 
                     assert config.datasource is not None
-                    realdataframe = Datasource(
-                        config.version_str, config.tag, config.name, config.datasource, context, basic_config
-                    )
-                    if realdataframe.file_exists():
-                        with get_context_by_engine(
-                            basic_config.default_engine, basic_config.default_chunk_size
-                        ) as ctx:
+                    with get_context_by_engine(basic_config.default_engine, basic_config.default_chunk_size) as ctx:
+                        realdataframe = Datasource(
+                            config.version_str, config.tag, config.name, config.datasource, ctx, basic_config
+                        )
+                        if realdataframe.file_exists():
                             ctx.init_search(realdataframe.tablename, config.search)
 
         return router
+    finally:
+        for k, v in contexts.items():
+            v.__exit__()
