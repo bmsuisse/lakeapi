@@ -18,9 +18,9 @@
         }
     },
     "required": [
-        "users",
+        "tables",
         "app",
-        "tables"
+        "users"
     ],
     "$defs": {
         "Config": {
@@ -152,7 +152,8 @@
                         "csv",
                         "json",
                         "ndjson",
-                        "odbc"
+                        "odbc",
+                        "sqlite"
                     ]
                 },
                 "select": {

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 Engines = Literal["duckdb", "polars", "odbc", "sqlite"]
 
 
-FileTypes = Literal["delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson", "odbc"]
+FileTypes = Literal["delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson", "odbc", "sqlite"]
 OutputFileType = Literal[
     "json",
     "ndjson",

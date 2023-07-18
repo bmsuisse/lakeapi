@@ -380,6 +380,15 @@ tables:
       file_type: delta
     config_from_delta: true
 
+  - name: sqlite_customers
+    tag: sqlite
+    api_method: get
+    engine: sqlite
+    datasource:
+      uri: chinook.db
+      file_type: sqlite
+      table_name: customers
+
 # --------------------------------
 # User / Password
 # --------------------------------

@@ -112,7 +112,7 @@ class SqliteExecutionContext(ExecutionContext):
         self.connections[name] = connect(uri)
 
     def list_tables(self) -> ResultData:
-        return self.execute_sql("SELECT table_schema, table_name as name, table_type from information_schema.tables")
+        return self.execute_sql("SELECT type as table_type, name from sqlite_schema where type='table'")
 
     def __enter__(self):
         return self
