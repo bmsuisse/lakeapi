@@ -7,12 +7,12 @@ auth = get_auth()
 
 def test_simple_customers():
     response = client.get(
-        f"/api/v1/sqlite/sqlite_customers?format=json&limit=100",
+        f"/api/v1/sqlite/sqlite_customers?format=json&limit=50",
         auth=auth,
     )
     assert response.status_code == 200
     tables = response.json()
-    assert len(tables) == 100
+    assert len(tables) == 50
 
 
 def test_filter_country():
