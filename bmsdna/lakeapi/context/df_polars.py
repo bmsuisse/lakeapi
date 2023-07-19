@@ -1,4 +1,4 @@
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
 
 
 import pyarrow as pa
@@ -159,7 +159,7 @@ class PolarsExecutionContext(ExecutionContext):
             case "ndjson":
                 df = pl.scan_ndjson(uri)
             case _:
-                raise Exception(f"Not supported file type {file_type}")
+                raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(name, df)
 
     def execute_sql(

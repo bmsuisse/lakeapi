@@ -137,6 +137,12 @@ class ResultData(ABC):
                 writer.write_batch(batch)
 
 
+class FileTypeNotSupportedError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
 class ExecutionContext(ABC):
     def __init__(self, chunk_size: int) -> None:
         super().__init__()
@@ -186,7 +192,7 @@ class ExecutionContext(ABC):
                     partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )
             case _:
-                raise Exception(f"Not supported file type {file_type}")
+                raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
 
     @abstractmethod
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):

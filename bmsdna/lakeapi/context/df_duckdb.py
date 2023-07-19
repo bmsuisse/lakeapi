@@ -216,7 +216,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def register_datasource(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if file_type not in ["odbc"]:
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
             return

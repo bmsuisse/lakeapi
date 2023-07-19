@@ -1,13 +1,16 @@
 from typing import Optional, Union
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
-from bmsdna.lakeapi.context.df_base import ExecutionContext
+from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
 from bmsdna.lakeapi.core.datasource import Datasource
+from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 
 sql_contexts: dict[str, ExecutionContext] = {}
+
+logger = get_logger(__name__)
 
 
 def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
@@ -15,7 +18,10 @@ def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Con
         assert cfg.datasource is not None
         df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
         if df.file_exists():
-            con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
+            try:
+                con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
+            except FileTypeNotSupportedError as err:
+                logger.warning(f"Cannot query {df.tablename}")
 
 
 def get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
