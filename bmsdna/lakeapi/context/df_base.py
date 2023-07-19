@@ -35,7 +35,7 @@ def get_sql(
     if len(sql_or_pypika._selects) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "mssql" and sql_or_pypika._limit or sql_or_pypika._offset:
+    if flavor == "mssql" and (sql_or_pypika._limit is not None or sql_or_pypika._offset is not None):
         old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
         old_offset = sql_or_pypika._offset
         no_limit = sql_or_pypika.limit(None).offset(None)
@@ -148,7 +148,6 @@ class ExecutionContext(ABC):
     @abstractmethod
     def __exit__(self, *args, **kwargs):
         ...
-
 
     def get_pyarrow_dataset(
         self,

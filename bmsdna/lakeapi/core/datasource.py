@@ -108,13 +108,27 @@ class Datasource:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
 
+    @property
+    def table(self):
+        if self.config.table_name:
+            tn = self.config.table_name
+            if "." in tn:
+                parts = tn.split(".")
+                if len(parts) == 3:
+                    return pypika.Table(parts[2], schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])))
+                assert len(parts) == 2
+                return pypika.Table(parts[2], schema=pypika.Schema(parts[1]))
+        if self.version in ["1", "v1"]:
+            return pypika.Table(self.tag + "_" + self.name)
+        return pypika.Table(self.tag + "_" + self.name + "_" + self.version)
+
     def get_df(
         self,
         partitions: Optional[List[Tuple[str, str, Any]]],
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            query = pypika.Query.from_(self.tablename)
+            query = pypika.Query.from_(self.table)
             self.query = self._prep_df(query, endpoint=endpoint)
             global df_cache
             mod_date: datetime | None = None
