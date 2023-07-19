@@ -142,6 +142,9 @@ tables:
       - name: name1
         operators:
           - "="
+      - name: fakeparam
+        operators:
+          - "="
     datasource:
       uri: delta/fake
       file_type: delta

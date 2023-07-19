@@ -111,12 +111,12 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
 
 def _get_datatype(schema: Optional[pa.Schema], name: str):
     if schema is None:
-        return str
+        return str | None
     try:
         field = schema.field(name)
         return get_schema_for("prm_" + name, field.name, field.type)[0]
     except KeyError as err:
-        return str
+        return str | None
 
 
 def create_parameter_model(
@@ -140,7 +140,7 @@ def create_parameter_model(
                     )
             else:
                 realtype = (
-                    _get_datatype(schema, param.name) if df is not None else str
+                    _get_datatype(schema, param.name) if df is not None else str | None
                 )  # well. no model, no real thing. just string
                 for operator in operators:
                     postfix = _operator_postfix_map[operator]
