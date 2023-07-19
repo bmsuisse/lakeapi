@@ -401,6 +401,8 @@ tables:
       uri: DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=MyPass@word4tests;Database=AdventureWorks
       file_type: odbc
       table_name: "HumanResources.Department"
+    params:
+      - GroupName
 
 # --------------------------------
 # User / Password
