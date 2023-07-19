@@ -1,7 +1,10 @@
 import dataclasses
 import bmsdna.lakeapi
 import fastapi
+import test_server
+import os
 
+sql_server = test_server.start_mssql_server()
 app = fastapi.FastAPI()
 
 def_cfg = bmsdna.lakeapi.get_default_config()  # Get default startup config
@@ -11,3 +14,9 @@ cfg = dataclasses.replace(
 sti = bmsdna.lakeapi.init_lakeapi(
     app, True, cfg, "config_test.yml"
 )  # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
+
+
+@app.on_event("shutdown")
+def shutdown_event():
+    if os.getenv("KEEP_SQL_SERVER", "0") == "0":
+        sql_server.stop()

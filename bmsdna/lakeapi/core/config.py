@@ -96,6 +96,7 @@ class DatasourceConfig:
     exclude: Optional[List[str]] = None
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
+    table_name: Optional[str] = None
     in_memory: bool = False
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
 
@@ -194,6 +195,7 @@ class Config:
             exclude=exclude,
             in_memory=datasource.get("in_memory", False),
             sortby=sortby,
+            table_name=datasource.get("table_name", None),
             filters=None,
             cache_expiration_time_seconds=cache_expiration_time_seconds,
         )

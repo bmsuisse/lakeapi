@@ -59,12 +59,16 @@ class Datasource:
 
     @property
     def uri(self):
+        if "://" in self.config.uri or self.config.file_type in ["odbc"]:
+            return self.config.uri
         return os.path.join(
             self.basic_config.data_path,
             self.config.uri,
         )
 
     def file_exists(self):
+        if self.config.file_type in ["odbc", "sqlite"]:
+            return True  # the uri is not really a file here
         if not os.path.exists(self.uri):
             return False
         if self.config.file_type == "delta" and not os.path.exists(os.path.join(self.uri, "_delta_log")):
@@ -98,9 +102,23 @@ class Datasource:
 
     @property
     def tablename(self):
+        if self.config.table_name:
+            return self.config.table_name
         if self.version in ["1", "v1"]:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
+
+    @property
+    def table(self):
+        if self.config.table_name:
+            tn = self.config.table_name
+            if "." in tn:
+                parts = tn.split(".")
+                if len(parts) == 3:
+                    return pypika.Table(parts[2], schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])))
+                assert len(parts) == 2
+                return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
+        return pypika.Table(self.tablename)
 
     def get_df(
         self,
@@ -108,7 +126,7 @@ class Datasource:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            query = pypika.Query.from_(self.tablename)
+            query = pypika.Query.from_(self.table)
             self.query = self._prep_df(query, endpoint=endpoint)
             global df_cache
             mod_date: datetime | None = None

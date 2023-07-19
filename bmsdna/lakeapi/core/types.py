@@ -6,19 +6,10 @@ from typing import Type, Optional
 from pydantic import BaseModel
 
 
-Engines = Literal["duckdb", "polars"]
+Engines = Literal["duckdb", "polars", "odbc", "sqlite"]
 
 
-FileTypes = Literal[
-    "delta",
-    "parquet",
-    "arrow",
-    "arrow-stream",
-    "avro",
-    "csv",
-    "json",
-    "ndjson",
-]
+FileTypes = Literal["delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson", "odbc", "sqlite"]
 OutputFileType = Literal[
     "json",
     "ndjson",

@@ -13,6 +13,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
+from uuid import uuid4
 
 logger = get_logger(__name__)
 
@@ -138,6 +139,18 @@ class FileResponseWCharset(FileResponse):
         super().__init__(*args, **kwargs)
 
 
+class TempFileWrapper:  # does not open the file which is important on windows
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    @property
+    def name(self):
+        return self.path
+
+    def close(self):
+        os.unlink(self.path)
+
+
 async def create_response(
     url: URL,
     accept: str,
@@ -163,7 +176,10 @@ async def create_response(
         content_dispositiont_type = "inline"
         filename = None
 
-    temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
+    if os.name == "nt":
+        temp_file = TempFileWrapper(os.environ["TEMP"] + "/" + str(uuid4()))
+    else:
+        temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
     additional_files = write_frame(
         url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config

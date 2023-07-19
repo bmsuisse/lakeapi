@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
-from typing import Optional, List, Tuple, Any, TYPE_CHECKING, Union
+from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 import pyarrow.dataset
@@ -9,23 +9,55 @@ import pypika.queries
 import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 import pypika.terms
-
+import os
 
 if TYPE_CHECKING:
     import pandas as pd
 
+FLAVORS = Literal["ansi", "mssql"]
 
-def get_sql(sql_or_pypika: str | pypika.queries.QueryBuilder, limit_zero=False) -> str:
-    if limit_zero:
+
+def get_sql(
+    sql_or_pypika: str | pypika.queries.QueryBuilder, limit: int | None = None, flavor: FLAVORS = "ansi"
+) -> str:
+    if limit is not None:
         sql_or_pypika = (
-            sql_or_pypika.limit(0)
+            sql_or_pypika.limit(limit)
             if not isinstance(sql_or_pypika, str)
-            else "SELECT * FROM (" + sql_or_pypika + ") s LIMIT 0 "
+            else (  # why not just support limit/offset like everyone else, microsoft?
+                f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
+                if flavor == "ansi"
+                else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
+            )
         )
     if isinstance(sql_or_pypika, str):
         return sql_or_pypika
     if len(sql_or_pypika._selects) == 0:
-        return sql_or_pypika.select("*").get_sql()
+        sql_or_pypika = sql_or_pypika.select("*")
+    assert not isinstance(sql_or_pypika, str)
+    if flavor == "mssql" and (sql_or_pypika._limit is not None or sql_or_pypika._offset is not None):
+        old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
+        old_offset = sql_or_pypika._offset
+        no_limit = sql_or_pypika.limit(None).offset(None)
+        if old_offset is None or old_offset == 0:
+            sql_no_limit = no_limit.get_sql()
+            if sql_no_limit.upper().startswith("SELECT"):
+                return "SELECT TOP " + str(old_limit) + sql_no_limit[len("SELECT") :]
+            return f" SELECT TOP {old_limit} * from ({sql_no_limit}) s1"
+        else:
+            if len(no_limit._orderbys) == 0:
+                no_limit = no_limit.orderby(1)
+            sql_no_limit = no_limit.get_sql()
+            assert sql_no_limit.upper().startswith("SELECT")
+            return (
+                sql_no_limit
+                + " OFFSET "
+                + str(old_offset)
+                + " ROWS FETCH NEXT "
+                + str(old_limit or 100000)
+                + " ROWS ONLY"
+            )
+
     return sql_or_pypika.get_sql()
 
 
@@ -105,11 +137,18 @@ class ResultData(ABC):
                 writer.write_batch(batch)
 
 
+class FileTypeNotSupportedError(Exception):
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
 class ExecutionContext(ABC):
     def __init__(self, chunk_size: int) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
         self.chunk_size = chunk_size
+        self.len_func = "LEN"
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -153,7 +192,7 @@ class ExecutionContext(ABC):
                     partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )
             case _:
-                raise Exception(f"Not supported file type {file_type}")
+                raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
 
     @abstractmethod
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
@@ -218,7 +257,8 @@ class ExecutionContext(ABC):
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if os.path.exists(uri):
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         self.register_arrow(name, ds)
 
     @abstractmethod
