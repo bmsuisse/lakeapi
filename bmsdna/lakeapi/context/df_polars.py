@@ -110,6 +110,7 @@ class PolarsExecutionContext(ExecutionContext):
         super().__init__(chunk_size=chunk_size)
         import polars as pl
 
+        self.len_func = "length"
         self.sql_context = sql_context or pl.SQLContext()
 
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):

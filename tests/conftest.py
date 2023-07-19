@@ -11,4 +11,5 @@ def spawn_sql():
 
     sql_server = test_server.start_mssql_server()
     yield sql_server
-    sql_server.stop()
+    if os.getenv("KEEP_SQL_SERVER", "0") == "0":  # can be handy during development
+        sql_server.stop()
