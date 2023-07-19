@@ -32,6 +32,7 @@ deltalake = "^0.10.0"
 fastapi = "^0.100.0"
 pydantic = "^2.0.2"
 adbc-driver-sqlite = {version = "^0.5.1", optional = true}
+arrow-odbc = { version = "^1.1.1", optional = true}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -75,6 +76,8 @@ polars = ["xlsx2csv"]
 auth = ["argon2-cffi", "pyjwt"]
 useradd = ["ruamel.yaml"]
 sqlite = ["adbc-driver-sqlite"]
+odbc = ["arrow-odbc"]
+
 
 [tool.poetry.scripts]
 validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli", extras = ["schema"] }
