@@ -36,6 +36,8 @@ def get_sql(
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
     if flavor == "mssql" and (sql_or_pypika._limit is not None or sql_or_pypika._offset is not None):
+        if len(sql_or_pypika._orderbys) == 0:
+            sql_or_pypika.orderby(1)
         old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
         old_offset = sql_or_pypika._offset
         no_limit = sql_or_pypika.limit(None).offset(None)
