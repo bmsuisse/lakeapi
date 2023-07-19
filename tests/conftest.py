@@ -8,6 +8,7 @@ from docker.models.containers import Container
 @pytest.fixture(scope="session", autouse=True)
 def spawn_sql():
     import test_server
+    import os
 
     sql_server = test_server.start_mssql_server()
     yield sql_server

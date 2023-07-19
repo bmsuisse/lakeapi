@@ -13,7 +13,8 @@
             "jinja": false,
             "justMyCode": false,
             "env": {
-                "KEEP_SQL_SERVER": "1"
+                "KEEP_SQL_SERVER": "1",
+                "MY_SQL_PWD": "MyPass@word4tests"
             }
         }
     ]

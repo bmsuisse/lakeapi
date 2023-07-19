@@ -2,11 +2,13 @@ from fastapi import Depends, FastAPI, Request
 import dataclasses
 from faker import Faker
 import random
+import os
 
 
 def get_app(default_engine="duckdb"):
     import bmsdna.lakeapi
 
+    os.environ["MY_SQL_PWD"] = "MyPass@word4tests"
     app = FastAPI()
     def_cfg = bmsdna.lakeapi.get_default_config()
     cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data", default_engine=default_engine)

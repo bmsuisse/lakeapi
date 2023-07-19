@@ -24,6 +24,7 @@ from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
+import expandvars
 
 if TYPE_CHECKING:
     from bmsdna.lakeapi.context.df_base import ExecutionContext
@@ -88,6 +89,10 @@ class Column:
         self.alias = self.alias if self.alias else self.name
 
 
+def _expand_env_vars(uri: str):
+    return expandvars.expandvars(uri)
+
+
 @dataclass
 class DatasourceConfig:
     uri: str
@@ -138,9 +143,11 @@ class Config:
         datasource: dict[str, Any] = config.get("datasource", {})
         file_type: FileTypes = datasource.get(
             "file_type",
-            "delta" if config.get("engine", None) not in ["odbc", "sqlite"] else config.get("engine", None), # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
+            "delta"
+            if config.get("engine", None) not in ["odbc", "sqlite"]
+            else config.get("engine", None),  # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
         )
-        uri = datasource.get("uri", tag + "/" + name)
+        uri = _expand_env_vars(datasource.get("uri", tag + "/" + name))
         if config.get("config_from_delta"):
             assert file_type == "delta"
             real_path = os.path.join(basic_config.data_path, uri)

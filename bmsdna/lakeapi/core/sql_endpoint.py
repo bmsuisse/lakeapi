@@ -24,7 +24,8 @@ def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Con
                 logger.warning(f"Cannot query {df.tablename}")
 
 
-def get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
+def _get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
+    assert engine not in ["odbc", "sqlite"]  # would be dangerous
     global sql_contexts
     if not engine in sql_contexts:
         sql_contexts[engine] = get_context_by_engine(engine, basic_config.default_chunk_size)
@@ -55,7 +56,7 @@ def create_sql_endpoint(
         format: Optional[OutputFileType] = "json",
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
     ):
-        con = get_sql_context(engine, basic_config, configs)
+        con = _get_sql_context(engine, basic_config, configs)
         return con.list_tables().to_arrow_table().to_pylist()
 
     @router.post(
@@ -73,7 +74,7 @@ def create_sql_endpoint(
         body = await request.body()
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
 
-        con = get_sql_context(engine, basic_config, configs)
+        con = _get_sql_context(engine, basic_config, configs)
         df = con.execute_sql(body.decode("utf-8"))
 
         return await create_response(
@@ -93,7 +94,7 @@ def create_sql_endpoint(
         format: Optional[OutputFileType] = "json",
         engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
     ):
-        con = get_sql_context(engine, basic_config, configs)
+        con = _get_sql_context(engine, basic_config, configs)
 
         df = con.execute_sql(sql)
         return await create_response(
