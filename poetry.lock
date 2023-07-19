@@ -628,6 +628,17 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "expandvars"
+version = "0.9.0"
+description = "Expand system variables Unix style"
+optional = false
+python-versions = ">=3.4"
+files = [
+    {file = "expandvars-0.9.0-py3-none-any.whl", hash = "sha256:ae90b9c6167e876a0d67892ae18cf2c1ea2e336b2b5542113239d33bf9267497"},
+    {file = "expandvars-0.9.0.tar.gz", hash = "sha256:6a0e7821e55ff1ab44f8ca08b50d2b2d01c076a9bc979da940467cb7f105c565"},
+]
+
+[[package]]
 name = "faker"
 version = "18.13.0"
 description = "Faker is a Python package that generates fake data for you."
@@ -2008,4 +2019,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "90900c1f4be158055ff25e92c912082fd01c3231f8d395dcc9602f672e040b18"
+content-hash = "649bbee322385ffbfb48e5ad47c3dcf9558c8a8799a1f86d8707be4524c31b91"
