@@ -136,7 +136,10 @@ class Config:
         name = config["name"]
         tag = config["tag"]
         datasource: dict[str, Any] = config.get("datasource", {})
-        file_type: FileTypes = datasource.get("file_type", "delta")
+        file_type: FileTypes = datasource.get(
+            "file_type",
+            "delta" if config.get("engine", None) not in ["odbc", "sqlite"] else config.get("engine", None), # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
+        )
         uri = datasource.get("uri", tag + "/" + name)
         if config.get("config_from_delta"):
             assert file_type == "delta"
