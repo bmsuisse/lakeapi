@@ -46,7 +46,7 @@ def get_sql(
             return f" SELECT TOP {old_limit} * from ({sql_no_limit}) s1"
         else:
             if len(no_limit._orderbys) == 0:
-                no_limit = sql_or_pypika.orderby(1)
+                no_limit = no_limit.orderby(1)
             sql_no_limit = no_limit.get_sql()
             assert sql_no_limit.upper().startswith("SELECT")
             return (
