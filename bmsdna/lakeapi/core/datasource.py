@@ -117,10 +117,8 @@ class Datasource:
                 if len(parts) == 3:
                     return pypika.Table(parts[2], schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])))
                 assert len(parts) == 2
-                return pypika.Table(parts[2], schema=pypika.Schema(parts[1]))
-        if self.version in ["1", "v1"]:
-            return pypika.Table(self.tag + "_" + self.name)
-        return pypika.Table(self.tag + "_" + self.name + "_" + self.version)
+                return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
+        return pypika.Table(self.tablename)
 
     def get_df(
         self,
