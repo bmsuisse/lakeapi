@@ -2,6 +2,7 @@ import dataclasses
 import bmsdna.lakeapi
 import fastapi
 import test_server
+import os
 
 sql_server = test_server.start_mssql_server()
 app = fastapi.FastAPI()
@@ -17,4 +18,5 @@ sti = bmsdna.lakeapi.init_lakeapi(
 
 @app.on_event("shutdown")
 def shutdown_event():
-    sql_server.stop()
+    if os.getenv("KEEP_SQL_SERVER", "0") == "0":
+        sql_server.stop()

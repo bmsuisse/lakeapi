@@ -11,7 +11,10 @@
             "module": "uvicorn",
             "args": ["start_test_instance:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
             "jinja": false,
-            "justMyCode": false
+            "justMyCode": false,
+            "env": {
+                "KEEP_SQL_SERVER": "1"
+            }
         }
     ]
 }

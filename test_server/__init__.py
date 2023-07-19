@@ -1,10 +1,18 @@
 import docker
 from docker.models.containers import Container
 from time import sleep
+from typing import cast
+import docker.errors
 
 
 def start_mssql_server() -> Container:
     client = docker.from_env()  # code taken from https://github.com/fsspec/adlfs/blob/main/adlfs/tests/conftest.py#L72
+    try:
+        m = cast(Container, client.containers.get("test4sql"))
+        if m.status == "running":
+            return m
+    except docker.errors.NotFound as err:
+        pass
 
     envs = dict()
     with open("test_server/sql_docker.env", "r") as f:
@@ -20,6 +28,7 @@ def start_mssql_server() -> Container:
         "chriseaton/adventureworks:light",
         environment=envs,
         detach=True,
+        name="test4sql",
         ports={"1433/tcp": "1439"},
     )  # type: ignore
     sql_server.start()
