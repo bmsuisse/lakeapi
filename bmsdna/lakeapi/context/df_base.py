@@ -9,7 +9,7 @@ import pypika.queries
 import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 import pypika.terms
-
+import os
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -257,7 +257,8 @@ class ExecutionContext(ABC):
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if os.path.exists(uri):
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         self.register_arrow(name, ds)
 
     @abstractmethod

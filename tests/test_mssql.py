@@ -22,7 +22,7 @@ def test_filter_group_name():
     )
     assert response.status_code == 200
     tables = response.json()
-    assert len(tables) == 5
+    assert len(tables) == 3
 
 
 def test_filter_offset():

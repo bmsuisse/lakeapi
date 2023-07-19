@@ -1,6 +1,6 @@
 from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
 
-
+import os
 import pyarrow as pa
 from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
@@ -134,7 +134,8 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if os.path.exists(uri):
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
                 from bmsdna.lakeapi.polars_extensions.delta import scan_delta2
