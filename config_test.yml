@@ -142,6 +142,9 @@ tables:
       - name: name1
         operators:
           - "="
+      - name: fakeparam
+        operators:
+          - "="
     datasource:
       uri: delta/fake
       file_type: delta
@@ -314,7 +317,6 @@ tables:
       - post
     datasource:
       uri: delta/fruits
-      file_type: delta
       select:
         - name: fruits
           alias: fruits_new
@@ -379,6 +381,28 @@ tables:
       uri: delta/struct_fruits
       file_type: delta
     config_from_delta: true
+
+  - name: sqlite_customers
+    tag: sqlite
+    api_method: get
+    engine: sqlite
+    datasource:
+      uri: chinook.db
+      table_name: customers
+    params:
+      - Country
+      - name: CustomerId
+        operators: [">", "=", "<=", "<"]
+
+  - name: mssql_department
+    tag: mssql
+    api_method: get
+    engine: odbc
+    datasource:
+      uri: DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=${MY_SQL_PWD};Database=AdventureWorks
+      table_name: "HumanResources.Department"
+    params:
+      - GroupName
 
 # --------------------------------
 # User / Password

@@ -190,8 +190,18 @@ tables:
     api_method:
       - get
     datasource:
-      uri: startest/fruits
+      uri: startest/fruits/${IN_URI_YOU_CAN_HAVE_ENVIRONMENT_VARIABLES}
       file_type: delta
+
+  - name: mssql_department
+    tag: mssql
+    api_method: get
+    engine: odbc #requires the odbc extra, same for sqlite
+    datasource:
+      uri: DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=${MY_SQL_PWD};Database=AdventureWorks
+      table_name: "HumanResources.Department"
+    params:
+      - GroupName
 ```
 
 ## Partitioning for awesome performance
@@ -221,6 +231,15 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - Easily expose entire folders by using a "\*" wildcard in both the name and the datasource.uri config, see example in the config above
 - Config in delta table as json, by using the lakeapi.config Table property. Example in the tests. This allows to have the config for the lakeapi along with your data
 - Good test coverage
+
+## ODBC and Sqlite Support
+
+If you want to use ODBC or Sqlite, install the required extra (named `odbc`/`sqlite`).
+
+ODBC / Sqlite Tables cannot be queried through the sql endpoint for now because of Security Implications.
+We might allow this later if needed via explicit flag.
+
+ODBC is tested against MS SQL Server using ODBC Driver 17 for MS SQL Server
 
 ## Further projects
 

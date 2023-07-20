@@ -47,7 +47,7 @@ class DuckDBResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit_zero=True)
+        query = get_sql(self.original_sql, limit=0)
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
@@ -216,7 +216,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def register_datasource(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if os.path.exists(uri):
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
             return
@@ -259,7 +260,7 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
 
     def __exit__(self, *args, **kwargs):
         super().__exit__(*args, **kwargs)
-        self.con.__exit__(*args, **kwargs)
+        self.con.close()
 
     def close(self):
         self.con.close()

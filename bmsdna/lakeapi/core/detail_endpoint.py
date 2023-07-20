@@ -55,12 +55,19 @@ def create_detailed_meta_endpoint(
         import json
 
         req.state.lake_api_basic_config = basic_config
-        from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
+        from bmsdna.lakeapi.context import get_context_by_engine
 
-        with DuckDbExecutionContext(basic_config.default_chunk_size) as context:
+        with get_context_by_engine(
+            config.engine or basic_config.default_engine, basic_config.default_chunk_size
+        ) as context:
             assert config.datasource is not None
             realdataframe = Datasource(
-                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+                config.version_str,
+                config.tag,
+                config.name,
+                config.datasource,
+                context,
+                basic_config=basic_config,
             )
 
             if not realdataframe.file_exists():
@@ -102,11 +109,16 @@ def create_detailed_meta_endpoint(
                     context.execute_sql(
                         df.query_builder().select(
                             *(
-                                [fn.Function("MAX", fn.Function("LEN", fn.Field(sc))).as_(sc) for sc in str_cols]
+                                [
+                                    fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                                    for sc in str_cols
+                                ]
                                 + [
                                     fn.Function(
                                         "MAX",
-                                        fn.Function("LEN", context.json_function(fn.Field(sc), assure_string=True)),
+                                        fn.Function(
+                                            context.len_func, context.json_function(fn.Field(sc), assure_string=True)
+                                        ),
                                     ).as_(sc)
                                     for sc in complex_str_cols
                                 ]

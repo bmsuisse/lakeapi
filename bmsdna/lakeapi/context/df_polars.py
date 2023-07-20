@@ -1,6 +1,6 @@
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
 
-
+import os
 import pyarrow as pa
 from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
@@ -110,6 +110,7 @@ class PolarsExecutionContext(ExecutionContext):
         super().__init__(chunk_size=chunk_size)
         import polars as pl
 
+        self.len_func = "length"
         self.sql_context = sql_context or pl.SQLContext()
 
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
@@ -134,7 +135,8 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        if os.path.exists(uri):
+            self.modified_dates[name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
 
@@ -158,7 +160,7 @@ class PolarsExecutionContext(ExecutionContext):
             case "ndjson":
                 df = pl.scan_ndjson(uri)
             case _:
-                raise Exception(f"Not supported file type {file_type}")
+                raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(name, df)
 
     def execute_sql(
