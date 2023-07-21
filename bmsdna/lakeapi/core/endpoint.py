@@ -33,12 +33,14 @@ from bmsdna.lakeapi.core.types import (
     Engines,
 )
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+from functools import lru_cache
 
 cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
 
 logger = get_logger(__name__)
 
 
+@cache
 async def get_partitions(datasource: Datasource, params: BaseModel, config: Config) -> Optional[list]:
     parts = (
         await filter_partitions_based_on_params(
@@ -52,6 +54,7 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
     return parts
 
 
+@lru_cache(maxsize=128)
 def remove_search(prm_dict: dict, config: Config):
     if not config.search or len(prm_dict) == 0:
         return prm_dict
@@ -59,6 +62,7 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
+@cache
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -78,11 +82,13 @@ def get_response_model(config: Config, metamodel: ResultData) -> Optional[Type[B
     return response_model
 
 
+@lru_cache(maxsize=128)
 def exclude_cols(columns: List[str]) -> List[str]:
     columns = [c for c in columns if not should_hide_colname(c)]
     return columns
 
 
+@lru_cache(maxsize=128)
 def is_complex_type(schema: pa.Schema, col_name: str):
     f = schema.field(col_name)
     return pa.types.is_nested(f.type)

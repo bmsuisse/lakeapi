@@ -15,7 +15,6 @@ cache = cached(
 
 security = HTTPBasic()
 
-
 userhashmap: dict[str, str] | None = None
 
 

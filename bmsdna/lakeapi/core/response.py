@@ -14,6 +14,7 @@ from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from uuid import uuid4
+from functools import lru_cache
 
 logger = get_logger(__name__)
 
@@ -34,6 +35,7 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
+@lru_cache(maxsize=128)
 def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":
