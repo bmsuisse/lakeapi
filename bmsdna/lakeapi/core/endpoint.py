@@ -131,7 +131,7 @@ def create_config_endpoint(
     @api_method
     @cache(
         ttl=CACHE_EXPIRATION_TIME_SECONDS,
-        key="{request.url}:{params.json}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
+        key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
         condition=is_json,
     )
     async def data(
