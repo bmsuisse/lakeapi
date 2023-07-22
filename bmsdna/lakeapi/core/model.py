@@ -3,8 +3,7 @@
 import datetime
 from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
 from bmsdna.lakeapi.context.df_base import ResultData
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
+from cashews import cache
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from bmsdna.lakeapi.context.df_base import ResultData
@@ -14,7 +13,8 @@ from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 
-cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+cache.setup("mem://")
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 
 def _make_model(v, name):
@@ -47,7 +47,7 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
-@cache
+@cached
 async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold()
     for param in paramdef:

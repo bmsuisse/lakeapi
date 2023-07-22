@@ -1,40 +1,28 @@
 from typing import List, Literal, Optional, Type, Union
+
 import pyarrow as pa
 import pypika
 import pypika.functions as fn
+import pypika.queries
+import pypika.terms
+from cashews import cache
 from deltalake import DeltaTable
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-)
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
-from bmsdna.lakeapi.core.datasource import (
-    Datasource,
-    filter_df_based_on_params,
-    filter_partitions_based_on_params,
-)
+from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
-from bmsdna.lakeapi.core.types import (
-    OutputFileType,
-    Engines,
-)
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.types import Engines, OutputFileType
 
-cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+cache.setup("mem://")
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 logger = get_logger(__name__)
 
@@ -59,6 +47,7 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
+@cached
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -176,8 +165,6 @@ def create_config_endpoint(
                     if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
                 }
 
-            import pypika
-
             columns = exclude_cols(df.columns())
             if select:
                 columns = [
@@ -214,9 +201,6 @@ def create_config_endpoint(
                 new_query = new_query.offset(offset or 0).limit(limit)
 
             if len(searches) > 0 and config.search is not None:
-                import pypika.queries
-                import pypika.terms
-
                 source_view = realdataframe.tablename
                 context.init_search(source_view, config.search)
                 score_sum = None

@@ -1,8 +1,9 @@
 import mimetypes
 import os
+import tempfile
 from enum import Enum
 from typing import Union
-import tempfile
+from uuid import uuid4
 
 import pyarrow as pa
 from starlette.background import BackgroundTask
@@ -13,7 +14,6 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
-from uuid import uuid4
 
 logger = get_logger(__name__)
 
