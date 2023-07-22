@@ -21,10 +21,11 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 
-cache.setup("mem://")
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
-
 logger = get_logger(__name__)
+
+
+Gb = 1073741824
+cache.setup("disk://", size_limit=10 * Gb, shards=12)
 
 
 async def get_partitions(datasource: Datasource, params: BaseModel, config: Config) -> Optional[list]:
@@ -47,7 +48,6 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
-@cached
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -84,6 +84,10 @@ def split_csv(csv_str: str) -> list[str]:
     for i in reader:
         return i
     raise ValueError("cannot happen")
+
+
+def is_json(result, args, kwargs, key=None):
+    return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
 
 
 def create_config_endpoint(
@@ -124,6 +128,13 @@ def create_config_endpoint(
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
 
     @api_method
+    @cache.failover(ttl="1h")
+    @cache.slice_rate_limit(10, "1m")
+    @cache(
+        ttl=CACHE_EXPIRATION_TIME_SECONDS,
+        key="{request.url}:{params.json}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
+        condition=is_json,
+    )
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore
