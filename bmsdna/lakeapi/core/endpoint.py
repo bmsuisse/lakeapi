@@ -5,7 +5,6 @@ import pypika
 import pypika.functions as fn
 import pypika.queries
 import pypika.terms
-from cashews import cache
 from deltalake import DeltaTable
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -14,18 +13,18 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import is_cache, CACHE_TYPE, CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
+from cashews import cache
+
+
+cache.setup("disk://" if CACHE_TYPE == "auto" else CACHE_TYPE)
 
 logger = get_logger(__name__)
-
-
-Gb = 1073741824
-cache.setup("disk://", size_limit=10 * Gb, shards=12)
 
 
 async def get_partitions(datasource: Datasource, params: BaseModel, config: Config) -> Optional[list]:
@@ -87,6 +86,8 @@ def split_csv(csv_str: str) -> list[str]:
 
 
 def is_json(result, args, kwargs, key=None):
+    if CACHE_EXPIRATION_TIME_SECONDS <= 0:
+        return False
     return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
 
 
@@ -128,8 +129,6 @@ def create_config_endpoint(
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
 
     @api_method
-    @cache.failover(ttl="1h")
-    @cache.slice_rate_limit(10, "1m")
     @cache(
         ttl=CACHE_EXPIRATION_TIME_SECONDS,
         key="{request.url}:{params.json}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
