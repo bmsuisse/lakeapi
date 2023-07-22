@@ -169,7 +169,7 @@ async def create_response(
 
     if format == OutputFormats.JSON:
         return Response(
-            content=pl.from_arrow(content.to_arrow_table()).write_json(row_oriented=True),
+            content=content.to_json(),
             headers=headers,
             media_type="application/json",
         )

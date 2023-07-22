@@ -103,6 +103,16 @@ class ResultData(ABC):
             assert isinstance(t, pl.DataFrame)
             t.write_json(f, row_oriented=True)
 
+    def to_json(self):
+        arrow_table = self.to_arrow_table()
+        t = pl.from_arrow(arrow_table)
+        return t.write_json(row_oriented=True)
+
+    def to_njson(self):
+        arrow_table = self.to_arrow_table()
+        t = pl.from_arrow(arrow_table)
+        return t.write_ndjson()
+
     def write_nd_json(self, file_name: str):
         import polars as pl
 
