@@ -237,6 +237,24 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "cashews"
+version = "6.2.0"
+description = "cache tools with async power"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "cashews-6.2.0-py3-none-any.whl", hash = "sha256:8a005fdb429efad8a99e2d8c3024a0a59bed35d49fe67da35a2cd9cb1d56cd89"},
+    {file = "cashews-6.2.0.tar.gz", hash = "sha256:c197202336d1bfde732bf43c30c8fd3fdb5836700e8a81bdd25abcc5ea1df9c8"},
+]
+
+[package.extras]
+dill = ["dill"]
+diskcache = ["diskcache (>=5.0.0)"]
+redis = ["redis (>=4.3.1)"]
+speedup = ["bitarray (<3.0.0)", "hiredis", "xxhash (<4.0.0)"]
+tests = ["hypothesis", "pytest", "pytest-asyncio"]
+
+[[package]]
 name = "certifi"
 version = "2023.5.7"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -515,7 +533,6 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "deltalake-0.10.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1aef72679268324e7cc556f03969b92235076b6edcecae7a2f85ac930b5fb9b9"},
-    {file = "deltalake-0.10.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:91e801b78e298946950b07bf0573e4cf012d6259ac294bcac662b6d746f95596"},
     {file = "deltalake-0.10.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:437f8ee9f28a9cd8454e8700c3dd88f5ad33c2ec9a7192356b55b23fee50259c"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f532b3c3dc8437fc26279a296bc576bdf79b167e1d4864847ca7c5ec7b3915b6"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42212ee879735d476772a9c1d1ca3e43ef15893a301796baffe94db3578e98ca"},
@@ -2019,4 +2036,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "649bbee322385ffbfb48e5ad47c3dcf9558c8a8799a1f86d8707be4524c31b91"
+content-hash = "28e5d8f6810f462dd3fdaba3e4d9b21a3ce5be212548f45242a21541174a1381"

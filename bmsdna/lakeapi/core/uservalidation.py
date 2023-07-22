@@ -2,16 +2,14 @@ from typing import Sequence
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from aiocache import cached, Cache
+from cashews import cache
 from aiocache.serializers import PickleSerializer
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from fastapi import FastAPI, Response
 
-cache = cached(
-    ttl=CACHE_EXPIRATION_TIME_SECONDS * 10000,
-    cache=Cache.MEMORY,
-    serializer=PickleSerializer(),
-)
+
+cache.setup("mem://")
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 security = HTTPBasic()
 
@@ -19,7 +17,7 @@ security = HTTPBasic()
 userhashmap: dict[str, str] | None = None
 
 
-@cache
+@cached
 async def is_correct(hash: str, pwd_str: str):
     import argon2
 

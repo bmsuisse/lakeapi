@@ -13,8 +13,9 @@ from typing import (
 )
 import pyarrow as pa
 import pyarrow.parquet
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
+
+from cashews import cache
+
 
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
@@ -33,7 +34,8 @@ logger = get_logger(__name__)
 endpoints = Literal["query", "meta", "request", "sql"]
 
 
-cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+cache.setup("mem://")
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
 
@@ -155,7 +157,7 @@ class Datasource:
         return self.df  # type: ignore
 
 
-@cache
+@cached
 async def get_partition_filter(param, deltaMeta, param_def):
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
@@ -224,7 +226,7 @@ async def get_partition_filter(param, deltaMeta, param_def):
     )
 
 
-@cache
+@cached
 async def filter_partitions_based_on_params(deltaMeta, params, param_def):
     if len(deltaMeta.partition_columns) == 0:
         return None
@@ -237,7 +239,7 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
     return partition_filters if len(partition_filters) > 0 else None
 
 
-@cache
+@cached
 async def concat_expr(
     exprs: Union[list[pypika.Criterion], list[pa.compute.Expression]],
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
@@ -250,7 +252,7 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
-@cache
+@cached
 async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
@@ -265,7 +267,7 @@ async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     return inner_expr
 
 
-@cache
+@cached
 async def filter_df_based_on_params(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],

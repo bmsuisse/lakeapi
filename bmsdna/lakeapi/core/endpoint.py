@@ -3,8 +3,7 @@ import pyarrow as pa
 import pypika
 import pypika.functions as fn
 from deltalake import DeltaTable
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
+from cashews import cache
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -33,8 +32,10 @@ from bmsdna.lakeapi.core.types import (
     Engines,
 )
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+import pypika
 
-cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+cache.setup("mem://")
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 logger = get_logger(__name__)
 
@@ -59,6 +60,7 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
+@cached
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -175,8 +177,6 @@ def create_config_endpoint(
                     for k, v in params.model_dump(exclude_unset=True).items()
                     if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
                 }
-
-            import pypika
 
             columns = exclude_cols(df.columns())
             if select:
