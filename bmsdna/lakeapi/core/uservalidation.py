@@ -6,19 +6,16 @@ from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from fastapi import FastAPI, Response
-
-cache = cached(
-    ttl=CACHE_EXPIRATION_TIME_SECONDS * 10000,
-    cache=Cache.MEMORY,
-    serializer=PickleSerializer(),
-)
+from cashews import cache
 
 security = HTTPBasic()
 
 userhashmap: dict[str, str] | None = None
 
+cache.setup("mem://")
 
-@cache
+
+@cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 async def is_correct(hash: str, pwd_str: str):
     import argon2
 

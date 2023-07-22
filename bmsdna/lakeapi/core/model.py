@@ -13,8 +13,9 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
+from cashews import cache
 
-cache = cached(ttl=CACHE_EXPIRATION_TIME_SECONDS, cache=Cache.MEMORY, serializer=PickleSerializer())
+cache.setup("mem://")
 
 
 def _make_model(v, name):
@@ -47,7 +48,7 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
-@cache
+@cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold()
     for param in paramdef:

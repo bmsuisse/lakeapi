@@ -10,13 +10,19 @@ import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 import pypika.terms
 import os
+from functools import lru_cache
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+
 
 if TYPE_CHECKING:
     import pandas as pd
 
 FLAVORS = Literal["ansi", "mssql"]
 
+KB = 1024
 
+
+@lru_cache(maxsize=KB * 10)
 def get_sql(
     sql_or_pypika: str | pypika.queries.QueryBuilder, limit: int | None = None, flavor: FLAVORS = "ansi"
 ) -> str:
