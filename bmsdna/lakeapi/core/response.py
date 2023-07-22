@@ -15,12 +15,12 @@ from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from cashews import cache
-from bmsdna.lakeapi.core.cache import is_cache, CACHE_TYPE, CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 
 logger = get_logger(__name__)
 
 
-cache.setup("mem://" if CACHE_TYPE == "auto" else CACHE_TYPE)
+cache.setup("mem://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
 cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS, condition=is_cache)
 
 

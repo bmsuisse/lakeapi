@@ -5,9 +5,9 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from bmsdna.lakeapi.core.cache import is_cache, CACHE_TYPE, CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 
-cache.setup("mem://" if CACHE_TYPE == "auto" else CACHE_TYPE)
+cache.setup("mem://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
 cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS, condition=is_cache)
 
 

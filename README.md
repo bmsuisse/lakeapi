@@ -241,6 +241,12 @@ We might allow this later if needed via explicit flag.
 
 ODBC is tested against MS SQL Server using ODBC Driver 17 for MS SQL Server
 
+## Caching
+
+LakeAPI uses [cashews](https://github.com/Krukov/cashews) for caching. Caching can be controlled by environment variables.
+`CACHE_EXPIRATION_TIME_SECONDS` controls the expiration time. Set to 0 to disable caching.
+`CACHE_BACKEND` controls the backend. Memory, Disk and Redis are supported by `cashews`. See [cashews docs](https://github.com/Krukov/cashews#configuration) for more information.
+
 ## Further projects
 
 - [lakeapi2sql](https://github.com/bmsuisse/lakeapi2sql) Allows you to read from lake api and write to MS SQL Server
