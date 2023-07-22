@@ -1,38 +1,25 @@
 from typing import List, Literal, Optional, Type, Union
+
 import pyarrow as pa
 import pypika
 import pypika.functions as fn
-from deltalake import DeltaTable
+import pypika.queries
+import pypika.terms
 from cashews import cache
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-)
+from deltalake import DeltaTable
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
-from bmsdna.lakeapi.core.datasource import (
-    Datasource,
-    filter_df_based_on_params,
-    filter_partitions_based_on_params,
-)
+from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
-from bmsdna.lakeapi.core.types import (
-    OutputFileType,
-    Engines,
-)
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
-import pypika
+from bmsdna.lakeapi.core.types import Engines, OutputFileType
 
 cache.setup("mem://")
 cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
@@ -214,9 +201,6 @@ def create_config_endpoint(
                 new_query = new_query.offset(offset or 0).limit(limit)
 
             if len(searches) > 0 and config.search is not None:
-                import pypika.queries
-                import pypika.terms
-
                 source_view = realdataframe.tablename
                 context.init_search(source_view, config.search)
                 score_sum = None
