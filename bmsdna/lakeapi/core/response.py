@@ -14,8 +14,10 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
+from functools import lru_cache, cache
 
 logger = get_logger(__name__)
+KB = 1024
 
 
 class OutputFormats(Enum):
@@ -34,6 +36,7 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
+@cache
 def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":
@@ -201,7 +204,7 @@ async def create_response(
         for f in additional_files:
             os.remove(f)
 
-    fr = FileResponseWCharset(
+    return FileResponseWCharset(
         path=temp_file.name,
         headers=headers,
         media_type=media_type,
@@ -210,4 +213,3 @@ async def create_response(
         background=BackgroundTask(clean_up),
         charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
     )
-    return fr

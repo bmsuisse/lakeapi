@@ -432,7 +432,7 @@ def test_all_metadata():
         meta_detail_route = route + "/metadata_detail"
         if name == "fake_polars":
             continue  # disable for now, see https://github.com/pola-rs/polars/issues/9668
-        response = client.get(meta_detail_route, auth=auth)        
+        response = client.get(meta_detail_route, auth=auth)
         # TODO: reenable once fixed
         if name not in ["not_existing", "not_existing2"]:
             assert name + "_" + str(response.status_code) == name + "_200"
