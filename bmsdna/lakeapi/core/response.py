@@ -171,7 +171,7 @@ async def create_response(
 
     format = await parse_format(accept)
 
-    format, extension = parse_format(accept)
+    format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
 
