@@ -9,7 +9,6 @@ from cashews import cache
 from deltalake import DeltaTable
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
-from inspect import signature
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
@@ -87,99 +86,6 @@ def split_csv(csv_str: str) -> list[str]:
     raise ValueError("cannot happen")
 
 
-async def _process_data(
-    request: Request,
-    format,
-    jsonify_complex,
-    config,
-    basic_config,
-    engine,
-    params,
-    limit,
-    offset,
-    select,
-    distinct,
-    chunk_size,
-    has_complex,
-):
-    with get_context_by_engine(engine, chunk_size=chunk_size) as context:
-        assert config.datasource is not None
-        realdataframe = Datasource(
-            config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
-        )
-        parts = await get_partitions(realdataframe, params, config)
-        df = realdataframe.get_df(parts or None)
-
-        expr = await get_params_filter_expr(df.columns(), config, params)
-        base_schema = df.arrow_schema()
-        new_query = df.query_builder()
-        new_query = new_query.where(expr) if expr is not None else new_query
-
-        searches = {}
-        if config.search is not None and params is not None:
-            search_dict = {c.name.lower(): c for c in config.search}
-            searches = {
-                k: (v, search_dict[k.lower()])
-                for k, v in params.model_dump(exclude_unset=True).items()
-                if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
-            }
-
-        columns = exclude_cols(df.columns())
-        if select:
-            columns = [
-                c for c in columns if c in split_csv(select)
-            ]  # split , is a bit naive, we might want to support real CSV with quotes here
-        if config.datasource.exclude and len(config.datasource.exclude) > 0:
-            columns = [c for c in columns if c not in config.datasource.exclude]
-        if config.datasource.sortby and len(searches) == 0:
-            for s in config.datasource.sortby:
-                new_query = new_query.orderby(
-                    s.by,
-                    order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
-                )
-        if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
-            jsonify_complex = True
-        if jsonify_complex:
-            new_query = new_query.select(
-                *[
-                    pypika.Field(c)
-                    if not is_complex_type(base_schema, c)
-                    else context.json_function(pypika.Field(c)).as_(c)
-                    for c in columns
-                ]
-            )
-        else:
-            new_query = new_query.select(*columns)
-
-        if distinct:
-            assert len(columns) <= 3  # reduce complexity here
-            new_query = new_query.distinct()
-
-        if not (limit == -1 and config.allow_get_all_pages):
-            limit = 1000 if limit == -1 else limit
-            new_query = new_query.offset(offset or 0).limit(limit)
-
-        if len(searches) > 0 and config.search is not None:
-            source_view = realdataframe.tablename
-            context.init_search(source_view, config.search)
-            score_sum = None
-            for search_key, (search_val, search_cfg) in searches.items():
-                score_sum = (
-                    context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                    if score_sum is None
-                    else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                )
-            assert score_sum is not None
-            new_query = new_query.select(score_sum.as_("search_score"))
-            new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
-
-            new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
-
-        logger.debug(f"Query: {get_sql(new_query)}")
-
-        return context.execute_sql(new_query), context
-
-
 def create_config_endpoint(
     metamodel: Optional[ResultData],
     apimethod: Literal["get", "post"],
@@ -237,32 +143,92 @@ def create_config_endpoint(
 
         logger.debug(f"Engine: {engine}")
         real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
-
-        df2, context = await _process_data(
-            request,
-            format,
-            jsonify_complex,
-            config,
-            basic_config,
-            engine,
-            params,
-            limit,
-            offset,
-            select,
-            distinct,
-            real_chunk_size,
-            has_complex,
-        )
-
-        try:
-            return await create_response(
-                request.url,
-                format or request.headers["Accept"],
-                df2,
-                context,
-                basic_config=basic_config,
-                close_context=True,
+        with get_context_by_engine(engine, chunk_size=real_chunk_size) as context:
+            assert config.datasource is not None
+            realdataframe = Datasource(
+                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
             )
-        except Exception as err:
-            logger.error("Error in creating response", exc_info=err)
-            raise HTTPException(status_code=500)
+            parts = await get_partitions(realdataframe, params, config)
+            df = realdataframe.get_df(parts or None)
+
+            expr = await get_params_filter_expr(df.columns(), config, params)
+            base_schema = df.arrow_schema()
+            new_query = df.query_builder()
+            new_query = new_query.where(expr) if expr is not None else new_query
+
+            searches = {}
+            if config.search is not None and params is not None:
+                search_dict = {c.name.lower(): c for c in config.search}
+                searches = {
+                    k: (v, search_dict[k.lower()])
+                    for k, v in params.model_dump(exclude_unset=True).items()
+                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
+                }
+
+            columns = exclude_cols(df.columns())
+            if select:
+                columns = [
+                    c for c in columns if c in split_csv(select)
+                ]  # split , is a bit naive, we might want to support real CSV with quotes here
+            if config.datasource.exclude and len(config.datasource.exclude) > 0:
+                columns = [c for c in columns if c not in config.datasource.exclude]
+            if config.datasource.sortby and len(searches) == 0:
+                for s in config.datasource.sortby:
+                    new_query = new_query.orderby(
+                        s.by,
+                        order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
+                    )
+            if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
+                jsonify_complex = True
+            if jsonify_complex:
+                new_query = new_query.select(
+                    *[
+                        pypika.Field(c)
+                        if not is_complex_type(base_schema, c)
+                        else context.json_function(pypika.Field(c)).as_(c)
+                        for c in columns
+                    ]
+                )
+            else:
+                new_query = new_query.select(*columns)
+
+            if distinct:
+                assert len(columns) <= 3  # reduce complexity here
+                new_query = new_query.distinct()
+
+            if not (limit == -1 and config.allow_get_all_pages):
+                limit = 1000 if limit == -1 else limit
+                new_query = new_query.offset(offset or 0).limit(limit)
+
+            if len(searches) > 0 and config.search is not None:
+                source_view = realdataframe.tablename
+                context.init_search(source_view, config.search)
+                score_sum = None
+                for search_key, (search_val, search_cfg) in searches.items():
+                    score_sum = (
+                        context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                        if score_sum is None
+                        else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
+                    )
+                assert score_sum is not None
+                new_query = new_query.select(score_sum.as_("search_score"))
+                new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
+
+                new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
+
+            logger.debug(f"Query: {get_sql(new_query)}")
+
+            df2 = context.execute_sql(new_query)
+
+            try:
+                return await create_response(
+                    request.url,
+                    format or request.headers["Accept"],
+                    df2,
+                    context,
+                    basic_config=basic_config,
+                    close_context=True,
+                )
+            except Exception as err:
+                logger.error("Error in creating response", exc_info=err)
+                raise HTTPException(status_code=500)

@@ -4,11 +4,11 @@ import tempfile
 from enum import Enum
 from typing import Union
 from uuid import uuid4
-
+import polars as pl
 import pyarrow as pa
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, Response
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
@@ -166,8 +166,15 @@ async def create_response(
     format, extension = parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
+
+    if format == OutputFormats.JSON:
+        return Response(
+            content=pl.from_arrow(content.to_arrow_table()).write_json(row_oriented=True),
+            headers=headers,
+            media_type="application/json",
+        )
+
     if format in [
-        OutputFormats.JSON,
         OutputFormats.ND_JSON,
         OutputFormats.CSV,
         OutputFormats.SEMI_CSV,
