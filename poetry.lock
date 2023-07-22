@@ -50,22 +50,6 @@ dbapi = ["pandas", "pyarrow (>=8.0.0)"]
 test = ["pandas", "pyarrow (>=8.0.0)", "pytest"]
 
 [[package]]
-name = "aiocache"
-version = "0.12.1"
-description = "multi backend asyncio cache"
-optional = false
-python-versions = "*"
-files = [
-    {file = "aiocache-0.12.1-py2.py3-none-any.whl", hash = "sha256:15eb17188e12d7226678c22a890824ff9c406cf7e5b418f86944395db63a3c1b"},
-    {file = "aiocache-0.12.1.tar.gz", hash = "sha256:7d9ffbd4ca2b1c51e5b213fd7d42dc43b80af01a436b14be5ebcbde199709fb3"},
-]
-
-[package.extras]
-memcached = ["aiomcache (>=0.5.2)"]
-msgpack = ["msgpack (>=0.5.5)"]
-redis = ["redis (>=4.2.0)"]
-
-[[package]]
 name = "annotated-types"
 version = "0.5.0"
 description = "Reusable constraint types to use with typing.Annotated"
@@ -2047,4 +2031,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f95440a2b361cd341dd436f2e2b6846823fbada99ad1a935611662a5ccfb63ff"
+content-hash = "f8dd24fcf63705e06ee43de2762bfb6b91d9b138563f0d2548a004ed701fb062"
