@@ -19,7 +19,7 @@ from typing import (
 from typing_extensions import TypedDict, NotRequired, Required
 import copy
 import yaml
-from bmsdna.lakeapi.core.env import (
+from bmsdna.lakeapi.core.cache import (
     CACHE_EXPIRATION_TIME_SECONDS,
     CACHE_JSON_RESPONSES,
     CACHE_BACKEND,
