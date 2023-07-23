@@ -19,7 +19,13 @@ from typing import (
 from typing_extensions import TypedDict, NotRequired, Required
 import copy
 import yaml
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.env import (
+    CACHE_EXPIRATION_TIME_SECONDS,
+    CACHE_JSON_RESPONSES,
+    CACHE_BACKEND,
+    CACHE_MAX_DISK_SIZE,
+    CACHE_MAX_MEMORY_SIZE,
+)
 
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
@@ -107,6 +113,24 @@ class DatasourceConfig:
 
 
 @dataclass
+class CacheConfig:
+    cache_json_response: bool = CACHE_JSON_RESPONSES
+    expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
+    backend: Optional[str] = CACHE_BACKEND
+    max_size: Optional[int] = CACHE_MAX_MEMORY_SIZE
+
+    def __post_init__(self):
+        valid_prefix = ["mem://", "disk://", "memory", "disk", "auto", "redis://"]
+        assert any(
+            self.backend.startswith(prefix) for prefix in valid_prefix
+        ), f"Backend is not valid {self.backend}. See cashews config for more info"
+        if self.backend == "memory":
+            self.backend = "mem://"
+        if self.backend == "disk":
+            self.backend = "disk://"
+
+
+@dataclass
 class Config:
     name: str
     tag: str
@@ -121,6 +145,7 @@ class Config:
     search: Optional[List[SearchConfig]] = None
     engine: Optional[Engines] = None
     chunk_size: Optional[int] = None
+    cache: Optional[CacheConfig] = None
 
     def __post_init__(self):
         self.version_str = (
@@ -198,6 +223,14 @@ class Config:
         if select:
             select = [Column(name=c.get("name"), alias=c.get("alias")) for c in select]
 
+        _cache = config.get("cache", {})
+        cache = CacheConfig(
+            cache_json_response=_cache.get("cache_json_response", CACHE_JSON_RESPONSES),
+            expiration_time_seconds=_cache.get("expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS),
+            backend=_cache.get("backend", CACHE_BACKEND),
+            max_size=_cache.get("max_size", CACHE_MAX_DISK_SIZE),
+        )
+
         datasource_obj = DatasourceConfig(
             uri=uri,
             file_type=file_type,
@@ -223,6 +256,7 @@ class Config:
             allow_get_all_pages=config.get("allow_get_all_pages", False),
             datasource=datasource_obj,
             cache_expiration_time_seconds=cache_expiration_time_seconds,
+            cache=cache,
         )
 
     @classmethod

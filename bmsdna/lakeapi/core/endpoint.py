@@ -22,10 +22,6 @@ from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
 
 
-cache.setup(
-    "disk://" if CACHE_BACKEND == "auto" else CACHE_BACKEND,
-)
-
 logger = get_logger(__name__)
 
 
@@ -119,6 +115,11 @@ def create_config_endpoint(
         ),
     }
 
+    cache_backend = config.cache.backend or CACHE_BACKEND
+    cache.setup(
+        "disk://" if cache_backend == "auto" else cache_backend,
+    )
+
     api_method = api_method_mapping[apimethod]
     has_complex = True
     if metamodel is not None:
@@ -126,9 +127,9 @@ def create_config_endpoint(
 
     @api_method
     @cache(
-        ttl=CACHE_EXPIRATION_TIME_SECONDS,
+        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_cache_json_response,
+        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,
     )
     async def data(
         request: Request,
