@@ -13,7 +13,7 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
-from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS, is_cache_json_response
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
@@ -22,7 +22,9 @@ from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
 
 
-cache.setup("disk://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
+cache.setup(
+    "disk://" if CACHE_BACKEND == "auto" else CACHE_BACKEND,
+)
 
 logger = get_logger(__name__)
 
@@ -85,12 +87,6 @@ def split_csv(csv_str: str) -> list[str]:
     raise ValueError("cannot happen")
 
 
-def is_json(result, args, kwargs, key=None):
-    if CACHE_EXPIRATION_TIME_SECONDS <= 0:
-        return False
-    return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
-
-
 def create_config_endpoint(
     metamodel: Optional[ResultData],
     apimethod: Literal["get", "post"],
@@ -132,7 +128,7 @@ def create_config_endpoint(
     @cache(
         ttl=CACHE_EXPIRATION_TIME_SECONDS,
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_json,
+        condition=is_cache_json_response,
     )
     async def data(
         request: Request,
