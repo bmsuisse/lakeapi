@@ -114,16 +114,19 @@ class DatasourceConfig:
 
 @dataclass
 class CacheConfig:
-    cache_json_response: bool = CACHE_JSON_RESPONSES
-    expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
-    backend: Optional[str] = CACHE_BACKEND
-    max_size: Optional[int] = CACHE_MAX_MEMORY_SIZE
+    cache_json_response: bool = CACHE_JSON_RESPONSES or True
+    expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS or None
+    backend: Optional[str] = CACHE_BACKEND or None
+    max_size: Optional[int] = CACHE_MAX_MEMORY_SIZE or None
 
     def __post_init__(self):
         valid_prefix = ["mem://", "disk://", "memory", "disk", "auto", "redis://"]
-        assert any(
-            self.backend.startswith(prefix) for prefix in valid_prefix
-        ), f"Backend is not valid {self.backend}. See cashews config for more info"
+        if self.backend is not None:
+            assert any(
+                self.backend.startswith(prefix) for prefix in valid_prefix
+            ), f"Backend is not valid {self.backend}. See cashews config for more info"
+        if not self.backend:
+            self.backend = "auto"
         if self.backend == "memory":
             self.backend = "mem://"
         if self.backend == "disk":

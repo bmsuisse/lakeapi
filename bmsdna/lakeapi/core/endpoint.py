@@ -115,10 +115,8 @@ def create_config_endpoint(
         ),
     }
 
-    cache_backend = config.cache.backend or CACHE_BACKEND
-    cache.setup(
-        "disk://" if cache_backend == "auto" else cache_backend,
-    )
+    cache_backend = config.cache.backend or CACHE_BACKEND  # type: ignore
+    cache.setup("disk://" if cache_backend == "auto" else cache_backend)
 
     api_method = api_method_mapping[apimethod]
     has_complex = True
@@ -127,9 +125,9 @@ def create_config_endpoint(
 
     @api_method
     @cache(
-        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,
+        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,
+        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,  # type: ignore
     )
     async def data(
         request: Request,
