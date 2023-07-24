@@ -12,9 +12,13 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
+from datetime import timedelta
 
-cache.setup("mem://")
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
+KB = 1024
+MB = KB * 1024
+
+cache.setup(f"mem://?size={500 * MB}")
+cached = cache(ttl=timedelta(hours=3))
 
 
 def _make_model(v, name):

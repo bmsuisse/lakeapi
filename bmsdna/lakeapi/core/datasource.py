@@ -17,14 +17,18 @@ from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
+from datetime import timedelta
 
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
 
+KB = 1024
+MB = KB * 1024
 
-cache.setup("mem://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS, condition=is_cache)
+cache.setup(f"mem://?size={500 * MB}")
+cached = cache(ttl=timedelta(hours=3))
+
 
 df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
 
