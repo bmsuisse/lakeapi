@@ -12,7 +12,7 @@ KB = 1024
 MB = KB * 1024
 
 cache.setup(f"mem://?size={500 * MB}")
-cached = cache(ttl=timedelta(hours=12))
+cached = cache(ttl=timedelta(hours=3))
 
 security = HTTPBasic()
 
