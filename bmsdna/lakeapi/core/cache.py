@@ -14,12 +14,20 @@ def get_max_cache_size(disk=True):
 
 
 def is_cache(result, args, kwargs, key=None):
-    if CACHE_EXPIRATION_TIME_SECONDS <= 0:
+    if (
+        kwargs.get("request").headers.get("Cache-Control") in ("no-store", "no-cache")
+        or CACHE_EXPIRATION_TIME_SECONDS <= 0
+    ):
         return False
     return True
 
 
 def is_cache_json_response(result, args, kwargs, key=None):
-    if CACHE_EXPIRATION_TIME_SECONDS <= 0 or not CACHE_JSON_RESPONSES:
+    if not is_cache(result, args, kwargs, key) or not CACHE_JSON_RESPONSES:
         return False
     return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
+
+
+def update_header():
+    # https://github.com/long2ice/fastapi-cache/blob/main/fastapi_cache/decorator.py#L197
+    ...
