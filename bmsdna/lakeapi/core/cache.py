@@ -14,10 +14,13 @@ def get_max_cache_size(disk=True):
 
 
 def is_cache(result, args, kwargs, key=None):
-    if (
-        kwargs.get("request").headers.get("Cache-Control") in ("no-store", "no-cache")
-        or CACHE_EXPIRATION_TIME_SECONDS <= 0
-    ):
+    request = kwargs.get("request")
+    if request:
+        cache_control = request.headers.get("Cache-Control")
+        no_cache = cache_control in ("no-store", "no-cache")
+    else:
+        no_cache = False
+    if no_cache or CACHE_EXPIRATION_TIME_SECONDS <= 0:
         return False
     return True
 
