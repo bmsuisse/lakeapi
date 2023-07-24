@@ -143,6 +143,10 @@ tables:
     tag: test
     version: 1
     allow_get_all_pages: true
+    cache:
+      cache_json_response: true
+      expiration_time_seconds: 30
+      backend: disk
     api_method:
       - get
       - post
