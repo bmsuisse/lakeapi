@@ -154,7 +154,7 @@ tables:
     version: 1
     cache:
       cache_json_response: true
-      expiration_time_seconds: 5
+      expiration_time_seconds: 30
       backend: disk
     allow_get_all_pages: true
     api_method:
