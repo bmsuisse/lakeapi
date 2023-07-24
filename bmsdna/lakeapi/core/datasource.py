@@ -17,6 +17,7 @@ from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
+from datetime import timedelta
 
 logger = get_logger(__name__)
 
@@ -26,7 +27,7 @@ KB = 1024
 MB = KB * 1024
 
 cache.setup(f"mem://?size={500 * MB}")
-cached = cache()
+cached = cache(ttl=timedelta(hours=12))
 
 
 df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}

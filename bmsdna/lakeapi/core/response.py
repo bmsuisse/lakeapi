@@ -16,6 +16,7 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from cashews import cache
 from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
+from datetime import timedelta
 
 logger = get_logger(__name__)
 
@@ -23,7 +24,7 @@ KB = 1024
 MB = KB * 1024
 
 cache.setup(f"mem://?size={500 * MB}")
-cached = cache()
+cached = cache(ttl=timedelta(hours=12))
 
 
 class OutputFormats(Enum):
