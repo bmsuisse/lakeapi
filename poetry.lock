@@ -50,22 +50,6 @@ dbapi = ["pandas", "pyarrow (>=8.0.0)"]
 test = ["pandas", "pyarrow (>=8.0.0)", "pytest"]
 
 [[package]]
-name = "aiocache"
-version = "0.12.1"
-description = "multi backend asyncio cache"
-optional = false
-python-versions = "*"
-files = [
-    {file = "aiocache-0.12.1-py2.py3-none-any.whl", hash = "sha256:15eb17188e12d7226678c22a890824ff9c406cf7e5b418f86944395db63a3c1b"},
-    {file = "aiocache-0.12.1.tar.gz", hash = "sha256:7d9ffbd4ca2b1c51e5b213fd7d42dc43b80af01a436b14be5ebcbde199709fb3"},
-]
-
-[package.extras]
-memcached = ["aiomcache (>=0.5.2)"]
-msgpack = ["msgpack (>=0.5.5)"]
-redis = ["redis (>=4.2.0)"]
-
-[[package]]
 name = "annotated-types"
 version = "0.5.0"
 description = "Reusable constraint types to use with typing.Annotated"
@@ -547,6 +531,17 @@ pyarrow = ">=7"
 devel = ["black", "mypy", "packaging (>=20)", "pytest", "pytest-benchmark", "pytest-cov", "pytest-mock", "pytest-timeout", "ruff", "sphinx (<=4.5)", "sphinx-rtd-theme", "toml", "wheel"]
 pandas = ["pandas (<2)"]
 pyspark = ["delta-spark", "numpy (==1.22.2)", "pyspark"]
+
+[[package]]
+name = "diskcache"
+version = "5.6.1"
+description = "Disk Cache -- Disk and file backed persistent cache."
+optional = false
+python-versions = ">=3"
+files = [
+    {file = "diskcache-5.6.1-py3-none-any.whl", hash = "sha256:558c6a2d5d7c721bb00e40711803d6804850c9f76c426ed81ecc627fe9d2ce2d"},
+    {file = "diskcache-5.6.1.tar.gz", hash = "sha256:e4c978532feff5814c4cc00fe1e11e40501985946643d73220d41ee7737c72c3"},
+]
 
 [[package]]
 name = "docker"
@@ -2036,4 +2031,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "28e5d8f6810f462dd3fdaba3e4d9b21a3ce5be212548f45242a21541174a1381"
+content-hash = "f8dd24fcf63705e06ee43de2762bfb6b91d9b138563f0d2548a004ed701fb062"

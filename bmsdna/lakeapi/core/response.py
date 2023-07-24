@@ -4,18 +4,24 @@ import tempfile
 from enum import Enum
 from typing import Union
 from uuid import uuid4
-
+import polars as pl
 import pyarrow as pa
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, Response
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
+from cashews import cache
+from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 
 logger = get_logger(__name__)
+
+
+cache.setup("mem://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS, condition=is_cache)
 
 
 class OutputFormats(Enum):
@@ -34,7 +40,8 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
-def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
+@cached
+async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":
         return (OutputFormats.AVRO, ".avro")
@@ -161,13 +168,20 @@ async def create_response(
 ):
     headers = {}
 
-    format = parse_format(accept)
+    format = await parse_format(accept)
 
-    format, extension = parse_format(accept)
+    format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
+
+    if format == OutputFormats.JSON:
+        return Response(
+            content=content.to_json(),
+            headers=headers,
+            media_type="application/json",
+        )
+
     if format in [
-        OutputFormats.JSON,
         OutputFormats.ND_JSON,
         OutputFormats.CSV,
         OutputFormats.SEMI_CSV,
@@ -194,7 +208,7 @@ async def create_response(
         for f in additional_files:
             os.remove(f)
 
-    fr = FileResponseWCharset(
+    return FileResponseWCharset(
         path=temp_file.name,
         headers=headers,
         media_type=media_type,
@@ -203,4 +217,3 @@ async def create_response(
         background=BackgroundTask(clean_up),
         charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
     )
-    return fr

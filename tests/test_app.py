@@ -28,397 +28,426 @@ def test_authentication():
 
 
 def test_fruits_limit_1():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 1,
-                "fruits": "banana",
-                "B": 5,
-                "cars": "beetle",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 1,
+                    "fruits": "banana",
+                    "B": 5,
+                    "cars": "beetle",
+                }
+            ]
 
 
 def test_fruits_sort_asc():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 5,
-                "fruits": "banana",
-                "B": 1,
-                "cars": "beetle",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 5,
+                    "fruits": "banana",
+                    "B": 1,
+                    "cars": "beetle",
+                }
+            ]
 
 
 def test_fruits_sort_desc():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_sortby_desc?limit=1&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_sortby_desc?limit=1&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 9,
+                    "fruits": "ananas",
+                    "B": 9,
+                    "cars": "fiat",
+                }
+            ]
 
 
 def test_fruits_offset_1():
-    for e in engines:  # polars does not support offset
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:  # polars does not support offset
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
 
 
 def test_data_limit():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 1000
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 1000
 
 
 def test_data_filter():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=json&cars=audi&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=json&fruits=ananas&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=json&cars=audi&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=json&fruits=ananas&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 9,
+                    "fruits": "ananas",
+                    "B": 9,
+                    "cars": "fiat",
+                }
+            ]
 
 
 def test_data_csv():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        txt = response.text
-        import csv
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            txt = response.text
+            import csv
 
-        reader = csv.DictReader(txt.splitlines())
-        line1 = reader.__next__()
-        assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+            reader = csv.DictReader(txt.splitlines())
+            line1 = reader.__next__()
+            assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
 def test_data_scsv():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=scsv&cars=audi&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        txt = response.text
-        import csv
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=scsv&cars=audi&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            txt = response.text
+            import csv
 
-        reader = csv.DictReader(txt.splitlines(), delimiter=";")
-        line1 = reader.__next__()
-        assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+            reader = csv.DictReader(txt.splitlines(), delimiter=";")
+            line1 = reader.__next__()
+            assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
 def test_data_minus_1():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 100_011
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 100_011
 
 
 def test_data_minus_1_csv():
-    from io import StringIO
+    for _ in range(2):
+        from io import StringIO
 
-    for f in ("csv", "scsv"):
-        separator = ";" if f == "scsv" else ","
-        for e in engines:
-            response = client.get(f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}", auth=auth)
-            assert response.status_code == 200
-            csv_file = StringIO(response.text)
-            assert len(pd.read_csv(csv_file, sep=separator)) == 100_011
+        for f in ("csv", "scsv"):
+            separator = ";" if f == "scsv" else ","
+            for e in engines:
+                response = client.get(f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}", auth=auth)
+                assert response.status_code == 200
+                csv_file = StringIO(response.text)
+                assert len(pd.read_csv(csv_file, sep=separator)) == 100_011
 
 
 def test_data_default_limit():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 100
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 100
 
 
 def test_get_parquet_data():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1000&format=parquet&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        from io import BytesIO
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1000&format=parquet&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            from io import BytesIO
 
-        buf = BytesIO(response.content)
-        df = pd.read_parquet(buf)
-        df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
-        assert df.equals(df2)
+            buf = BytesIO(response.content)
+            df = pd.read_parquet(buf)
+            df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
+            assert df.equals(df2)
 
 
 def test_get_arrow_data():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1000&format=arrow&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        from io import BytesIO
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1000&format=arrow&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            from io import BytesIO
 
-        buf = BytesIO(response.content)
-        df = pl.read_ipc(buf).to_pandas()
-        df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
-        assert df.equals(df2)
+            buf = BytesIO(response.content)
+            df = pl.read_ipc(buf).to_pandas()
+            df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
+            assert df.equals(df2)
 
 
 def test_get_ndjson_data():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1000&format=ndjson&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        from io import BytesIO
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1000&format=ndjson&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            from io import BytesIO
 
-        buf = BytesIO(response.content)
-        df = pl.read_ndjson(buf).to_pandas()
-        df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
-        assert df.equals(df2)
+            buf = BytesIO(response.content)
+            df = pl.read_ndjson(buf).to_pandas()
+            df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
+            assert df.equals(df2)
 
 
 def test_get_excel_data():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits?limit=1000&format=xlsx&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        from io import BytesIO
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1000&format=xlsx&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            from io import BytesIO
 
-        buf = BytesIO(response.content)
-        df = pl.read_excel(buf).to_pandas()
-        df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
-        assert df.equals(df2)
+            buf = BytesIO(response.content)
+            df = pl.read_excel(buf).to_pandas()
+            df2 = pl.read_delta("tests/data/delta/fruits").to_pandas()
+            assert df.equals(df2)
 
 
 def test_fruits_in():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"fruits_in": ["banana", "ananas"]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert len(response.json()) == 4
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"fruits_in": ["banana", "ananas"]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert len(response.json()) == 4
 
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"fruits_in": ["apple", "ananas"]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert len(response.json()) == 4
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"fruits_in": ["apple", "ananas"]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert len(response.json()) == 4
 
 
 def test_fruits_in_zero():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"A_in": [0, 9]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert len(response.json()) == 2
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"A_in": [0, 9]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert len(response.json()) == 2
 
 
 def test_fruits_combi():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"pk": [{"cars": "audi"}]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"pk": [{"cars": "audi"}]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
 
 
 def test_fruits_combi_int():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"combiint": [{"A": 0, "cars": "lamborghini", "B": 5}]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 0,
-                "fruits": "apple",
-                "B": 5,
-                "cars": "lamborghini",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"combiint": [{"A": 0, "cars": "lamborghini", "B": 5}]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 0,
+                    "fruits": "apple",
+                    "B": 5,
+                    "cars": "lamborghini",
+                }
+            ]
 
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"combiint": [{"A": 1, "cars": "beetle", "B": 5}]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 1,
-                "fruits": "banana",
-                "B": 5,
-                "cars": "beetle",
-            }
-        ]
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"combiint": [{"A": 1, "cars": "beetle", "B": 5}]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 1,
+                    "fruits": "banana",
+                    "B": 5,
+                    "cars": "beetle",
+                }
+            ]
 
 
 def test_fruits_combi_different_name():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={"combi": [{"cars": "audi", "fruits": "banana"}]},
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={"combi": [{"cars": "audi", "fruits": "banana"}]},
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
 
 
 def test_fruits_combi_multi():
-    for e in engines:
-        response = client.post(
-            f"/api/v1/test/fruits?limit=1000",
-            json={
-                "pk": [
-                    {"cars": "audi", "fruits": "banana"},
-                    {"cars": "fiat", "fruits": "ananas"},
-                ]
-            },
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert len(response.json()) == 2
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            },
-            {
-                "A": 9,
-                "fruits": "ananas",
-                "B": 9,
-                "cars": "fiat",
-            },
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.post(
+                f"/api/v1/test/fruits?limit=1000",
+                json={
+                    "pk": [
+                        {"cars": "audi", "fruits": "banana"},
+                        {"cars": "fiat", "fruits": "ananas"},
+                    ]
+                },
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert len(response.json()) == 2
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                },
+                {
+                    "A": 9,
+                    "fruits": "ananas",
+                    "B": 9,
+                    "cars": "fiat",
+                },
+            ]
 
 
 def test_fruits_select():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [{"fruits_new": "banana"}]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert response.json() == [{"fruits_new": "banana"}]
 
 
 def test_fake_parquet():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 10
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 10
 
 
 def test_fake_parquet_ns():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 10
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 10
 
 
 def test_fake_csv():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 3
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 3
 
 
 def test_json():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 3
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 3
 
 
 def test_ndjson():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 3
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 3
 
 
 def test_avro():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 3
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 3
 
 
 def test_fake_arrow():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert len(response.json()) == 10
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert len(response.json()) == 10
 
 
 def test_all_metadata():
@@ -432,7 +461,7 @@ def test_all_metadata():
         meta_detail_route = route + "/metadata_detail"
         if name == "fake_polars":
             continue  # disable for now, see https://github.com/pola-rs/polars/issues/9668
-        response = client.get(meta_detail_route, auth=auth)        
+        response = client.get(meta_detail_route, auth=auth)
         # TODO: reenable once fixed
         if name not in ["not_existing", "not_existing2"]:
             assert name + "_" + str(response.status_code) == name + "_200"
@@ -464,76 +493,92 @@ def test_auth_metadata():
 
 
 def test_data_partition():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [{"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "my_empty_col": None}]
-        response = client.get(
-            f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        assert response.json() == [{"A": 9, "fruits": "ananas", "B": 9, "cars": "fiat", "my_empty_col": None}]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [{"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "my_empty_col": None}]
+            response = client.get(
+                f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            assert response.json() == [{"A": 9, "fruits": "ananas", "B": 9, "cars": "fiat", "my_empty_col": None}]
 
 
 def test_data_partition_mod():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={e}",
-            auth=auth,  # works because of implicit parameters
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
-        response = client.post(
-            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={e}",
-            auth=auth,
-            json={"cars_in": ["audi"]},
-        )
-        assert response.status_code == 200
-        assert response.json() == [
-            {
-                "A": 2,
-                "fruits": "banana",
-                "B": 4,
-                "cars": "audi",
-            }
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={e}",
+                auth=auth,  # works because of implicit parameters
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
+            response = client.post(
+                f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={e}",
+                auth=auth,
+                json={"cars_in": ["audi"]},
+            )
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                }
+            ]
 
 
 def test_fruits_nested():
-    for e in engines:
-        response = client.get(f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [
-            {"A": 1, "fruits": "banana", "B": 5, "cars": "beetle", "nested": {"fruits": "banana", "cars": "beetle"}},
-            {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"fruits": "banana", "cars": "audi"}},
-        ] or response.json() == [
-            {"A": 1, "fruits": "banana", "B": 5, "cars": "beetle", "nested": {"cars": "beetle", "fruits": "banana"}},
-            {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"cars": "audi", "fruits": "banana"}},
-        ]
+    for _ in range(2):
+        for e in engines:
+            response = client.get(f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}", auth=auth)
+            assert response.status_code == 200
+            assert response.json() == [
+                {
+                    "A": 1,
+                    "fruits": "banana",
+                    "B": 5,
+                    "cars": "beetle",
+                    "nested": {"fruits": "banana", "cars": "beetle"},
+                },
+                {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"fruits": "banana", "cars": "audi"}},
+            ] or response.json() == [
+                {
+                    "A": 1,
+                    "fruits": "banana",
+                    "B": 5,
+                    "cars": "beetle",
+                    "nested": {"cars": "beetle", "fruits": "banana"},
+                },
+                {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"cars": "audi", "fruits": "banana"}},
+            ]
 
 
 def test_sortby():
-    for e in engines:
-        response = client.get(
-            f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        jsd = response.json()
-        assert len(jsd) == 5
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            jsd = response.json()
+            assert len(jsd) == 5
 
-        assert jsd[0]["randomdata"] <= jsd[1]["randomdata"]
-        assert jsd[1]["randomdata"] <= jsd[2]["randomdata"]
-        assert jsd[2]["randomdata"] <= jsd[3]["randomdata"]
-        assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]
+            assert jsd[0]["randomdata"] <= jsd[1]["randomdata"]
+            assert jsd[1]["randomdata"] <= jsd[2]["randomdata"]
+            assert jsd[2]["randomdata"] <= jsd[3]["randomdata"]
+            assert jsd[3]["randomdata"] <= jsd[4]["randomdata"]

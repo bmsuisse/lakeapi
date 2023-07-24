@@ -18,5 +18,6 @@ sti = bmsdna.lakeapi.init_lakeapi(
 
 @app.on_event("shutdown")
 def shutdown_event():
-    if os.getenv("KEEP_SQL_SERVER", "0") == "0":
-        sql_server.stop()
+    # if os.getenv("KEEP_SQL_SERVER", "0") == "0":
+    #    sql_server.stop()
+    pass

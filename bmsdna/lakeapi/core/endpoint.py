@@ -5,7 +5,6 @@ import pypika
 import pypika.functions as fn
 import pypika.queries
 import pypika.terms
-from cashews import cache
 from deltalake import DeltaTable
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -14,15 +13,14 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS, is_cache_json_response
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
+from cashews import cache
 
-cache.setup("mem://")
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
 
 logger = get_logger(__name__)
 
@@ -47,7 +45,6 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
-@cached
 async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -118,12 +115,20 @@ def create_config_endpoint(
         ),
     }
 
+    cache_backend = config.cache.backend or CACHE_BACKEND  # type: ignore
+    cache.setup("disk://" if cache_backend == "auto" else cache_backend)
+
     api_method = api_method_mapping[apimethod]
     has_complex = True
     if metamodel is not None:
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
 
     @api_method
+    @cache(
+        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
+        key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
+        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,  # type: ignore
+    )
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore

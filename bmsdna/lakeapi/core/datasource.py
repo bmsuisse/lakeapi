@@ -1,41 +1,30 @@
 import asyncio
 import hashlib
 import os
-from typing import (
-    Any,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-    get_args,
-)
+from datetime import datetime
+from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
+
 import pyarrow as pa
 import pyarrow.parquet
-
+import pypika
+import pypika.queries as fn
 from cashews import cache
+from pypika.queries import QueryBuilder
 
-
+from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
+from bmsdna.lakeapi.core.cache import CACHE_EXPIRATION_TIME_SECONDS, CACHE_BACKEND, is_cache
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
-from bmsdna.lakeapi.context.df_base import ResultData, ExecutionContext
-import pypika
-from pypika.queries import QueryBuilder
-import pypika.queries as fn
-from datetime import datetime
-
 
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
 
 
-cache.setup("mem://")
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
+cache.setup("mem://" if CACHE_BACKEND == "auto" else CACHE_BACKEND)
+cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS, condition=is_cache)
 
 df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
 
