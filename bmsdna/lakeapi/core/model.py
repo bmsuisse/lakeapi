@@ -13,8 +13,11 @@ from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 
-cache.setup("mem://")
-cached = cache(ttl=CACHE_EXPIRATION_TIME_SECONDS)
+KB = 1024
+MB = KB * 1024
+
+cache.setup(f"mem://?size={500 * MB}")
+cached = cache()
 
 
 def _make_model(v, name):
