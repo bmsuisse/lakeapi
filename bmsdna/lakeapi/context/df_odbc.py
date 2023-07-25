@@ -25,6 +25,9 @@ def _get_temp_table_name():
     return "temp_" + str(uuid4()).replace("-", "")
 
 
+arrow_odbc.enable_odbc_connection_pooling()
+
+
 class BatchReaderWrap:
     def __init__(self, rdr: arrow_odbc.BatchReader):
         self.rdr = rdr
