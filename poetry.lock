@@ -139,20 +139,20 @@ tests = ["pytest"]
 
 [[package]]
 name = "arrow-odbc"
-version = "1.1.1"
+version = "1.2.0"
 description = "Read the data of an ODBC data source as sequence of Apache Arrow record batches."
 optional = true
 python-versions = "*"
 files = [
-    {file = "arrow_odbc-1.1.1-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:4cb32172a583d09ac3e4f49c96ad72ea269efe20326bf96d9ce41fd386e6a35e"},
-    {file = "arrow_odbc-1.1.1-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fcd4880e43bd9ccd09c26a8710c6c8fa2b61870fb3df9f53d735506f13d5edae"},
-    {file = "arrow_odbc-1.1.1-py3-none-win_amd64.whl", hash = "sha256:bf9d6f4a5021e7594b23adbf2339da3ba06ad058874e576c77733fa2f90e68d1"},
-    {file = "arrow_odbc-1.1.1.tar.gz", hash = "sha256:a69f2199f0acaf16b6efcbc5683602940ae7d0bbf1e8283ff62dc285f17b9e8b"},
+    {file = "arrow_odbc-1.2.0-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:3f6c43bc701700cda00749583b25ff855e2f95fbc9260bf7be91f1e4026dc14d"},
+    {file = "arrow_odbc-1.2.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1b92b551befe489c1e2587f7bfe02ee66891861d96ee17b838c827fd8741b230"},
+    {file = "arrow_odbc-1.2.0-py3-none-win_amd64.whl", hash = "sha256:06c178f21637f46b81a546fbed76fc73bd4eaf2be3320e33e04527ec2127f0bd"},
+    {file = "arrow_odbc-1.2.0.tar.gz", hash = "sha256:cc6803074299a38ab01a1906556a772b242d06e2d348cbbe7971e9a777823ca2"},
 ]
 
 [package.dependencies]
 cffi = "*"
-pyarrow = "*"
+pyarrow = ">=8.0.0"
 
 [package.extras]
 test = ["pytest (<8.0.0)"]
@@ -240,13 +240,13 @@ tests = ["hypothesis", "pytest", "pytest-asyncio"]
 
 [[package]]
 name = "certifi"
-version = "2023.5.7"
+version = "2023.7.22"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2023.5.7-py3-none-any.whl", hash = "sha256:c6c2e98f5c7869efca1f8916fed228dd91539f9f1b444c314c06eef02980c716"},
-    {file = "certifi-2023.5.7.tar.gz", hash = "sha256:0f0d56dc5a6ad56fd4ba36484d6cc34451e1c6548c61daad8c320169f91eddc7"},
+    {file = "certifi-2023.7.22-py3-none-any.whl", hash = "sha256:92d6037539857d8206b8f6ae472e8b77db8058fec5937a1ef3f54304089edbb9"},
+    {file = "certifi-2023.7.22.tar.gz", hash = "sha256:539cc1d13202e33ca466e88b2807e29f4c13049d6d87031a3c110744495cb082"},
 ]
 
 [[package]]
@@ -517,6 +517,7 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "deltalake-0.10.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1aef72679268324e7cc556f03969b92235076b6edcecae7a2f85ac930b5fb9b9"},
+    {file = "deltalake-0.10.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:91e801b78e298946950b07bf0573e4cf012d6259ac294bcac662b6d746f95596"},
     {file = "deltalake-0.10.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:437f8ee9f28a9cd8454e8700c3dd88f5ad33c2ec9a7192356b55b23fee50259c"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f532b3c3dc8437fc26279a296bc576bdf79b167e1d4864847ca7c5ec7b3915b6"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42212ee879735d476772a9c1d1ca3e43ef15893a301796baffe94db3578e98ca"},
@@ -1138,13 +1139,13 @@ numpy = ">=1.16.6"
 
 [[package]]
 name = "pycln"
-version = "2.1.5"
+version = "2.1.6"
 description = "A formatter for finding and removing unused import statements."
 optional = false
 python-versions = ">=3.6.2,<4"
 files = [
-    {file = "pycln-2.1.5-py3-none-any.whl", hash = "sha256:1e1f2542aabc8942fd945bbecd39b55ed5f25cd9a70fa116a554cceaab4fdc3b"},
-    {file = "pycln-2.1.5.tar.gz", hash = "sha256:5029007881d00b87bfc8831ef7cf59c90cc214fbbcc8773f0a9560ddef8d150a"},
+    {file = "pycln-2.1.6-py3-none-any.whl", hash = "sha256:2fc4d6fa9e4e1cc71818073122927f6a7a237c8dec47cb579ea79c8756297eab"},
+    {file = "pycln-2.1.6.tar.gz", hash = "sha256:59aed29811614865d88adc3242eb88fee8db711efa9e15f55f4259e88c8f7554"},
 ]
 
 [package.dependencies]
@@ -1370,13 +1371,13 @@ files = [
 
 [[package]]
 name = "pyright"
-version = "1.1.317"
+version = "1.1.318"
 description = "Command line wrapper for pyright"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyright-1.1.317-py3-none-any.whl", hash = "sha256:9cf24f83fe8f2cf00773068e06ce771f03331590c7d5e771546f81d7f60efaba"},
-    {file = "pyright-1.1.317.tar.gz", hash = "sha256:74da4d3e2dcfe66a2d1d1001e16431ec17aac0ad35b03c0410f7379c2cb5c7f0"},
+    {file = "pyright-1.1.318-py3-none-any.whl", hash = "sha256:056c1b2e711c3526e32919de1684ae599d34b7ec27e94398858a43f56ac9ba9b"},
+    {file = "pyright-1.1.318.tar.gz", hash = "sha256:69dcf9c32d5be27d531750de627e76a7cadc741d333b547c09044278b508db7b"},
 ]
 
 [package.dependencies]
@@ -1935,13 +1936,13 @@ files = [
 
 [[package]]
 name = "urllib3"
-version = "2.0.3"
+version = "2.0.4"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "urllib3-2.0.3-py3-none-any.whl", hash = "sha256:48e7fafa40319d358848e1bc6809b208340fafe2096f1725d05d67443d0483d1"},
-    {file = "urllib3-2.0.3.tar.gz", hash = "sha256:bee28b5e56addb8226c96f7f13ac28cb4c301dd5ea8a6ca179c0b9835e032825"},
+    {file = "urllib3-2.0.4-py3-none-any.whl", hash = "sha256:de7df1803967d2c2a98e4b11bb7d6bd9210474c46e8a0401514e3a42a75ebde4"},
+    {file = "urllib3-2.0.4.tar.gz", hash = "sha256:8d22f86aae8ef5e410d4f539fde9ce6b2113a001bb4d189e0aed70642d602b11"},
 ]
 
 [package.extras]
@@ -1986,17 +1987,17 @@ test = ["websockets"]
 
 [[package]]
 name = "wheel"
-version = "0.40.0"
+version = "0.41.0"
 description = "A built-package format for Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "wheel-0.40.0-py3-none-any.whl", hash = "sha256:d236b20e7cb522daf2390fa84c55eea81c5c30190f90f29ae2ca1ad8355bf247"},
-    {file = "wheel-0.40.0.tar.gz", hash = "sha256:cd1196f3faee2b31968d626e1731c94f99cbdb67cf5a46e4f5656cbee7738873"},
+    {file = "wheel-0.41.0-py3-none-any.whl", hash = "sha256:7e9be3bbd0078f6147d82ed9ed957e323e7708f57e134743d2edef3a7b7972a9"},
+    {file = "wheel-0.41.0.tar.gz", hash = "sha256:55a0f0a5a84869bce5ba775abfd9c462e3a6b1b7b7ec69d72c0b83d673a5114d"},
 ]
 
 [package.extras]
-test = ["pytest (>=6.0.0)"]
+test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 
 [[package]]
 name = "xlsx2csv"
@@ -2031,4 +2032,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f8dd24fcf63705e06ee43de2762bfb6b91d9b138563f0d2548a004ed701fb062"
+content-hash = "1d5ded149f19419bf9672b1b97a7a4b4b8be36e40be74a3c3798c4237459e622"
