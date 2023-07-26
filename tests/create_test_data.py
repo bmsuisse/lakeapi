@@ -7,7 +7,9 @@ from deltalake import write_deltalake
 import shutil
 import pandas as pd
 from hashlib import md5
+import pyarrow as pa
 import json
+import pyarrow.dataset as ds
 
 try:
     from .utils import create_rows_faker
@@ -29,13 +31,16 @@ def delete_folder(path):
 
 
 def store_df_as_delta(
-    data: dict[str, list[Any]] | pd.DataFrame,
+    data: dict[str, list[Any]] | pd.DataFrame | pa.Table,
     data_path: str,
     partition_by: Optional[list[str]] = None,
     *,
     configuration: Optional[dict[str, str | dict | list]] = None,
-):
-    dfp = data if isinstance(data, pd.DataFrame) else pl.DataFrame(data).to_pandas()
+    compression: str | None = None,
+) -> pd.DataFrame:
+    dfp: pa.Table | pd.DataFrame = (
+        data if isinstance(data, pd.DataFrame) or isinstance(data, pa.Table) else pl.DataFrame(data).to_pandas()
+    )
     delta_path = "tests/data/" + data_path
     delete_folder(delta_path)
 
@@ -44,14 +49,17 @@ def store_df_as_delta(
             return v
         return json.dumps(v)
 
+    opts = ds.ParquetFileFormat().make_write_options(compression=compression or "snappy")
     write_deltalake(
         delta_path,
         dfp,
         mode="overwrite",
         partition_by=partition_by,
+        file_options=opts,
         configuration={k: _str_or_json(v) for k, v in configuration.items()} if configuration is not None else None,
     )
-    return dfp
+    assert not isinstance(dfp, dict)
+    return dfp if isinstance(dfp, pd.DataFrame) else dfp.to_pandas()
 
 
 if __name__ == "__main__":
@@ -122,6 +130,20 @@ if __name__ == "__main__":
     df_fruits_nested = df_fruits_nested.to_pandas()
     store_df_as_delta(df_fruits_nested, "delta/fruits_nested")
     store_df_as_delta(df_fruits_nested, "startest/fruits_nested")
+    weather = pl.DataFrame(
+        {
+            "station": ["Station " + str(x) for x in range(1, 6)],
+            "temperatures": [
+                "20 5 5 E1 7 13 19 9 6 20",
+                "18 8 16 11 23 E2 8 E2 E2 E2 90 70 40",
+                "19 24 E9 16 6 12 10 22",
+                "E2 E0 15 7 8 10 E1 24 17 13 6",
+                "14 8 E0 16 22 24 E1",
+            ],
+        }
+    )
+    out = weather.with_columns(pl.col("temperatures").str.split(" "))  # thanks for the sample, polars
+    store_df_as_delta(out.to_pandas(), "delta/weather", compression="zstd")
 
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)
