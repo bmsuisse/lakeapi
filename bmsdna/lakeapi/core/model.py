@@ -143,7 +143,7 @@ def create_parameter_model(
                     )
             else:
                 realtype = (
-                    _get_datatype(schema, param.name) if df is not None else str | None
+                    _get_datatype(schema, param.name) if schema is not None else str | None
                 )  # well. no model, no real thing. just string
                 for operator in operators:
                     postfix = _operator_postfix_map[operator]

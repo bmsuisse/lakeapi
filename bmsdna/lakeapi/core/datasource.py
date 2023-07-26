@@ -117,6 +117,11 @@ class Datasource:
         return pypika.Table(self.tablename)
 
     def get_schema(self) -> pa.Schema:
+        if not self.config.select and self.config.file_type == "delta" and self.file_exists():
+            from deltalake import DeltaTable
+
+            deltameta = DeltaTable(self.uri).schema().to_pyarrow()
+            return deltameta
         return self.get_df(endpoint="meta").arrow_schema()
 
     def get_df(
@@ -129,7 +134,7 @@ class Datasource:
             self.query = self._prep_df(query, endpoint=endpoint)
             global df_cache
             mod_date: datetime | None = None
-            if self.config.in_memory:
+            if self.config.in_memory and not endpoint in ["meta"]:
                 mod_date = self.sql_context.get_modified_date(self.uri, self.config.file_type)
                 if self.config.in_memory and self.tablename in df_cache:
                     cache_date, df_t = df_cache[self.tablename]
@@ -147,7 +152,7 @@ class Datasource:
                     partitions=partitions,
                 )
                 self.df = self.sql_context.execute_sql(self.query)
-            if self.config.in_memory and not self.tablename in df_cache:
+            if self.config.in_memory and not self.tablename in df_cache and not endpoint in ["meta"]:
                 assert mod_date is not None
                 df_cache[self.tablename] = mod_date, self.df.to_arrow_table()
 
