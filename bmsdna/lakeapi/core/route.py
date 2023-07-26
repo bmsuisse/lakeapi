@@ -47,10 +47,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
                     )
-                    metamodel = None
+                    schema = None
                 else:
-                    metamodel = realdataframe.get_df(endpoint="meta", partitions=None)
-                schema = metamodel.arrow_schema() if metamodel else None
+                    schema = realdataframe.get_schema()
                 metadata.append(
                     {
                         "name": config.name,
@@ -66,11 +65,11 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
 
             except Exception as err:
                 logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
-                metamodel = None
+                schema = None
 
-            response_model = get_response_model(config=config, metamodel=metamodel) if metamodel is not None else None
+            response_model = get_response_model(config=config, schema=schema) if schema is not None else None
             create_detailed_meta_endpoint(
-                metamodel=metamodel, config=config, configs=configs, router=router, basic_config=basic_config
+                schema=schema, config=config, configs=configs, router=router, basic_config=basic_config
             )
             for am in methods:
                 create_config_endpoint(
@@ -78,7 +77,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     config=config,
                     router=router,
                     response_model=response_model,
-                    metamodel=metamodel,
+                    schema=schema,
                     basic_config=basic_config,
                     configs=configs,
                 )

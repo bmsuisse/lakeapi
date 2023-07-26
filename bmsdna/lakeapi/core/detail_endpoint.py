@@ -35,12 +35,12 @@ def _to_dict(tblmeta: Optional[Metadata]):
 
 
 def create_detailed_meta_endpoint(
-    metamodel: Optional[ResultData], config: Config, configs: Configs, router: APIRouter, basic_config: BasicConfig
+    schema: Optional[pa.Schema], config: Config, configs: Configs, router: APIRouter, basic_config: BasicConfig
 ):
     route = config.route + "/metadata_detail"
     has_complex = True
-    if metamodel is not None:
-        has_complex = any((pa.types.is_nested(t) for t in metamodel.arrow_schema().types))
+    if schema is not None:
+        has_complex = any((pa.types.is_nested(t) for t in schema.types))
 
     @router.get(
         route,

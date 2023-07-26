@@ -116,9 +116,12 @@ class Datasource:
                 return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
         return pypika.Table(self.tablename)
 
+    def get_schema(self) -> pa.Schema:
+        return self.get_df(endpoint="meta").arrow_schema()
+
     def get_df(
         self,
-        partitions: Optional[List[Tuple[str, str, Any]]],
+        partitions: Optional[List[Tuple[str, str, Any]]] = None,
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:

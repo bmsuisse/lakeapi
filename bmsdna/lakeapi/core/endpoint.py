@@ -57,10 +57,10 @@ async def get_params_filter_expr(
     return expr
 
 
-def get_response_model(config: Config, metamodel: ResultData) -> Optional[Type[BaseModel]]:
+def get_response_model(config: Config, schema: pa.Schema) -> Optional[Type[BaseModel]]:
     response_model: Optional[type[BaseModel]] = None
     try:
-        response_model = create_response_model(config.tag + "_" + config.name, metamodel)
+        response_model = create_response_model(config.tag + "_" + config.name, schema)
     except Exception as err:
         logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
         response_model = None
@@ -87,7 +87,7 @@ def split_csv(csv_str: str) -> list[str]:
 
 
 def create_config_endpoint(
-    metamodel: Optional[ResultData],
+    schema: Optional[pa.Schema],
     apimethod: Literal["get", "post"],
     config: Config,
     router: APIRouter,
@@ -98,7 +98,7 @@ def create_config_endpoint(
     route = config.route
 
     query_model = create_parameter_model(
-        metamodel, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
+        schema, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
     )
 
     api_method_mapping = {
@@ -123,8 +123,8 @@ def create_config_endpoint(
 
     api_method = api_method_mapping[apimethod]
     has_complex = True
-    if metamodel is not None:
-        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in metamodel.arrow_schema().types))
+    if schema is not None:
+        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
 
     @api_method
     @cache(
