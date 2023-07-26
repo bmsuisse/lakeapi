@@ -161,6 +161,7 @@ class ExecutionContext(ABC):
         self.modified_dates: dict[str, datetime] = {}
         self.chunk_size = chunk_size
         self.len_func = "LEN"
+        self.array_contains_func = "array_contains"
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":

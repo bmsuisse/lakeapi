@@ -10,7 +10,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, 
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
-from bmsdna.lakeapi.context.df_base import ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
 from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS, is_cache_json_response
@@ -45,8 +45,11 @@ def remove_search(prm_dict: dict, config: Config):
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
 
 
-async def get_params_filter_expr(columns: List[str], config: Config, params: BaseModel) -> Optional[pypika.Criterion]:
+async def get_params_filter_expr(
+    context: ExecutionContext, columns: List[str], config: Config, params: BaseModel
+) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
+        context,
         remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
         columns,
@@ -156,7 +159,7 @@ def create_config_endpoint(
             parts = await get_partitions(realdataframe, params, config)
             df = realdataframe.get_df(parts or None)
 
-            expr = await get_params_filter_expr(df.columns(), config, params)
+            expr = await get_params_filter_expr(context, df.columns(), config, params)
             base_schema = df.arrow_schema()
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query

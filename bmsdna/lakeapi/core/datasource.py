@@ -7,6 +7,7 @@ from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
 import pyarrow as pa
 import pyarrow.parquet
 import pypika
+import pypika.terms
 import pypika.queries as fn
 from cashews import cache
 from pypika.queries import QueryBuilder
@@ -262,6 +263,7 @@ async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
 
 @cached
 async def filter_df_based_on_params(
+    context: ExecutionContext,
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[list[str]],
@@ -317,6 +319,12 @@ async def filter_df_based_on_params(
                     exprs.append(fn.Field(colname).not_like("%" + value + "%"))
                 case "contains":
                     exprs.append(fn.Field(colname).like("%" + value + "%"))
+                case "array_contains":
+                    exprs.append(
+                        fn.Function(
+                            context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value)
+                        )
+                    )
                 case "in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
