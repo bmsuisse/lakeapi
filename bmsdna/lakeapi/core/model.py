@@ -124,7 +124,7 @@ def _get_datatype(schema: Optional[pa.Schema], name: str):
 
 
 def create_parameter_model(
-    df: Optional[ResultData],
+    schema: Optional[pa.Schema],
     name: str,
     params: Optional[Iterable[Union[Param, str]]],
     search: Optional[Iterable[SearchConfig]],
@@ -135,7 +135,6 @@ def create_parameter_model(
         for param in params or []:
             param = Param(name=param) if isinstance(param, str) else param
             operators = param.operators or ["="]
-            schema = df.arrow_schema() if df else None
             if param.combi:
                 if apimethod == "post":  # Only supported in POST Requets for now
                     query_params[param.name] = (
@@ -144,7 +143,7 @@ def create_parameter_model(
                     )
             else:
                 realtype = (
-                    _get_datatype(schema, param.name) if df is not None else str | None
+                    _get_datatype(schema, param.name) if schema is not None else str | None
                 )  # well. no model, no real thing. just string
                 for operator in operators:
                     postfix = _operator_postfix_map[operator]
@@ -175,8 +174,7 @@ class TypeBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def create_response_model(name: str, frame: ResultData) -> type[BaseModel]:
-    schema = frame.arrow_schema()
+def create_response_model(name: str, schema: pa.Schema) -> type[BaseModel]:
     props = {
         k: get_schema_for(name, schema.field(k).name, schema.field(k).type)
         for k in schema.names

@@ -136,6 +136,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.con = con
         self.res_con = None
         self.persistance_file_name = None
+        self.array_contains_func = "array_contains"
 
     def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
         # self.con.from_arrow(ds).create_view(name, replace=True)
