@@ -27,6 +27,11 @@ def get_auth():
     return (user, pw)
 
 
+def random_coords(fake: Faker):
+    c = fake.local_latlng("CH")
+    return {"geo_lat": c[0], "geo_lon": c[1]}
+
+
 def create_rows_faker(num=1):
     fake = Faker()
     output = [
@@ -44,6 +49,7 @@ def create_rows_faker(num=1):
             "randomdata": random.randint(1000, 2000),
             "abc": random.choice(["a", "b", "c"]),
         }
+        | random_coords(fake)
         for x in range(num)
     ]
     return output
