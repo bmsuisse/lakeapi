@@ -191,3 +191,29 @@ def test_not_between():
             json={"B_not_between": [5, 7, 9]},
         )
         assert response.status_code == 400
+
+
+def test_has():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/array/weather?limit=100&temperatures_has=E1&format=json&%24engine={e}",
+            auth=auth,
+        )
+        assert response.status_code == 200
+        jsd = response.json()
+        assert len(jsd) == 3
+
+        for item in jsd:
+            assert "E1" in item["temperatures"]
+
+        response = client.post(
+            f"/api/v1/array/weather?limit=100&format=json&%24engine={e}",
+            auth=auth,
+            json={"temperatures_has": "E1"},
+        )
+        assert response.status_code == 200
+        jsd = response.json()
+        assert len(jsd) == 3
+
+        for item in jsd:
+            assert "E1" in item["temperatures"]
