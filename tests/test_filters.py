@@ -196,7 +196,7 @@ def test_not_between():
 def test_has():
     for e in engines:
         response = client.get(
-            f"/api/v1/array/weather?limit=100&temperatures_has_E1&format=json&%24engine={e}",
+            f"/api/v1/array/weather?limit=100&temperatures_has=E1&format=json&%24engine={e}",
             auth=auth,
         )
         assert response.status_code == 200
