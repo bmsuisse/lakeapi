@@ -207,7 +207,12 @@ def create_config_endpoint(
             if not (limit == -1 and config.allow_get_all_pages):
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
-
+            # new_query = new_query.where(
+            #     ST_Distance(
+            #         ST_Transform(pickup_point, "EPSG:4326", "EPSG:3857"),
+            #         ST_Transform(dropoff_point, "EPSG:4326", "EPSG:3857"),
+            #     )/1000 > distance_km
+            # )
             if len(searches) > 0 and config.search is not None:
                 source_view = realdataframe.tablename
                 context.init_search(source_view, config.search)
