@@ -16,6 +16,7 @@ import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
+from pypika.terms import Term
 
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
@@ -101,11 +102,11 @@ class DuckDBResultData(ResultData):
         self.con.execute(full_query)
 
 
-class Match25Term(pypika.terms.Term):
+class Match25Term(Term):
     def __init__(
         self,
         source_view: str,
-        field: pypika.terms.Term,
+        field: Term,
         search_text: str,
         fields: Optional[str],
         alias: Optional[str] = None,
@@ -118,11 +119,11 @@ class Match25Term(pypika.terms.Term):
         self.alias = alias
 
     def get_sql(self, **kwargs):
-        search_text_const = pypika.terms.Term.wrap_constant(self.search_text)
-        assert isinstance(search_text_const, pypika.terms.Term)
+        search_text_const = Term.wrap_constant(self.search_text)
+        assert isinstance(search_text_const, Term)
         search_txt = search_text_const.get_sql()
-        fields_const = pypika.terms.Term.wrap_constant(self.fields or "")
-        assert isinstance(fields_const, pypika.terms.Term)
+        fields_const = Term.wrap_constant(self.fields or "")
+        assert isinstance(fields_const, Term)
         field_or_not = ", fields := " + fields_const.get_sql() if self.fields is not None else ""
         sql = f"fts_main_{self.source_view}.match_bm25({self.field.get_sql()}, {search_txt}{field_or_not})"
         if self.alias is not None:
@@ -167,7 +168,30 @@ class DuckDbExecutionContextBase(ExecutionContext):
         fields = ",".join(search_config.columns)
         return Match25Term(source_view, pypika.queries.Field("__search_id"), search_text, fields)
 
-    def json_function(self, term: pypika.terms.Term, assure_string=False):
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+        return pypika.terms.Function(
+            "ST_Distance",
+            pypika.terms.Function(
+                "ST_Transform",
+                pypika.terms.Function("ST_Point", lat1, lon1),
+                Term.wrap_constant("EPSG:4326"),
+                Term.wrap_constant("EPSG:3857"),  # kind of metric gps
+            ),
+            pypika.terms.Function(
+                "ST_Transform",
+                pypika.terms.Function("ST_Point", lat2, lon2),
+                Term.wrap_constant("EPSG:4326"),
+                Term.wrap_constant("EPSG:3857"),  # kind of metric gps
+            ),
+        )
+        # new_query = new_query.where(
+        #     ST_Distance(
+        #         ST_Transform(ST_Point(pickup_latitude, pickup_longitude), "EPSG:4326", "EPSG:3857"),
+        #         ST_Transform(ST_Point(pickup_latitude, pickup_longitude), "EPSG:4326", "EPSG:3857"),
+        #     )/1000 > distance_km
+        # )
+
+    def json_function(self, term: Term, assure_string=False):
         fn = pypika.terms.Function("to_json", term)
         if assure_string:
             return pypika.functions.Cast(fn, pypika.enums.SqlTypes.VARCHAR)

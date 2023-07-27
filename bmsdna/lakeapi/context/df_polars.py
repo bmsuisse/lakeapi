@@ -6,7 +6,7 @@ from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import pypika.queries
-import pypika.terms
+from pypika.terms import Term
 import pypika
 from uuid import uuid4
 
@@ -123,8 +123,11 @@ class PolarsExecutionContext(ExecutionContext):
     def close(self):
         pass
 
-    def json_function(self, term: pypika.terms.Term, assure_string=False):
+    def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
+
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+        raise NotImplementedError("Not implemented")
 
     def register_datasource(
         self,

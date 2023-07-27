@@ -7,7 +7,7 @@ from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData, get_sql
 import pyarrow.dataset
 import pypika.queries
-import pypika.terms
+from pypika.terms import Term
 import pypika.functions
 import pypika.enums
 import pypika
@@ -93,7 +93,10 @@ class SqliteExecutionContext(ExecutionContext):
             sql, chunk_size=self.chunk_size, connection=self.connections[list(self.connections.keys())[0]]
         )
 
-    def json_function(self, term: pypika.terms.Term, assure_string=False):
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+        raise NotImplementedError("Not implemented")
+
+    def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError(
             "Cannot convert to JSON in remote sql"
         )  # we could but sql does not support structured types anyway, so...

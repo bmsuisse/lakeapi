@@ -8,7 +8,7 @@ import pyarrow.dataset
 import pypika.queries
 import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
-import pypika.terms
+from pypika.terms import Term
 import os
 
 if TYPE_CHECKING:
@@ -223,7 +223,11 @@ class ExecutionContext(ABC):
         pass
 
     @abstractmethod
-    def json_function(self, term: pypika.terms.Term, assure_string=False) -> pypika.terms.Term:
+    def json_function(self, term: Term, assure_string=False) -> Term:
+        ...
+
+    @abstractmethod
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
         ...
 
     def search_score_function(
@@ -232,7 +236,7 @@ class ExecutionContext(ABC):
         search_text: str,
         search_config: SearchConfig,
         alias: Optional[str],
-    ) -> pypika.terms.Term:
+    ) -> Term:
         import pypika.terms
         import pypika.functions
 
@@ -244,13 +248,13 @@ class ExecutionContext(ABC):
         for part in parts:
             case = pypika.Case()
             cond = pypika.functions.Concat(*[pypika.Field(c) for c in search_config.columns]).like("%" + part + "%")
-            case.when(cond, pypika.terms.Term.wrap_constant(1))
-            case.else_(pypika.terms.Term.wrap_constant(0))
+            case.when(cond, Term.wrap_constant(1))
+            case.else_(Term.wrap_constant(0))
             cases.append(case)
             summ = case if summ is None else summ + case
         assert summ is not None
 
-        return pypika.functions.NullIf(summ, pypika.terms.Term.wrap_constant(0)).as_(alias)
+        return pypika.functions.NullIf(summ, Term.wrap_constant(0)).as_(alias)
 
     def get_modified_date(self, uri: str, file_type: FileTypes) -> datetime:
         if file_type == "delta":

@@ -20,7 +20,7 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
-
+from bmsdna.lakeapi.core.endpoint_search import get_searches, handle_search_request
 
 logger = get_logger(__name__)
 
@@ -98,7 +98,12 @@ def create_config_endpoint(
     route = config.route
 
     query_model = create_parameter_model(
-        schema, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
+        schema,
+        config.tag + "_" + config.name + "_" + apimethod,
+        config.params,
+        config.search,
+        config.nearby,
+        apimethod,
     )
 
     api_method_mapping = {
@@ -164,14 +169,11 @@ def create_config_endpoint(
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
 
-            searches = {}
-            if config.search is not None and params is not None:
-                search_dict = {c.name.lower(): c for c in config.search}
-                searches = {
-                    k: (v, search_dict[k.lower()])
-                    for k, v in params.model_dump(exclude_unset=True).items()
-                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
-                }
+            searches = (
+                get_searches(config.search, params, basic_config.min_search_length)
+                if config.search is not None
+                else {}
+            )
 
             columns = exclude_cols(df.columns())
             if select:
@@ -207,27 +209,9 @@ def create_config_endpoint(
             if not (limit == -1 and config.allow_get_all_pages):
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
-            # new_query = new_query.where(
-            #     ST_Distance(
-            #         ST_Transform(pickup_point, "EPSG:4326", "EPSG:3857"),
-            #         ST_Transform(dropoff_point, "EPSG:4326", "EPSG:3857"),
-            #     )/1000 > distance_km
-            # )
-            if len(searches) > 0 and config.search is not None:
-                source_view = realdataframe.tablename
-                context.init_search(source_view, config.search)
-                score_sum = None
-                for search_key, (search_val, search_cfg) in searches.items():
-                    score_sum = (
-                        context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                        if score_sum is None
-                        else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                    )
-                assert score_sum is not None
-                new_query = new_query.select(score_sum.as_("search_score"))
-                new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
 
-                new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
+            if len(searches) > 0 and config.search is not None:
+                new_query = handle_search_request(context, config.search, realdataframe.tablename, new_query, searches)
 
             logger.debug(f"Query: {get_sql(new_query)}")
 

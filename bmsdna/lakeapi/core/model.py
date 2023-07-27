@@ -37,7 +37,7 @@ empty_model = create_model("NoQuery")
 class GeoModel(BaseModel):
     lat: float
     lon: float
-    distance_km: float
+    distance_m: float
 
 
 _operator_postfix_map: dict[OperatorType, str] = {
