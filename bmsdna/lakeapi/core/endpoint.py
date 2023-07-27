@@ -20,7 +20,8 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
-from bmsdna.lakeapi.core.endpoint_search import get_searches, handle_search_request
+from bmsdna.lakeapi.core.endpoint_search import handle_search_request
+from bmsdna.lakeapi.core.endpoint_nearby import handle_nearby_request
 
 logger = get_logger(__name__)
 
@@ -168,13 +169,6 @@ def create_config_endpoint(
             base_schema = df.arrow_schema()
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
-
-            searches = (
-                get_searches(config.search, params, basic_config.min_search_length)
-                if config.search is not None
-                else {}
-            )
-
             columns = exclude_cols(df.columns())
             if select:
                 columns = [
@@ -182,7 +176,7 @@ def create_config_endpoint(
                 ]  # split , is a bit naive, we might want to support real CSV with quotes here
             if config.datasource.exclude and len(config.datasource.exclude) > 0:
                 columns = [c for c in columns if c not in config.datasource.exclude]
-            if config.datasource.sortby and len(searches) == 0:
+            if config.datasource.sortby:
                 for s in config.datasource.sortby:
                     new_query = new_query.orderby(
                         s.by,
@@ -210,9 +204,12 @@ def create_config_endpoint(
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
 
-            if len(searches) > 0 and config.search is not None:
-                new_query = handle_search_request(context, config.search, realdataframe.tablename, new_query, searches)
-
+            new_query = handle_search_request(
+                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            )
+            new_query = handle_nearby_request(
+                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            )
             logger.debug(f"Query: {get_sql(new_query)}")
 
             df2 = context.execute_sql(new_query)

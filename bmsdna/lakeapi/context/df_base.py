@@ -227,7 +227,7 @@ class ExecutionContext(ABC):
         ...
 
     @abstractmethod
-    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term) -> Term:
         ...
 
     def search_score_function(
