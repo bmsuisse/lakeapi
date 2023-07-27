@@ -121,11 +121,13 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
     raise ValueError("Not supported")
 
 
-def _get_datatype(schema: Optional[pa.Schema], name: str):
+def _get_datatype(schema: Optional[pa.Schema], name: str, *, inner: bool = False):
     if schema is None:
         return str | None
     try:
         field = schema.field(name)
+        if inner and pa.types.is_list(field.type):
+            return get_schema_for("prm_" + name, field.name, field.type.value_type)[0]
         return get_schema_for("prm_" + name, field.name, field.type)[0]
     except KeyError as err:
         return str | None
@@ -164,7 +166,11 @@ def create_parameter_model(
                             Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
                             Query(default=param.real_default if not param.required else ...),
                         )
-
+                    elif operator in ["has"] and schema is not None:
+                        query_params[param.name + postfix] = (
+                            _get_datatype(schema, param.name, inner=True),
+                            param.real_default if not param.required else ...,
+                        )
                 else:
                     query_params[param.name + postfix] = (
                         realtype,
