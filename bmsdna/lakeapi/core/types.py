@@ -40,7 +40,7 @@ OperatorType = Literal[
     "null",
     "between",
     "not between",
-    "array_contains",
+    "has",
 ]
 DeltaOperatorTypes = Literal["<", "=", ">", ">=", "<=", "in", "not in"]
 PolaryTypeFunction = Literal[

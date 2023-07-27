@@ -407,6 +407,18 @@ tables:
       file_type: delta
     config_from_delta: true
 
+  - name: weather
+    tag: array
+    api_method: [post, get]
+    datasource:
+      uri: delta/weather
+      file_type: delta
+    config_from_delta: true
+    params:
+      - name: temperatures
+        operators:
+          - has
+
   - name: sqlite_customers
     tag: sqlite
     api_method: get

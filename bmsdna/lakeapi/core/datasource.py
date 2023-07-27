@@ -327,7 +327,7 @@ async def filter_df_based_on_params(
                     exprs.append(fn.Field(colname).not_like("%" + value + "%"))
                 case "contains":
                     exprs.append(fn.Field(colname).like("%" + value + "%"))
-                case "array_contains":
+                case "has":
                     exprs.append(
                         fn.Function(
                             context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value)
