@@ -117,11 +117,14 @@ class Datasource:
         return pypika.Table(self.tablename)
 
     def get_schema(self) -> pa.Schema:
-        if not self.config.select and self.config.file_type == "delta" and self.file_exists():
+        if self.config.file_type == "delta" and self.file_exists():
             from deltalake import DeltaTable
 
-            deltameta = DeltaTable(self.uri).schema().to_pyarrow()
-            return deltameta
+            schema = DeltaTable(self.uri).schema().to_pyarrow()
+            if self.config.select:
+                fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
+                return pyarrow.schema(fields)
+            return schema
         return self.get_df(endpoint="meta").arrow_schema()
 
     def get_df(
