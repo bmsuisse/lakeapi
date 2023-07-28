@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 import pandas as pd
 from urllib.parse import quote
+import json
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -21,7 +22,7 @@ def test_nearby():
             json={"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 4200}},
         )
         assert response.status_code == 200
-        lines = response.text.split("\n")
+        lines = [json.loads(l) for l in response.text.split("\n")]
         assert len(lines) >= 25 and len(lines) <= 40  # it's a bit fuzzy since distance calc is never 100% accurate
 
         assert lines[0]["nearby"] <= lines[1]["nearby"]
@@ -40,6 +41,6 @@ def test_no_nearby():
         )
         assert response.status_code == 200
         assert response.status_code == 200
-        lines = response.text.split("\n")
+        lines = [json.loads(l) for l in response.text.split("\n")]
         assert len(lines) == 50
         assert "nearby" not in lines[0]
