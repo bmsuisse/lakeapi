@@ -57,5 +57,5 @@ def handle_nearby_request(
         )
         query = query.select(fn.as_(nearby_cfg.name))
         query = query.where(pypika.Field(nearby_cfg.name) <= nearby_val.distance_m)
-        query = query.orderby(pypika.Field(nearby_cfg.name), order=pypika.Order.desc)
+        query = query.orderby(pypika.Field(nearby_cfg.name), order=pypika.Order.asc)
     return query
