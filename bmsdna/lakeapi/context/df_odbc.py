@@ -135,7 +135,8 @@ class ODBCExecutionContext(ExecutionContext):
         )  # we could but sql does not support structured types anyway, so...
 
     def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
-        raise NotImplementedError("Not implemented")
+        # you have to implement haversine function yourself
+        return pypika.terms.Function("f_haversine", lat1, lon1, lat2, lon2)
 
     def init_search(
         self,

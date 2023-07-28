@@ -169,27 +169,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         return Match25Term(source_view, pypika.queries.Field("__search_id"), search_text, fields)
 
     def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
-        return pypika.terms.Function(
-            "ST_Distance",
-            pypika.terms.Function(
-                "ST_Transform",
-                pypika.terms.Function("ST_Point", lat1, lon1),
-                Term.wrap_constant("EPSG:4326"),
-                Term.wrap_constant("EPSG:3857"),  # kind of metric gps
-            ),
-            pypika.terms.Function(
-                "ST_Transform",
-                pypika.terms.Function("ST_Point", lat2, lon2),
-                Term.wrap_constant("EPSG:4326"),
-                Term.wrap_constant("EPSG:3857"),  # kind of metric gps
-            ),
-        )
-        # new_query = new_query.where(
-        #     ST_Distance(
-        #         ST_Transform(ST_Point(pickup_latitude, pickup_longitude), "EPSG:4326", "EPSG:3857"),
-        #         ST_Transform(ST_Point(pickup_latitude, pickup_longitude), "EPSG:4326", "EPSG:3857"),
-        #     )/1000 > distance_km
-        # )
+        return pypika.terms.Function("haversine", lat1, lon1, lat2, lon2)
 
     def json_function(self, term: Term, assure_string=False):
         fn = pypika.terms.Function("to_json", term)
@@ -239,7 +219,14 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.persistance_file_name = persistance_file_name
 
     def init_spatial(self):
-        self.con.execute("INSTALL spatial;LOAD spatial;")
+        # we don't need spatial extension since haversine is good enough
+        self.con.execute(
+            """CREATE FUNCTION haversine(lat1, lng1, lat2, lng2) 
+    AS ( 6371000 * acos( cos( radians(lat1) ) *
+       cos( radians(lat2) ) * cos( radians(lng2) - radians(lng1) ) +
+       sin( radians(lat1) ) * sin( radians(lat2) ) ) 
+    )"""
+        )
 
     def register_datasource(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
