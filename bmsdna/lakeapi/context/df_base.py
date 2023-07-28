@@ -222,6 +222,9 @@ class ExecutionContext(ABC):
     ):
         pass
 
+    def init_spatial(self):
+        pass
+
     @abstractmethod
     def json_function(self, term: Term, assure_string=False) -> Term:
         ...

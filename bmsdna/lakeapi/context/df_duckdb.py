@@ -238,6 +238,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
             os.rename(persistance_file_name_temp, persistance_file_name)
         self.persistance_file_name = persistance_file_name
 
+    def init_spatial(self):
+        self.con.execute("INSTALL spatial;LOAD spatial;")
+
     def register_datasource(
         self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
     ):

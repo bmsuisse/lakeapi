@@ -16,10 +16,14 @@ def parse_lat_lon(vl: str):
     return float(lat), float(lon)
 
 
+def _to_geo(v: dict | GeoModel):
+    return GeoModel(**v) if isinstance(v, dict) else v
+
+
 def get_nearby_filter(nearby_config: list[NearbyConfig], params: BaseModel, basic_config: BasicConfig) -> NearbyType:
     nearby_dict = {c.name.lower(): c for c in nearby_config}
     v = [
-        (v, nearby_dict[k.lower()])
+        (_to_geo(v), nearby_dict[k.lower()])
         for k, v in params.model_dump(exclude_unset=True).items()
         if k.lower() in nearby_dict and v is not None
     ]
@@ -40,6 +44,7 @@ def handle_nearby_request(
     nearbyes = get_nearby_filter(config.nearby, params, basic_config)
     if nearbyes is None:
         return query
+    context.init_spatial()
     score_sum = None
     query._orderbys = []  # reset order
 

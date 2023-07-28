@@ -39,11 +39,13 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
     return parts
 
 
-def remove_search(prm_dict: dict, config: Config):
-    if not config.search or len(prm_dict) == 0:
+def remove_search_nearby(prm_dict: dict, config: Config):
+    if (not config.search and not config.nearby) or len(prm_dict) == 0:
         return prm_dict
-    search_cols = [s.name.lower() for s in config.search]
-    return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
+    search_nearby_cols = [s.name.lower() for s in (config.search or [])] + [
+        s.name.lower() for s in (config.nearby or [])
+    ]
+    return {k: v for k, v in prm_dict.items() if k.lower() not in search_nearby_cols}
 
 
 async def get_params_filter_expr(
@@ -51,7 +53,7 @@ async def get_params_filter_expr(
 ) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         context,
-        remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
+        remove_search_nearby(params.model_dump(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
         columns,
     )
