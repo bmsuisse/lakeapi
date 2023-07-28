@@ -4,7 +4,7 @@ import fastapi
 import test_server
 import os
 
-# sql_server = test_server.start_mssql_server()
+sql_server = test_server.start_mssql_server()
 print("after start mssql")
 app = fastapi.FastAPI()
 
