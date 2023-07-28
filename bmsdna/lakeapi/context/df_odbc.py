@@ -12,6 +12,7 @@ from pypika.terms import Term
 import pypika.functions
 import pypika.enums
 import pypika
+import pypika.terms
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig

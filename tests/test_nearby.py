@@ -21,13 +21,13 @@ def test_nearby():
             json={"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 4200}},
         )
         assert response.status_code == 200
-        lines = response.text().split("\n")
+        lines = response.text.split("\n")
         assert len(lines) >= 25 and len(lines) <= 40  # it's a bit fuzzy since distance calc is never 100% accurate
 
-        assert jsd[0]["nearby"] <= jsd[1]["nearby"]
-        assert jsd[1]["nearby"] <= jsd[2]["nearby"]
-        assert jsd[2]["nearby"] <= jsd[3]["nearby"]
-        for item in jsd:
+        assert lines[0]["nearby"] <= lines[1]["nearby"]
+        assert lines[1]["nearby"] <= lines[2]["nearby"]
+        assert lines[2]["nearby"] <= lines[3]["nearby"]
+        for item in lines:
             assert item["nearby"] <= 4200
 
 
@@ -40,6 +40,6 @@ def test_no_nearby():
         )
         assert response.status_code == 200
         assert response.status_code == 200
-        lines = response.text().split("\n")
+        lines = response.text.split("\n")
         assert len(lines) == 50
         assert "nearby" not in lines[0]
