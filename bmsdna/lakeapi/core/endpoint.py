@@ -89,6 +89,15 @@ def split_csv(csv_str: str) -> list[str]:
     raise ValueError("cannot happen")
 
 
+_setup_caches = set()
+
+
+def _setup_cache(backend: str):
+    if backend not in _setup_caches:
+        cache.setup(backend)
+        _setup_caches.add(backend)
+
+
 def create_config_endpoint(
     schema: Optional[pa.Schema],
     apimethod: Literal["get", "post"],
@@ -127,7 +136,7 @@ def create_config_endpoint(
     }
 
     cache_backend = config.cache.backend or CACHE_BACKEND  # type: ignore
-    cache.setup("disk://" if cache_backend == "auto" else cache_backend)
+    _setup_cache("disk://" if cache_backend == "auto" else cache_backend)
 
     api_method = api_method_mapping[apimethod]
     has_complex = True
