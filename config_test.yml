@@ -145,6 +145,10 @@ tables:
       - name: fakeparam
         operators:
           - "="
+    nearby:
+      - name: nearby
+        lat_col: geo_lat
+        lon_col: geo_lon
     datasource:
       uri: delta/fake
       file_type: delta

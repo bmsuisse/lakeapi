@@ -7,17 +7,13 @@ from cashews import cache
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from bmsdna.lakeapi.context.df_base import ResultData
-from bmsdna.lakeapi.core.config import Param, SearchConfig
+from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 from datetime import timedelta
 
-KB = 1024
-MB = KB * 1024
-
-cache.setup(f"mem://?size={500 * MB}")
 cached = cache(ttl=timedelta(hours=3))
 
 
@@ -32,6 +28,13 @@ def make_model(v: Dict, name: str):
 
 
 empty_model = create_model("NoQuery")
+
+
+class GeoModel(BaseModel):
+    lat: float
+    lon: float
+    distance_m: float
+
 
 _operator_postfix_map: dict[OperatorType, str] = {
     "<": "_lt",
@@ -131,50 +134,57 @@ def create_parameter_model(
     name: str,
     params: Optional[Iterable[Union[Param, str]]],
     search: Optional[Iterable[SearchConfig]],
+    nearby: Optional[Iterable[NearbyConfig]],
     apimethod: Literal["get", "post"],
 ):
     query_params = {}
-    if params or search:
-        for param in params or []:
-            param = Param(name=param) if isinstance(param, str) else param
-            operators = param.operators or ["="]
-            if param.combi:
-                if apimethod == "post":  # Only supported in POST Requets for now
-                    query_params[param.name] = (
-                        Union[List[dict[str, Any]], None],  # type: ignore
-                        Query(default=param.real_default if not param.required else ...),
-                    )
-            else:
-                realtype = (
-                    _get_datatype(schema, param.name) if schema is not None else str | None
-                )  # well. no model, no real thing. just string
-                for operator in operators:
-                    postfix = _operator_postfix_map[operator]
+    if not params and not search and not nearby:
+        return empty_model
+    for param in params or []:
+        param = Param(name=param) if isinstance(param, str) else param
+        operators = param.operators or ["="]
+        if param.combi:
+            if apimethod == "post":  # Only supported in POST Requets for now
+                query_params[param.name] = (
+                    Union[List[dict[str, Any]], None],  # type: ignore
+                    Query(default=param.real_default if not param.required else ...),
+                )
+        else:
+            realtype = (
+                _get_datatype(schema, param.name) if schema is not None else str | None
+            )  # well. no model, no real thing. just string
+            for operator in operators:
+                postfix = _operator_postfix_map[operator]
 
-                    if operator in ["in", "not in", "between", "not between"]:
-                        if apimethod == "post":  # Only supported in POST Requets for now
-                            query_params[param.name + postfix] = (
-                                Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
-                                Query(default=param.real_default if not param.required else ...),
-                            )
-                    elif operator in ["has"] and schema is not None:
+                if operator in ["in", "not in", "between", "not between"]:
+                    if apimethod == "post":  # Only supported in POST Requets for now
                         query_params[param.name + postfix] = (
-                            _get_datatype(schema, param.name, inner=True),
-                            param.real_default if not param.required else ...,
+                            Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
+                            Query(default=param.real_default if not param.required else ...),
                         )
-                    else:
-                        query_params[param.name + postfix] = (
-                            realtype,
-                            param.real_default if not param.required else ...,
-                        )
-        for sc in search or []:
-            query_params[sc.name] = (
-                Optional[str],
+                elif operator in ["has"] and schema is not None:
+                    query_params[param.name + postfix] = (
+                        _get_datatype(schema, param.name, inner=True),
+                        param.real_default if not param.required else ...,
+                    )
+                else:
+                    query_params[param.name + postfix] = (
+                        realtype,
+                        param.real_default if not param.required else ...,
+                    )
+    for sc in search or []:
+        query_params[sc.name] = (
+            Optional[str],
+            None,
+        )
+    if apimethod == "post":
+        for nb in nearby or []:
+            query_params[nb.name] = (
+                Optional[GeoModel],
                 None,
             )
-        query_model = create_model(name + "Parameter", **query_params)  # type: ignore
-        return query_model
-    return empty_model
+    query_model = create_model(name + "Parameter", **query_params)  # type: ignore
+    return query_model
 
 
 class TypeBaseModel(BaseModel):

@@ -28,7 +28,10 @@ def is_cache(result, args, kwargs, key=None):
 def is_cache_json_response(result, args, kwargs, key=None):
     if not is_cache(result, args, kwargs, key) or not CACHE_JSON_RESPONSES:
         return False
-    return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
+    format_prm = kwargs.get("format")
+    if format_prm is not None and format_prm != "json":
+        return False
+    return kwargs.get("request").headers.get("Accept") == "application/json"
 
 
 def update_header():

@@ -109,6 +109,13 @@ class SearchConfig:
 
 
 @dataclass
+class NearbyConfig:
+    name: str
+    lat_col: str
+    lon_col: str
+
+
+@dataclass
 class Param:
     name: str
     combi: Optional[Optional[List[str]]] = None
@@ -134,6 +141,7 @@ class MetadataDetailResult(BaseModel):
     delta_schema: Any = None
     parameters: Optional[List[Any]] = None
     search: Optional[List[Any]] = None
+    nearby: Optional[List[Any]] = None
 
 
 MetadataSchemaFieldType.model_rebuild()

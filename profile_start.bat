@@ -1,0 +1,1 @@
+python -m cProfile .\startup_perf.py > profile.txt

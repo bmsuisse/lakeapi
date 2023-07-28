@@ -29,7 +29,15 @@ from bmsdna.lakeapi.core.cache import (
 
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
-from bmsdna.lakeapi.core.types import FileTypes, OperatorType, Param, PolaryTypeFunction, Engines, SearchConfig
+from bmsdna.lakeapi.core.types import (
+    FileTypes,
+    OperatorType,
+    Param,
+    PolaryTypeFunction,
+    Engines,
+    SearchConfig,
+    NearbyConfig,
+)
 import expandvars
 
 if TYPE_CHECKING:
@@ -146,6 +154,7 @@ class Config:
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
     allow_get_all_pages: Optional[bool] = False
     search: Optional[List[SearchConfig]] = None
+    nearby: Optional[List[NearbyConfig]] = None
     engine: Optional[Engines] = None
     chunk_size: Optional[int] = None
     cache: Optional[CacheConfig] = None
@@ -208,6 +217,7 @@ class Config:
         )
         orderby = datasource.get("orderby") if datasource else None
         search_config = [SearchConfig(**c) for c in config["search"]] if "search" in config else None
+        nearby_config = [NearbyConfig(**c) for c in config["nearby"]] if "nearby" in config else None
         logger.debug(config)
 
         _params: list[Param] = []
@@ -252,6 +262,7 @@ class Config:
             tag=tag,
             version=version,
             search=search_config,
+            nearby=nearby_config,
             api_method=api_method,
             engine=config.get("engine", None),
             chunk_size=config.get("chunk_size", None),

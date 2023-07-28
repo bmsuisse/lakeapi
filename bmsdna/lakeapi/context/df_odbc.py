@@ -8,10 +8,11 @@ from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData
 import arrow_odbc
 import pyarrow.dataset
 import pypika.queries
-import pypika.terms
+from pypika.terms import Term
 import pypika.functions
 import pypika.enums
 import pypika
+import pypika.terms
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -129,10 +130,14 @@ class ODBCExecutionContext(ExecutionContext):
             sql, chunk_size=self.chunk_size, connection_string=self.datasources[list(self.datasources.keys())[0]]
         )
 
-    def json_function(self, term: pypika.terms.Term, assure_string=False):
+    def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError(
             "Cannot convert to JSON in remote sql"
         )  # we could but sql does not support structured types anyway, so...
+
+    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+        # you have to implement haversine function yourself
+        return pypika.terms.Function("f_haversine", lat1, lon1, lat2, lon2)
 
     def init_search(
         self,

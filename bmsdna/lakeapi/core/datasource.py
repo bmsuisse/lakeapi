@@ -24,10 +24,6 @@ logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
 
-KB = 1024
-MB = KB * 1024
-
-cache.setup(f"mem://?size={500 * MB}")
 cached = cache(ttl=timedelta(hours=3))
 
 
@@ -117,11 +113,18 @@ class Datasource:
         return pypika.Table(self.tablename)
 
     def get_schema(self) -> pa.Schema:
-        if not self.config.select and self.config.file_type == "delta" and self.file_exists():
+        schema: pa.Schema | None = None
+        if self.config.file_type == "delta" and self.file_exists():
             from deltalake import DeltaTable
 
-            deltameta = DeltaTable(self.uri).schema().to_pyarrow()
-            return deltameta
+            schema = DeltaTable(self.uri).schema().to_pyarrow()
+        if self.config.file_type == "parquet" and self.file_exists():
+            schema = pyarrow.parquet.read_schema(self.uri)
+        if schema is not None:
+            if self.config.select:
+                fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
+                return pyarrow.schema(fields)
+            return schema
         return self.get_df(endpoint="meta").arrow_schema()
 
     def get_df(

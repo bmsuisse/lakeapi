@@ -20,7 +20,8 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
-
+from bmsdna.lakeapi.core.endpoint_search import handle_search_request
+from bmsdna.lakeapi.core.endpoint_nearby import handle_nearby_request
 
 logger = get_logger(__name__)
 
@@ -38,11 +39,13 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
     return parts
 
 
-def remove_search(prm_dict: dict, config: Config):
-    if not config.search or len(prm_dict) == 0:
+def remove_search_nearby(prm_dict: dict, config: Config):
+    if (not config.search and not config.nearby) or len(prm_dict) == 0:
         return prm_dict
-    search_cols = [s.name.lower() for s in config.search]
-    return {k: v for k, v in prm_dict.items() if k.lower() not in search_cols}
+    search_nearby_cols = [s.name.lower() for s in (config.search or [])] + [
+        s.name.lower() for s in (config.nearby or [])
+    ]
+    return {k: v for k, v in prm_dict.items() if k.lower() not in search_nearby_cols}
 
 
 async def get_params_filter_expr(
@@ -50,7 +53,7 @@ async def get_params_filter_expr(
 ) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         context,
-        remove_search(params.model_dump(exclude_unset=True) if params else {}, config),
+        remove_search_nearby(params.model_dump(exclude_unset=True) if params else {}, config),
         config.params if config.params else [],
         columns,
     )
@@ -86,6 +89,15 @@ def split_csv(csv_str: str) -> list[str]:
     raise ValueError("cannot happen")
 
 
+_setup_caches = set()
+
+
+def _setup_cache(backend: str):
+    if backend not in _setup_caches:
+        cache.setup(backend)
+        _setup_caches.add(backend)
+
+
 def create_config_endpoint(
     schema: Optional[pa.Schema],
     apimethod: Literal["get", "post"],
@@ -98,7 +110,12 @@ def create_config_endpoint(
     route = config.route
 
     query_model = create_parameter_model(
-        schema, config.tag + "_" + config.name + "_" + apimethod, config.params, config.search, apimethod
+        schema,
+        config.tag + "_" + config.name + "_" + apimethod,
+        config.params,
+        config.search,
+        config.nearby,
+        apimethod,
     )
 
     api_method_mapping = {
@@ -119,7 +136,7 @@ def create_config_endpoint(
     }
 
     cache_backend = config.cache.backend or CACHE_BACKEND  # type: ignore
-    cache.setup("disk://" if cache_backend == "auto" else cache_backend)
+    _setup_cache("disk://" if cache_backend == "auto" else cache_backend)
 
     api_method = api_method_mapping[apimethod]
     has_complex = True
@@ -163,16 +180,6 @@ def create_config_endpoint(
             base_schema = df.arrow_schema()
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
-
-            searches = {}
-            if config.search is not None and params is not None:
-                search_dict = {c.name.lower(): c for c in config.search}
-                searches = {
-                    k: (v, search_dict[k.lower()])
-                    for k, v in params.model_dump(exclude_unset=True).items()
-                    if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
-                }
-
             columns = exclude_cols(df.columns())
             if select:
                 columns = [
@@ -180,7 +187,7 @@ def create_config_endpoint(
                 ]  # split , is a bit naive, we might want to support real CSV with quotes here
             if config.datasource.exclude and len(config.datasource.exclude) > 0:
                 columns = [c for c in columns if c not in config.datasource.exclude]
-            if config.datasource.sortby and len(searches) == 0:
+            if config.datasource.sortby:
                 for s in config.datasource.sortby:
                     new_query = new_query.orderby(
                         s.by,
@@ -208,22 +215,12 @@ def create_config_endpoint(
                 limit = 1000 if limit == -1 else limit
                 new_query = new_query.offset(offset or 0).limit(limit)
 
-            if len(searches) > 0 and config.search is not None:
-                source_view = realdataframe.tablename
-                context.init_search(source_view, config.search)
-                score_sum = None
-                for search_key, (search_val, search_cfg) in searches.items():
-                    score_sum = (
-                        context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                        if score_sum is None
-                        else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
-                    )
-                assert score_sum is not None
-                new_query = new_query.select(score_sum.as_("search_score"))
-                new_query = new_query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
-
-                new_query = new_query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
-
+            new_query = handle_search_request(
+                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            )
+            new_query = handle_nearby_request(
+                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            )
             logger.debug(f"Query: {get_sql(new_query)}")
 
             df2 = context.execute_sql(new_query)

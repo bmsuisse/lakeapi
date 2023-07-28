@@ -18,9 +18,9 @@
         }
     },
     "required": [
-        "tables",
         "users",
-        "app"
+        "app",
+        "tables"
     ],
     "$defs": {
         "Config": {
@@ -114,6 +114,12 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/$defs/SearchConfig"
+                    }
+                },
+                "nearby": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/NearbyConfig"
                     }
                 },
                 "engine": {
@@ -362,6 +368,26 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "NearbyConfig": {
+            "type": "object",
+            "required": [
+                "name",
+                "lat_col",
+                "lon_col"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "lat_col": {
+                    "type": "string"
+                },
+                "lon_col": {
+                    "type": "string"
                 }
             }
         },

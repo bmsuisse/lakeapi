@@ -4,8 +4,11 @@ import fastapi
 import test_server
 import os
 
-sql_server = test_server.start_mssql_server()
+no_sql = os.getenv("NO_SQL_SERVER", "0") == "1"
+sql_server = test_server.start_mssql_server() if not no_sql else None
+print("after start mssql")
 app = fastapi.FastAPI()
+
 
 def_cfg = bmsdna.lakeapi.get_default_config()  # Get default startup config
 cfg = dataclasses.replace(
