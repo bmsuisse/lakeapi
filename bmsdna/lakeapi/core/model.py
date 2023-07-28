@@ -14,10 +14,6 @@ from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 from datetime import timedelta
 
-KB = 1024
-MB = KB * 1024
-
-cache.setup(f"mem://?size={500 * MB}")
 cached = cache(ttl=timedelta(hours=3))
 
 
