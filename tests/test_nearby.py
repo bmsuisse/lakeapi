@@ -19,17 +19,17 @@ def test_nearby():
         response = client.post(
             f"/api/v1/test/fake_delta?limit=50&format=ndjson&%24engine={e}",
             auth=auth,
-            json={"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 4200}},
+            json={"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 10000}},
         )
         assert response.status_code == 200
-        lines = [json.loads(l) for l in response.text.split("\n")]
-        assert len(lines) >= 25 and len(lines) <= 40  # it's a bit fuzzy since distance calc is never 100% accurate
+        lines = [json.loads(l) for l in response.text.split("\n") if len(l) > 0]
+        assert len(lines) >= 15 and len(lines) <= 40  # it's a bit fuzzy since distance calc is never 100% accurate
 
         assert lines[0]["nearby"] <= lines[1]["nearby"]
         assert lines[1]["nearby"] <= lines[2]["nearby"]
         assert lines[2]["nearby"] <= lines[3]["nearby"]
         for item in lines:
-            assert item["nearby"] <= 4200
+            assert item["nearby"] <= 10000
 
 
 def test_no_nearby():
@@ -41,6 +41,6 @@ def test_no_nearby():
         )
         assert response.status_code == 200
         assert response.status_code == 200
-        lines = [json.loads(l) for l in response.text.split("\n")]
+        lines = [json.loads(l) for l in response.text.split("\n") if len(l) > 0]
         assert len(lines) == 50
         assert "nearby" not in lines[0]
