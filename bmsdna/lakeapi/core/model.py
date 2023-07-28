@@ -162,11 +162,11 @@ def create_parameter_model(
                             Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
                             Query(default=param.real_default if not param.required else ...),
                         )
-                    elif operator in ["has"] and schema is not None:
-                        query_params[param.name + postfix] = (
-                            _get_datatype(schema, param.name, inner=True),
-                            param.real_default if not param.required else ...,
-                        )
+                elif operator in ["has"] and schema is not None:
+                    query_params[param.name + postfix] = (
+                        _get_datatype(schema, param.name, inner=True),
+                        param.real_default if not param.required else ...,
+                    )
                 else:
                     query_params[param.name + postfix] = (
                         realtype,
