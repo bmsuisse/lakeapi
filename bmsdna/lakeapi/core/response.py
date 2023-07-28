@@ -20,10 +20,6 @@ from datetime import timedelta
 
 logger = get_logger(__name__)
 
-KB = 1024
-MB = KB * 1024
-
-cache.setup(f"mem://?size={500 * MB}")
 cached = cache(ttl=timedelta(hours=3))
 
 

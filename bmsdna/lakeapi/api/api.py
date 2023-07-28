@@ -11,9 +11,20 @@ class LakeApiStartInfo:
     config: Configs
 
 
+def setup_cashews():
+    from cashews import cache
+
+    KB = 1024
+    MB = KB * 1024
+
+    cache.setup(f"mem://?size={250 * MB}")
+
+
 def init_lakeapi(
     app: FastAPI, use_basic_auth: bool, start_config: BasicConfig | None = None, config: Configs | str | None = None
 ) -> LakeApiStartInfo:
+    setup_cashews()
+
     start_config = start_config or get_default_config()
     real_config: Configs
     if config is None:
