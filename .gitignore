@@ -161,9 +161,11 @@ cython_debug/
 
 tests/data
 !tests/data/chinook.db
-
+!tests/data/delta/table_w_col_map
 out
 
 .pymon
 
 profile.txt
+
+_temp

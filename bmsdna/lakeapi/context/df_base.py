@@ -198,9 +198,13 @@ class ExecutionContext(ABC):
                 pd = pl.read_avro(uri).to_arrow()
                 return pd
             case "delta":
+                from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
+
                 dt = DeltaTable(
                     uri,
                 )
+                if only_fixed_supported(dt):
+                    return get_pyarrow_table(dt)
                 return dt.to_pyarrow_dataset(
                     partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )

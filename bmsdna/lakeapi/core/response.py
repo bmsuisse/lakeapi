@@ -15,7 +15,7 @@ from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from cashews import cache
-from bmsdna.lakeapi.core.cache import is_cache, CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
+from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from datetime import timedelta
 
 logger = get_logger(__name__)

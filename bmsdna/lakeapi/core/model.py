@@ -6,6 +6,7 @@ from bmsdna.lakeapi.context.df_base import ResultData
 from cashews import cache
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
+from pydantic.fields import FieldInfo
 from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
@@ -57,13 +58,13 @@ _operator_postfix_map: dict[OperatorType, str] = {
 
 @cached
 async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
-    casefoldqueryname = queryname.casefold()
+    casefoldqueryname = queryname.casefold().replace(" ", "_")
     for param in paramdef:
         param = Param(name=param) if isinstance(param, str) else param
         operators = param.operators or ["="]
         for operator in operators:
             postfix = _operator_postfix_map[operator]
-            if (param.name + postfix).casefold() == casefoldqueryname:
+            if (param.name + postfix).casefold().replace(" ", "_") == casefoldqueryname:
                 return (param, operator)
     return None
 
@@ -129,6 +130,17 @@ def _get_datatype(schema: Optional[pa.Schema], name: str, *, inner: bool = False
         return str | None
 
 
+def _fix_space_names(query_params: dict[str, tuple[str, Any]]):
+    res_dict = {}
+    for key, value in query_params.items():
+        if " " in key:
+            new_key = key.replace(" ", "_")
+            res_dict[new_key] = (value[0], FieldInfo(default=value[1], title=key))
+        else:
+            res_dict[key] = (value[0], FieldInfo(default=value[1], title=key))
+    return res_dict
+
+
 def create_parameter_model(
     schema: Optional[pa.Schema],
     name: str,
@@ -137,7 +149,7 @@ def create_parameter_model(
     nearby: Optional[Iterable[NearbyConfig]],
     apimethod: Literal["get", "post"],
 ):
-    query_params = {}
+    query_params: dict[str, tuple[str, Any]] = {}
     if not params and not search and not nearby:
         return empty_model
     for param in params or []:
@@ -183,6 +195,7 @@ def create_parameter_model(
                 Optional[GeoModel],
                 None,
             )
+    query_params = _fix_space_names(query_params)
     query_model = create_model(name + "Parameter", **query_params)  # type: ignore
     return query_model
 
