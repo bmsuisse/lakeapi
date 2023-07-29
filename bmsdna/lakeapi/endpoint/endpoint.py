@@ -13,15 +13,15 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
-from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS, is_cache_json_response
+from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
-from bmsdna.lakeapi.core.endpoint_search import handle_search_request
-from bmsdna.lakeapi.core.endpoint_nearby import handle_nearby_request
+from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
+from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 
 logger = get_logger(__name__)
 
@@ -147,7 +147,6 @@ def create_config_endpoint(
     @cache(
         ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,  # type: ignore
     )
     async def data(
         request: Request,

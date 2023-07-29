@@ -4,6 +4,7 @@ from bmsdna.lakeapi.api.api import init_lakeapi
 from cashews import cache
 from cashews.commands import Command
 import time
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS, CACHE_JSON_RESPONSES
 
 
 def run_fastapi():
@@ -36,7 +37,12 @@ def run_fastapi():
 
     @app.middleware("http")
     async def disable_middleware(request, call_next):
-        if request.headers.get("X-No-Cache"):
+        if (
+            request.headers.get("X-No-Cache")
+            or request.header.get("Accept") != "application/json"
+            or CACHE_EXPIRATION_TIME_SECONDS <= 0
+            or not CACHE_JSON_RESPONSES
+        ):
             with cache.disabling(Command.GET):
                 return await call_next(request)
         return await call_next(request)
