@@ -22,6 +22,7 @@ from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
 from bmsdna.lakeapi.core.endpoint_search import handle_search_request
 from bmsdna.lakeapi.core.endpoint_nearby import handle_nearby_request
+from starlette.responses import Response
 
 logger = get_logger(__name__)
 
@@ -98,6 +99,10 @@ def _setup_cache(backend: str):
         _setup_caches.add(backend)
 
 
+def skip_error_result(result: Response, args, kwargs, key=None) -> bool:
+    return result.status_code == 200
+
+
 def create_config_endpoint(
     schema: Optional[pa.Schema],
     apimethod: Literal["get", "post"],
@@ -147,7 +152,7 @@ def create_config_endpoint(
     @cache(
         ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_cache_json_response if config.cache.cache_json_response else lambda *args, **kwargs: False,  # type: ignore
+        condition=skip_error_result,
     )
     async def data(
         request: Request,
