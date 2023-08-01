@@ -46,7 +46,7 @@ def _literal(vl: Any):
     return _literal(str(vl))
 
 
-def get_sql_for_delta(dt: DeltaTable, uri: str):
+def get_sql_for_delta(dt: DeltaTable):
     sql = "WITH files as ("
     file_selects = []
 
@@ -56,13 +56,8 @@ def get_sql_for_delta(dt: DeltaTable, uri: str):
     phys_names = [cm[1] for cm in colmaps]
     for ac in dt.get_add_actions(flatten=False).to_pylist():
         fullpath = os.path.join(dt.table_uri, ac["path"])
-        relpath = os.path.join(uri, ac["path"])
         if not os.path.exists(fullpath):
-            if os.path.exists(relpath):
-                fullpath = relpath
-                logger.warning(f"{relpath} exists, {fullpath} does not")
-            else:
-                raise FileNotFoundError(f"error for {fullpath}")
+            raise FileNotFoundError(f"error for {fullpath}")
         sc = pq.read_schema(fullpath)
 
         cols = sc.names
