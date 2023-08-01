@@ -65,8 +65,7 @@ def get_sql_for_delta(dt: DeltaTable):
         for c in phys_names:
             if "partition_values" in ac and c in ac["partition_values"]:
                 cols_sqls.append(_literal(ac["partition_values"][c]) + " AS " + _quote(c))
-
-            if "partition." + c in ac:
+            elif "partition." + c in ac:
                 cols_sqls.append(_literal(ac["partition." + c]) + " AS " + _quote(c))
             elif c in cols:
                 cols_sqls.append(_quote(c))
