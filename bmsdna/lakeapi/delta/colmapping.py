@@ -1,8 +1,14 @@
 from deltalake import DeltaTable
 from deltalake.table import MAX_SUPPORTED_READER_VERSION
 from deltalake.fs import DeltaStorageHandler
+import pyarrow.parquet as pq
 import pyarrow
 import pyarrow.fs as pa_fs
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
 from pyarrow.dataset import (
     Expression,
     FileSystemDataset,
@@ -25,6 +31,51 @@ def _apply_col_mapping(dt: DeltaTable, logical_schema: pyarrow.Schema):
 
 def only_fixed_supported(dt: DeltaTable):
     return dt.protocol().min_reader_version == 2 and MAX_SUPPORTED_READER_VERSION == 1
+
+
+def _quote(s: str):
+    assert '"' not in s
+    return '"' + s + '"'
+
+
+def _literal(vl: Any):
+    if isinstance(vl, str):
+        return "'" + vl.replace("'", "''") + "'"
+    if isinstance(vl, int) or isinstance(vl, float):
+        return str(vl)
+    return _literal(str(vl))
+
+
+def get_sql_for_delta(dt: DeltaTable):
+    sql = "WITH files as ("
+    file_selects = []
+
+    colmaps = []
+    for field in dt.schema().fields:
+        colmaps.append((field.name, field.metadata.get("delta.columnMapping.physicalName", field.name)))
+    phys_names = [cm[1] for cm in colmaps]
+    for ac in dt.get_add_actions(flatten=True).to_pylist():
+        fullpath = os.path.join(dt.table_uri, ac["path"])
+        sc = pq.read_schema(fullpath)
+
+        cols = sc.names
+        cols_sqls = []
+        for c in phys_names:
+            if "partition_values" in ac and c in ac["partition_values"]:
+                cols_sqls.append(_literal(ac["partition_values"][c]) + " AS " + _quote(c))
+            elif "partition." + c in ac:
+                cols_sqls.append(_literal(ac["partition." + c]) + " AS " + _quote(c))
+            elif c in cols:
+                cols_sqls.append(_quote(c))
+            else:
+                cols_sqls.append("NULL AS " + _quote(c))
+
+        select = "SELECT " + ", ".join(cols_sqls) + " FROM read_parquet('" + fullpath + "')"
+        file_selects.append(select)
+    sql += "\r\n UNION ALL ".join(file_selects) + "\r\n)"
+    colmapssql = ", ".join(('"' + phys_name + '" AS "' + name + '"' for name, phys_name in colmaps))
+    return f"""{sql} 
+     SELECT {colmapssql} from files"""
 
 
 def get_pyarrow_dataset(
@@ -91,3 +142,7 @@ if __name__ == "__main__":
     t = ds.to_table().rename_columns(real_schema.names)
 
     print(repr(t))
+
+    lns = get_sql_for_delta(d).split("\n")
+    for ln in lns:
+        print(ln)

@@ -5,7 +5,7 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_dataset
+from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_dataset, get_sql_for_delta
 import duckdb
 import pyarrow.dataset
 import pypika.queries
@@ -249,15 +249,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if file_type == "delta" and os.path.exists(uri):
             dt = DeltaTable(uri)
             if only_fixed_supported(dt):
-                ds, logical_schema = get_pyarrow_dataset(
-                    dt, partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
-                )
-                colmaps = []
-                for field in dt.schema().fields:
-                    colmaps.append((field.name, field.metadata.get("delta.columnMapping.physicalName", field.name)))
-                colmapssql = ", ".join(('"' + phys_name + '" AS "' + name + '"' for name, phys_name in colmaps))
-                self.con.register(name + "__base", ds)
-                self.con.execute(f"CREATE VIEW {name} as SELECT {colmapssql} from {name}__base")
+                sql = get_sql_for_delta(dt)
+                self.con.execute(f"CREATE VIEW {name} as {sql}")
                 return
         return super().register_datasource(name, uri, file_type, partitions)
 
