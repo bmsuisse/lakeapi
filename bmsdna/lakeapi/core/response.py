@@ -197,7 +197,7 @@ async def create_response(
     url: URL,
     accept: str,
     context: ExecutionContext,
-    sql: QueryBuilder,
+    sql: QueryBuilder | str,
     basic_config: BasicConfig,
     close_context=True,
 ):
