@@ -75,10 +75,14 @@ def create_sql_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
 
         con = _get_sql_context(engine, basic_config, configs)
-        df = con.execute_sql(body.decode("utf-8"))
 
         return await create_response(
-            request.url, format or request.headers["Accept"], df, con, basic_config=basic_config, close_context=False
+            request.url,
+            format or request.headers["Accept"],
+            con,
+            body.decode("utf-8"),
+            basic_config=basic_config,
+            close_context=False,
         )
 
     @router.get(
