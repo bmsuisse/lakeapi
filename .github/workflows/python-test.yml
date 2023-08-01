@@ -32,5 +32,7 @@ jobs:
           poetry run pyright .
       - name: Create Test data
         run: poetry run python -m tests.create_test_data
+      - name: test_some_path
+        run: ls -al tests/data/delta/table_w_col_map/nO
       - name: Test with pytest (no benchmarks)
         run: poetry run pytest --cov=bmsdna tests --benchmark-skip
