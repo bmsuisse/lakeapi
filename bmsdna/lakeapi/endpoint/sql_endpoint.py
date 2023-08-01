@@ -96,7 +96,6 @@ def create_sql_endpoint(
     ):
         con = _get_sql_context(engine, basic_config, configs)
 
-        df = con.execute_sql(sql)
         return await create_response(
-            request.url, format or request.headers["Accept"], df, con, basic_config=basic_config, close_context=False
+            request.url, format or request.headers["Accept"], con, sql, basic_config=basic_config, close_context=False
         )
