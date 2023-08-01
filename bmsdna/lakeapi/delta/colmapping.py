@@ -54,7 +54,7 @@ def get_sql_for_delta(dt: DeltaTable):
     for field in dt.schema().fields:
         colmaps.append((field.name, field.metadata.get("delta.columnMapping.physicalName", field.name)))
     phys_names = [cm[1] for cm in colmaps]
-    for ac in dt.get_add_actions(flatten=False).to_pylist():
+    for ac in dt.get_add_actions(flatten=True).to_pylist():
         fullpath = os.path.join(dt.table_uri, ac["path"])
         if not os.path.exists(fullpath):
             raise FileNotFoundError(f"error for {fullpath}")
@@ -65,6 +65,8 @@ def get_sql_for_delta(dt: DeltaTable):
         for c in phys_names:
             if "partition_values" in ac and c in ac["partition_values"]:
                 cols_sqls.append(_literal(ac["partition_values"][c]) + " AS " + _quote(c))
+            elif "partition." + c in ac:
+                cols_sqls.append(_literal(ac["partition." + c]) + " AS " + _quote(c))
             elif c in cols:
                 cols_sqls.append(_quote(c))
             else:
