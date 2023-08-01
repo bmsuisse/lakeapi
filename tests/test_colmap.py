@@ -13,7 +13,7 @@ sys.path.append(".")
 client = TestClient(get_app())
 auth = get_auth()
 
-engines = "duckdb"
+engines = ("duckdb",)
 
 
 def test_no_filter():

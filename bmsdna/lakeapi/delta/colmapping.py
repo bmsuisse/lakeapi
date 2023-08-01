@@ -77,7 +77,7 @@ def get_pyarrow_table(
     parquet_read_options: Optional[ParquetReadOptions] = None,
 ):
     ds, real_schema = get_pyarrow_dataset(
-        d, partitions=partitions, filesystem=filesystem, parquet_read_options=parquet_read_options
+        dt, partitions=partitions, filesystem=filesystem, parquet_read_options=parquet_read_options
     )
     t = ds.to_table().rename_columns(real_schema.names)
     return t
