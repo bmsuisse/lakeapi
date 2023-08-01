@@ -47,6 +47,7 @@ def _literal(vl: Any):
 
 
 def get_sql_for_delta(dt: DeltaTable):
+    dt.update_incremental()
     sql = "WITH files as ("
     file_selects = []
 
