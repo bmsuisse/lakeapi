@@ -143,6 +143,6 @@ if __name__ == "__main__":
 
     print(repr(t))
 
-    lns = get_sql_for_delta(d, "tests/data/delta/table_w_col_map").split("\n")
+    lns = get_sql_for_delta(d).split("\n")
     for ln in lns:
         print(ln)
