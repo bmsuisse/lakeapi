@@ -26,6 +26,8 @@ def is_cache(result, args, kwargs, key=None):
 
 
 def is_cache_json_response(result, args, kwargs, key=None):
+    if result.status_code != 200:
+        return False
     if not is_cache(result, args, kwargs, key) or not CACHE_JSON_RESPONSES:
         return False
     format_prm = kwargs.get("format")
