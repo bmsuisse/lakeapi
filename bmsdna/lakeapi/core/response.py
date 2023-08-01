@@ -8,8 +8,8 @@ import polars as pl
 import pyarrow as pa
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL
-from starlette.responses import FileResponse, Response
-
+from starlette.responses import FileResponse, Response, StreamingResponse
+import typing
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
@@ -17,8 +17,14 @@ from bmsdna.lakeapi.core.types import OutputFileType
 from cashews import cache
 from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from datetime import timedelta
+from email.utils import format_datetime, formatdate
+from urllib.parse import quote
+from starlette._compat import md5_hexdigest
+import asyncio
+from pypika.queries import QueryBuilder
 
 logger = get_logger(__name__)
+
 
 cached = cache(ttl=timedelta(hours=3))
 
@@ -138,11 +144,41 @@ def write_frame(
     return []
 
 
-class FileResponseWCharset(FileResponse):
-    def __init__(self, *args, **kwargs):
+class StreamingResponseWCharset(StreamingResponse):
+    def __init__(
+        self,
+        content_disposition_type: str = "attachment",
+        filename=None,
+        stat_result: typing.Optional[os.stat_result] = None,
+        *args,
+        **kwargs
+    ):
+        # taking over from FileResponse
+        self.filename = filename
+        if self.filename is not None:
+            content_disposition_filename = quote(self.filename)
+            if content_disposition_filename != self.filename:
+                content_disposition = "{}; filename*=utf-8''{}".format(
+                    content_disposition_type, content_disposition_filename
+                )
+            else:
+                content_disposition = '{}; filename="{}"'.format(content_disposition_type, self.filename)
+            self.headers.setdefault("content-disposition", content_disposition)
+
         if "charset" in kwargs:
             self.charset = kwargs.pop("charset")
+
         super().__init__(*args, **kwargs)
+
+    def set_stat_headers(self, stat_result: os.stat_result) -> None:
+        content_length = str(stat_result.st_size)
+        last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+        etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
+        etag = md5_hexdigest(etag_base.encode(), usedforsecurity=False)
+
+        self.headers.setdefault("content-length", content_length)
+        self.headers.setdefault("last-modified", last_modified)
+        self.headers.setdefault("etag", etag)
 
 
 class TempFileWrapper:  # does not open the file which is important on windows
@@ -160,10 +196,10 @@ class TempFileWrapper:  # does not open the file which is important on windows
 async def create_response(
     url: URL,
     accept: str,
-    content: ResultData,
     context: ExecutionContext,
+    sql: QueryBuilder,
     basic_config: BasicConfig,
-    close_context=False,
+    close_context=True,
 ):
     headers = {}
 
@@ -173,14 +209,8 @@ async def create_response(
     content_dispositiont_type = "attachment"
     filename = "file" + extension
 
-    if format == OutputFormats.JSON:
-        return Response(
-            content=content.to_json(),
-            headers=headers,
-            media_type="application/json",
-        )
-
     if format in [
+        OutputFormats.JSON,
         OutputFormats.ND_JSON,
         OutputFormats.CSV,
         OutputFormats.SEMI_CSV,
@@ -189,26 +219,36 @@ async def create_response(
         content_dispositiont_type = "inline"
         filename = None
 
-    if os.name == "nt":
-        temp_file = TempFileWrapper(os.environ["TEMP"] + "/" + str(uuid4()))
-    else:
-        temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
-    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    additional_files = write_frame(
-        url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config
-    )
-
     def clean_up():
         if close_context:
             context.close()
             logger.debug("closed context")
         temp_file.close()
 
-        for f in additional_files:
-            os.remove(f)
+    if os.name == "nt":
+        temp_file = TempFileWrapper(os.environ["TEMP"] + "/" + str(uuid4()))
+    else:
+        temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
+    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
 
-    return FileResponseWCharset(
-        path=temp_file.name,
+    @cache.iterator(ttl=CACHE_EXPIRATION_TIME_SECONDS, key="sql:{sql}:url{url}")
+    async def response_stream(context=context, sql=sql, url=url):
+        chunk_size = 64 * 1024
+        loop = asyncio.get_running_loop()
+        content = await loop.run_in_executor(None, context.execute_sql, sql)
+        additional_files = write_frame(
+            url=url, content=content, format=format, out=temp_file.name, basic_config=basic_config
+        )
+
+        with open(temp_file.name, "rb") as file_obj:
+            while True:
+                chunk = await loop.run_in_executor(None, file_obj.read, chunk_size)
+                if not chunk:
+                    return
+                yield chunk
+
+    return StreamingResponseWCharset(
+        content=response_stream(context, sql),
         headers=headers,
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,

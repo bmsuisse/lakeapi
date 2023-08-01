@@ -144,10 +144,6 @@ def create_config_endpoint(
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
 
     @api_method
-    @cache(
-        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
-        key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-    )
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore
@@ -167,72 +163,70 @@ def create_config_endpoint(
 
         logger.debug(f"Engine: {engine}")
         real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
-        with get_context_by_engine(engine, chunk_size=real_chunk_size) as context:
-            assert config.datasource is not None
-            realdataframe = Datasource(
-                config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
-            )
-            parts = await get_partitions(realdataframe, params, config)
-            df = realdataframe.get_df(parts or None)
+        context = get_context_by_engine(engine, chunk_size=real_chunk_size)
+        assert config.datasource is not None
+        realdataframe = Datasource(
+            config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+        )
+        parts = await get_partitions(realdataframe, params, config)
+        df = realdataframe.get_df(parts or None)
 
-            expr = await get_params_filter_expr(context, df.columns(), config, params)
-            base_schema = df.arrow_schema()
-            new_query = df.query_builder()
-            new_query = new_query.where(expr) if expr is not None else new_query
-            columns = exclude_cols(df.columns())
-            if select:
-                columns = [
-                    c for c in columns if c in split_csv(select)
-                ]  # split , is a bit naive, we might want to support real CSV with quotes here
-            if config.datasource.exclude and len(config.datasource.exclude) > 0:
-                columns = [c for c in columns if c not in config.datasource.exclude]
-            if config.datasource.sortby:
-                for s in config.datasource.sortby:
-                    new_query = new_query.orderby(
-                        s.by,
-                        order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
-                    )
-            if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
-                jsonify_complex = True
-            if jsonify_complex:
-                new_query = new_query.select(
-                    *[
-                        pypika.Field(c)
-                        if not is_complex_type(base_schema, c)
-                        else context.json_function(pypika.Field(c)).as_(c)
-                        for c in columns
-                    ]
+        expr = await get_params_filter_expr(context, df.columns(), config, params)
+        base_schema = df.arrow_schema()
+        new_query = df.query_builder()
+        new_query = new_query.where(expr) if expr is not None else new_query
+        columns = exclude_cols(df.columns())
+        if select:
+            columns = [
+                c for c in columns if c in split_csv(select)
+            ]  # split , is a bit naive, we might want to support real CSV with quotes here
+        if config.datasource.exclude and len(config.datasource.exclude) > 0:
+            columns = [c for c in columns if c not in config.datasource.exclude]
+        if config.datasource.sortby:
+            for s in config.datasource.sortby:
+                new_query = new_query.orderby(
+                    s.by,
+                    order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
                 )
-            else:
-                new_query = new_query.select(*columns)
-
-            if distinct:
-                assert len(columns) <= 3  # reduce complexity here
-                new_query = new_query.distinct()
-
-            if not (limit == -1 and config.allow_get_all_pages):
-                limit = 1000 if limit == -1 else limit
-                new_query = new_query.offset(offset or 0).limit(limit)
-
-            new_query = handle_search_request(
-                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+        if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
+            jsonify_complex = True
+        if jsonify_complex:
+            new_query = new_query.select(
+                *[
+                    pypika.Field(c)
+                    if not is_complex_type(base_schema, c)
+                    else context.json_function(pypika.Field(c)).as_(c)
+                    for c in columns
+                ]
             )
-            new_query = handle_nearby_request(
-                context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+        else:
+            new_query = new_query.select(*columns)
+
+        if distinct:
+            assert len(columns) <= 3  # reduce complexity here
+            new_query = new_query.distinct()
+
+        if not (limit == -1 and config.allow_get_all_pages):
+            limit = 1000 if limit == -1 else limit
+            new_query = new_query.offset(offset or 0).limit(limit)
+
+        new_query = handle_search_request(
+            context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+        )
+        new_query = handle_nearby_request(
+            context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+        )
+        logger.debug(f"Query: {get_sql(new_query)}")
+
+        try:
+            return await create_response(
+                request.url,
+                format or request.headers["Accept"],
+                context,
+                new_query,
+                basic_config=basic_config,
+                close_context=True,
             )
-            logger.debug(f"Query: {get_sql(new_query)}")
-
-            df2 = context.execute_sql(new_query)
-
-            try:
-                return await create_response(
-                    request.url,
-                    format or request.headers["Accept"],
-                    df2,
-                    context,
-                    basic_config=basic_config,
-                    close_context=True,
-                )
-            except Exception as err:
-                logger.error("Error in creating response", exc_info=err)
-                raise HTTPException(status_code=500)
+        except Exception as err:
+            logger.error("Error in creating response", exc_info=err)
+            raise HTTPException(status_code=500)
