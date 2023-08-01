@@ -99,8 +99,11 @@ def _setup_cache(backend: str):
         _setup_caches.add(backend)
 
 
-def skip_error_result(result: Response, args, kwargs, key=None) -> bool:
-    return result.status_code == 200
+def skip_error_result_fn(cfg: Config):
+    def skip_error_result(result: Response, args, kwargs, key=None) -> bool:
+        return result.status_code == 200 and config.cache.cache_json_response
+
+    return skip_error_result
 
 
 def create_config_endpoint(
@@ -152,7 +155,7 @@ def create_config_endpoint(
     @cache(
         ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
         key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=skip_error_result,
+        condition=skip_error_result_fn(config),
     )
     async def data(
         request: Request,
