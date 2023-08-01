@@ -1,8 +1,11 @@
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request, status
 import dataclasses
 from faker import Faker
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 import random
 import os
+import logging
 
 
 def get_app(default_engine="duckdb"):
@@ -13,6 +16,13 @@ def get_app(default_engine="duckdb"):
     def_cfg = bmsdna.lakeapi.get_default_config()
     cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data", default_engine=default_engine)
     sti = bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        exc_str = f"{exc}".replace("\n", " ").replace("   ", " ")
+        logging.error(f"{request}: {exc_str}")
+        content = {"status_code": 10422, "message": exc_str, "data": None}
+        return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     @app.get("/")
     async def root(req: Request):
