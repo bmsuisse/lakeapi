@@ -13,7 +13,7 @@ from cashews import cache
 from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
-from bmsdna.lakeapi.core.cache import CACHE_EXPIRATION_TIME_SECONDS, CACHE_BACKEND, is_cache
+from bmsdna.lakeapi.core.cache import CACHE_EXPIRATION_TIME_SECONDS, CACHE_BACKEND
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def

@@ -43,14 +43,17 @@ def scan_delta2(
     storage_options: Optional[dict[str, Any]] = None,
     delta_table_options: Optional[dict[str, Any]] = None,
     pyarrow_options: Optional[dict[str, Any]] = None,
-) -> LazyFrame:
+) -> LazyFrame | DataFrame:
     dt = DeltaTable(
         table_uri,
         version=version,
         storage_options=storage_options,
         **delta_table_options or {},
     )
+    from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
 
+    if only_fixed_supported(dt):
+        return cast(DataFrame, pl.from_arrow(get_pyarrow_table(dt)))
     pa_ds = dt.to_pyarrow_dataset(**pyarrow_options or {})
 
     return _scan_pyarrow_dataset(pa_ds)

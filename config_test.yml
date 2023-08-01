@@ -423,6 +423,15 @@ tables:
         operators:
           - has
 
+  - name: table_w_col_map
+    tag: deltatest
+    api_method: [get, post]
+    datasource:
+      uri: delta/table_w_col_map
+      file_type: delta
+    params:
+      - name: "Super Name_"
+
   - name: sqlite_customers
     tag: sqlite
     api_method: get
