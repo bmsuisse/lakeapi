@@ -56,8 +56,6 @@ def get_sql_for_delta(dt: DeltaTable):
     phys_names = [cm[1] for cm in colmaps]
     for ac in dt.get_add_actions(flatten=True).to_pylist():
         fullpath = os.path.join(dt.table_uri, ac["path"])
-        if not os.path.exists(fullpath):
-            raise FileNotFoundError(f"error for {fullpath}")
         sc = pq.read_schema(fullpath)
 
         cols = sc.names
