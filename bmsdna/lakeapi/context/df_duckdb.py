@@ -250,7 +250,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             dt = DeltaTable(uri)
             if only_fixed_supported(dt):
                 sql = get_sql_for_delta(dt)
-                self.con.execute(f"CREATE VIEW {name} as {sql}")
+                self.con.execute(f"CREATE OR REPLACE VIEW  VIEW {name} as {sql}")
                 return
         return super().register_datasource(name, uri, file_type, partitions)
 
