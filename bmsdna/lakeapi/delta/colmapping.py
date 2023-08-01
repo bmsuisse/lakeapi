@@ -65,7 +65,7 @@ def get_sql_for_delta(dt: DeltaTable):
             elif c in cols:
                 cols_sqls.append(_quote(c))
             else:
-                cols_sqls.append("NULL AS " + quote(c))
+                cols_sqls.append("NULL AS " + _quote(c))
 
         select = "SELECT " + ", ".join(cols_sqls) + " FROM read_parquet('" + fullpath + "')"
         file_selects.append(select)
@@ -140,6 +140,6 @@ if __name__ == "__main__":
 
     print(repr(t))
 
-    lns = get_sql(d).split("\n")
+    lns = get_sql_for_delta(d).split("\n")
     for ln in lns:
         print(ln)
