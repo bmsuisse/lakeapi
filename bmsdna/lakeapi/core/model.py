@@ -14,6 +14,9 @@ from bmsdna.lakeapi.core.types import OperatorType
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 cached = cache(ttl=timedelta(hours=3))
 
@@ -133,8 +136,10 @@ def _get_datatype(schema: Optional[pa.Schema], name: str, *, inner: bool = False
 def _fix_space_names(query_params: dict[str, tuple[str, Any]]):
     res_dict = {}
     for key, value in query_params.items():
-        if " " in key:
+        if " " in key or key.startswith("_"):
             new_key = key.replace(" ", "_")
+            if new_key.startswith("_"):
+                new_key = "p" + new_key
             res_dict[new_key] = (value[0], FieldInfo(default=value[1], title=key))
         else:
             res_dict[key] = (value[0], FieldInfo(default=value[1], title=key))
@@ -196,7 +201,12 @@ def create_parameter_model(
                 None,
             )
     query_params = _fix_space_names(query_params)
-    query_model = create_model(name + "Parameter", **query_params)  # type: ignore
+    try:
+        query_model = create_model(name + "Parameter", **query_params)  # type: ignore
+    except Exception as err:
+        # we do not want to throw here as this fails startup which is bad
+        logger.error(f"Could not create parameter model for {name}. Use empty instead")
+        query_model = create_model(name + "Parameter")
     return query_model
 
 

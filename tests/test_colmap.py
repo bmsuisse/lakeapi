@@ -30,11 +30,11 @@ def test_no_filter():
 def test_col_map_filter():
     for e in engines:
         response = client.get(
-            f"/api/v1/deltatest/table_w_col_map?limit=50&format=json&Super_Name_=Miguel Lam&%24engine={e}",
+            f"/api/v1/deltatest/table_w_col_map?limit=50&format=json&Super_Name_=John Duncan&%24engine={e}",
             auth=auth,
         )
         assert response.status_code == 200
         jsd = response.json()
         assert len(jsd) == 1
         for item in jsd:
-            assert item["Super Name_"] == "Miguel Lam"
+            assert item["Super Name_"] == "John Duncan"
