@@ -33,6 +33,7 @@ def get_pyarrow_dataset(
     filesystem: Optional[Union[str, pa_fs.FileSystem]] = None,
     parquet_read_options: Optional[ParquetReadOptions] = None,
 ):
+    dt.update_incremental()
     if not (dt.protocol().min_reader_version == 2 and MAX_SUPPORTED_READER_VERSION == 1):
         sc = dt.schema().to_pyarrow()
         return dt.to_pyarrow_dataset(), sc
