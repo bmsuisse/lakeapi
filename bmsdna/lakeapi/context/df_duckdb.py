@@ -249,7 +249,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if file_type == "delta" and os.path.exists(uri):
             dt = DeltaTable(uri)
             if only_fixed_supported(dt):
-                sql = get_sql_for_delta(dt)
+                sql = get_sql_for_delta(dt, uri)
                 self.con.execute(f"CREATE VIEW {name} as {sql}")
                 return
         return super().register_datasource(name, uri, file_type, partitions)

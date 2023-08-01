@@ -5,6 +5,9 @@ import pyarrow.parquet as pq
 import pyarrow
 import pyarrow.fs as pa_fs
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 from pyarrow.dataset import (
     Expression,
@@ -43,7 +46,7 @@ def _literal(vl: Any):
     return _literal(str(vl))
 
 
-def get_sql_for_delta(dt: DeltaTable):
+def get_sql_for_delta(dt: DeltaTable, uri: str):
     sql = "WITH files as ("
     file_selects = []
 
@@ -53,8 +56,13 @@ def get_sql_for_delta(dt: DeltaTable):
     phys_names = [cm[1] for cm in colmaps]
     for ac in dt.get_add_actions(flatten=False).to_pylist():
         fullpath = os.path.join(dt.table_uri, ac["path"])
+        relpath = os.path.join(uri, ac["path"])
         if not os.path.exists(fullpath):
-            raise FileNotFoundError(f"error for {fullpath}")
+            if os.path.exists(relpath):
+                fullpath = relpath
+                logger.warning(f"{relpath} exists, {fullpath} does not")
+            else:
+                raise FileNotFoundError(f"error for {fullpath}")
         sc = pq.read_schema(fullpath)
 
         cols = sc.names
@@ -140,6 +148,6 @@ if __name__ == "__main__":
 
     print(repr(t))
 
-    lns = get_sql_for_delta(d).split("\n")
+    lns = get_sql_for_delta(d, "tests/data/delta/table_w_col_map").split("\n")
     for ln in lns:
         print(ln)
