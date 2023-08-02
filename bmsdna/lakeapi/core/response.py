@@ -265,10 +265,10 @@ async def create_response(
 
     @cache.iterator(
         ttl=cache_expiration_time_seconds,
-        key="sql:{sql}:url{url}",
+        key="sql:{sql}:url{url}:format{format}",
         condition=do_cache,
     )
-    async def response_stream(context, sql, url):
+    async def response_stream(context, sql, url, format):
         chunk_size = 64 * 1024
         content = await anyio.to_thread.run_sync(context.execute_sql, sql)
         additional_files = await anyio.to_thread.run_sync(
@@ -288,7 +288,7 @@ async def create_response(
         temp_file.close()
 
     return StreamingResponseWCharset(
-        content=response_stream(context, sql, url),
+        content=response_stream(context, sql, url, format),
         headers=headers,
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,
