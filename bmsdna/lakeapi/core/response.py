@@ -21,7 +21,8 @@ from datetime import timedelta
 import typing
 from urllib.parse import quote
 from pypika.queries import QueryBuilder
-import aiofiles
+from mimetypes import guess_type
+from starlette.concurrency import iterate_in_threadpool
 
 import anyio
 
@@ -147,17 +148,43 @@ def write_frame(
     return []
 
 
+Content = typing.Union[str, bytes]
+SyncContentStream = typing.Iterator[Content]
+AsyncContentStream = typing.AsyncIterable[Content]
+ContentStream = typing.Union[AsyncContentStream, SyncContentStream]
+
+
 class StreamingResponseWCharset(StreamingResponse):
+    body_iterator: AsyncContentStream
+
     def __init__(
         self,
-        content_disposition_type: str = "attachment",
-        filename=None,
+        content: ContentStream,
+        status_code: int = 200,
+        headers: typing.Optional[typing.Mapping[str, str]] = None,
+        media_type: typing.Optional[str] = None,
+        background: typing.Optional[BackgroundTask] = None,
+        filename: typing.Optional[str] = None,
         stat_result: typing.Optional[os.stat_result] = None,
+        method: typing.Optional[str] = None,
+        content_disposition_type: str = "attachment",
         *args,
         **kwargs
     ):
+        if isinstance(content, typing.AsyncIterable):
+            self.body_iterator = content
+        else:
+            self.body_iterator = iterate_in_threadpool(content)
+
         # taking over from FileResponse
+        self.status_code = status_code
         self.filename = filename
+        self.send_header_only = method is not None and method.upper() == "HEAD"
+        if media_type is None:
+            media_type = guess_type(filename or "text/pain")[0] or "text/plain"
+        self.media_type = media_type
+        self.background = background
+        self.init_headers(headers)
         if self.filename is not None:
             content_disposition_filename = quote(self.filename)
             if content_disposition_filename != self.filename:
@@ -167,11 +194,12 @@ class StreamingResponseWCharset(StreamingResponse):
             else:
                 content_disposition = '{}; filename="{}"'.format(content_disposition_type, self.filename)
             self.headers.setdefault("content-disposition", content_disposition)
+        self.stat_result = stat_result
+        if stat_result is not None:
+            self.set_stat_headers(stat_result)
 
         if "charset" in kwargs:
             self.charset = kwargs.pop("charset")
-
-        super().__init__(*args, **kwargs)
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)

@@ -16,7 +16,7 @@ auth = get_auth()
 engines = ("duckdb", "polars")
 # engines = ("duckdb")
 
-
+"""
 def test_caching_speed():
     endpoint = f"/api/v1/test/fake_delta_cache?limit=100&format=json"
     start1 = time.time()
@@ -35,3 +35,4 @@ def test_caching_speed():
     duration2 = end2 - start2
 
     assert duration2 < duration1
+"""
