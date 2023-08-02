@@ -44,7 +44,7 @@ def create_detailed_meta_endpoint(
 
     @router.get(
         route,
-        tags=["metadata", "metadata:" + config.tag],
+        tags=["metadata", config.tag],
         operation_id=config.tag + "_" + config.name,
         name=config.name + "_metadata",
     )

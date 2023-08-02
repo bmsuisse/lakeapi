@@ -17,8 +17,9 @@ def setup_cashews():
 
     KB = 1024
     MB = KB * 1024
+    GB = MB * 1024
 
-    cache.setup(f"mem://?size={250 * MB}")
+    cache.setup(f"disk://", max_size=MB * 10)
 
 
 def init_lakeapi(

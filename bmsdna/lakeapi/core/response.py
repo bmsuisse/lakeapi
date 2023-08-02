@@ -227,19 +227,30 @@ async def create_response(
 
     cache_expiration_time_seconds = cache_config.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS
 
+    if os.name == "nt":
+        temp_file = TempFileWrapper(os.environ["TEMP"] + "/" + str(uuid4()))
+    else:
+        temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
+
     @cache.iterator(ttl=cache_expiration_time_seconds, key="sql:{sql}:url{url}")
     async def response_stream(context, sql, url):
-        async with aiofiles.tempfile.NamedTemporaryFile() as f:
-            chunk_size = 64 * 1024
-            content = await anyio.to_thread.run_sync(context.execute_sql, sql)
-            additional_files = await anyio.to_thread.run_sync(write_frame, url, content, format, f.name, basic_config)
+        chunk_size = 64 * 1024
+        content = await anyio.to_thread.run_sync(context.execute_sql, sql)
+        additional_files = await anyio.to_thread.run_sync(
+            write_frame, url, content, format, temp_file.name, basic_config
+        )
 
-            async with aiofiles.open(f.name, mode="rb") as file:
-                more_body = True
-                while more_body:
-                    chunk = await file.read(chunk_size)
-                    more_body = len(chunk) == chunk_size
-                    yield chunk
+        async with await anyio.open_file(temp_file.name, mode="rb") as file:
+            more_body = True
+            while more_body:
+                chunk = await file.read(chunk_size)
+                more_body = len(chunk) == chunk_size
+                yield chunk
+
+    def clean_up():
+        if close_context:
+            context.close()
+        temp_file.close()
 
     return StreamingResponseWCharset(
         content=response_stream(context, sql, url),
@@ -247,5 +258,6 @@ async def create_response(
         media_type=media_type,
         content_disposition_type=content_dispositiont_type,
         filename=filename,
+        background=BackgroundTask(clean_up),
         charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
     )

@@ -20,8 +20,8 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from cashews import cache
-from bmsdna.lakeapi.core.endpoint_search import handle_search_request
-from bmsdna.lakeapi.core.endpoint_nearby import handle_nearby_request
+from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
+from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.responses import Response
 
 logger = get_logger(__name__)
