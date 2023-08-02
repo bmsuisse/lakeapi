@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from fastapi import FastAPI, Request
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, get_default_config
 from bmsdna.lakeapi.core.route import init_routes
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import os
 
 
@@ -23,8 +24,6 @@ def setup_cashews():
 def init_lakeapi(
     app: FastAPI, use_basic_auth: bool, start_config: BasicConfig | None = None, config: Configs | str | None = None
 ) -> LakeApiStartInfo:
-    setup_cashews()
-
     start_config = start_config or get_default_config()
     real_config: Configs
     if config is None:
@@ -38,5 +37,11 @@ def init_lakeapi(
         from bmsdna.lakeapi.core.uservalidation import add_user_middlware
 
         add_user_middlware(app, start_config, real_config.users)
+    if CACHE_EXPIRATION_TIME_SECONDS > 0:
+        from bmsdna.lakeapi.core.cache import add_cache_middleware
+
+        setup_cashews()
+        add_cache_middleware(app)
+
     app.include_router(router)
     return LakeApiStartInfo(start_config, real_config)

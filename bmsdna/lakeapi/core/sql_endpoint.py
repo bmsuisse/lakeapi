@@ -1,12 +1,13 @@
 from typing import Optional, Union
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
 from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig, CacheConfig
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
+from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 
 sql_contexts: dict[str, ExecutionContext] = {}
 
@@ -48,6 +49,8 @@ def create_sql_endpoint(
             item.__exit__()
         sql_contexts = {}
 
+    cache_config = CacheConfig(expiration_time_seconds=CACHE_EXPIRATION_TIME_SECONDS)
+
     @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")
     async def get_sql_tables(
         request: Request,
@@ -75,10 +78,17 @@ def create_sql_endpoint(
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
 
         con = _get_sql_context(engine, basic_config, configs)
-        df = con.execute_sql(body.decode("utf-8"))
+
+        sql = body.decode("utf-8")
 
         return await create_response(
-            request.url, format or request.headers["Accept"], df, con, basic_config=basic_config, close_context=False
+            request.url,
+            format or request.headers["Accept"],
+            con,
+            sql,
+            basic_config=basic_config,
+            cache_config=cache_config,
+            close_context=False,
         )
 
     @router.get(
@@ -98,5 +108,11 @@ def create_sql_endpoint(
 
         df = con.execute_sql(sql)
         return await create_response(
-            request.url, format or request.headers["Accept"], df, con, basic_config=basic_config, close_context=False
+            request.url,
+            format or request.headers["Accept"],
+            con,
+            sql,
+            basic_config=basic_config,
+            cache_config=cache_config,
+            close_context=False,
         )

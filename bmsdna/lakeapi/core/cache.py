@@ -5,6 +5,10 @@ from bmsdna.lakeapi.core.env import (
     CACHE_MAX_DISK_SIZE,
     CACHE_MAX_MEMORY_SIZE,
 )
+from fastapi import FastAPI
+import time
+from cashews import cache
+from cashews.commands import Command
 
 
 def get_max_cache_size(disk=True):
@@ -13,29 +17,28 @@ def get_max_cache_size(disk=True):
     return CACHE_MAX_MEMORY_SIZE
 
 
-def is_cache(result, args, kwargs, key=None):
-    request = kwargs.get("request")
-    if request:
-        cache_control = request.headers.get("Cache-Control")
-        no_cache = cache_control in ("no-store", "no-cache")
-    else:
-        no_cache = False
-    if no_cache or CACHE_EXPIRATION_TIME_SECONDS <= 0:
-        return False
-    return True
+def add_cache_middleware(app: FastAPI):
+    @app.middleware("http")
+    async def add_process_time_header(request, call_next):
+        start_time = time.perf_counter()
+        response = await call_next(request)
+        process_time = time.perf_counter() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        return response
 
+    @app.middleware("http")
+    async def add_from_cache_headers(request, call_next):
+        with cache.detect as detector:
+            response = await call_next(request)
+            if request.method.lower() != "get":
+                return response
+            if detector.calls:
+                response.headers["X-From-Cache-keys"] = ";".join(detector.calls.keys())
+        return response
 
-def is_cache_json_response(result, args, kwargs, key=None):
-    if not hasattr(result, "status_code") or result.status_code != 200:
-        return False
-    if not is_cache(result, args, kwargs, key) or not CACHE_JSON_RESPONSES:
-        return False
-    format_prm = kwargs.get("format")
-    if format_prm is not None and format_prm != "json":
-        return False
-    return kwargs.get("request").headers.get("Accept") == "application/json"
-
-
-def update_header():
-    # https://github.com/long2ice/fastapi-cache/blob/main/fastapi_cache/decorator.py#L197
-    ...
+    @app.middleware("http")
+    async def disable_middleware(request, call_next):
+        if request.headers.get("X-No-Cache"):
+            with cache.disabling(Command.GET):
+                return await call_next(request)
+        return await call_next(request)
