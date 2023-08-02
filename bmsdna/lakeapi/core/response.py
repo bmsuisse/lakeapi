@@ -260,7 +260,14 @@ async def create_response(
     else:
         temp_file = tempfile.NamedTemporaryFile(delete=True, suffix=extension)
 
-    @cache.iterator(ttl=cache_expiration_time_seconds, key="sql:{sql}:url{url}")
+    def do_cache(*arg, **kwargs):
+        return cache_config.cache_response and cache_expiration_time_seconds > 0
+
+    @cache.iterator(
+        ttl=cache_expiration_time_seconds,
+        key="sql:{sql}:url{url}",
+        condition=do_cache,
+    )
     async def response_stream(context, sql, url):
         chunk_size = 64 * 1024
         content = await anyio.to_thread.run_sync(context.execute_sql, sql)

@@ -396,7 +396,7 @@
             "required": [],
             "additionalProperties": false,
             "properties": {
-                "cache_json_response": {
+                "cache_response": {
                     "type": "boolean"
                 },
                 "expiration_time_seconds": {
