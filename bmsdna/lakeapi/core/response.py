@@ -173,7 +173,7 @@ class StreamingResponseWCharset(StreamingResponse):
         method: typing.Optional[str] = None,
         content_disposition_type: str = "attachment",
         *args,
-        **kwargs
+        **kwargs,
     ):
         if isinstance(content, typing.AsyncIterable):
             self.body_iterator = content
@@ -269,7 +269,11 @@ async def create_response(
     temp_file = get_temp_file(extension)
 
     def do_cache(*arg, **kwargs):
-        return cache_config.cache_response and cache_expiration_time_seconds > 0
+        is_cache = cache_config.cache_response and cache_expiration_time_seconds > 0
+        if is_cache:
+            logger.info(f"Caching key: {kwargs.get('key', None)}")
+            return True
+        return False
 
     @cache.iterator(
         ttl=cache_expiration_time_seconds,
