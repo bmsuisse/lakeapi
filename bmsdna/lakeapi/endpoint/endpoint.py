@@ -224,8 +224,6 @@ def create_config_endpoint(
         )
         logger.debug(f"Query: {get_sql(new_query)}")
 
-        df2 = context.execute_sql(new_query)
-
         try:
             return await create_response(
                 request.url,
