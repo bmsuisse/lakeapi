@@ -99,6 +99,15 @@ def _setup_cache(backend: str):
         _setup_caches.add(backend)
 
 
+def is_json_response(result, args, kwargs, key=None):
+    return (
+        kwargs.get("format") == "json"
+        or kwargs.get("format") == "ndjson"
+        or kwargs.get("request").headers.get("Accept") == "application/json"
+        or kwargs.get("request").headers.get("Accept") == "application/x-ndjson"
+    )
+
+
 def create_config_endpoint(
     schema: Optional[pa.Schema],
     apimethod: Literal["get", "post"],
@@ -150,6 +159,11 @@ def create_config_endpoint(
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
 
     @api_method
+    @cache(
+        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
+        key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
+        condition=is_json_response,
+    )
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore
