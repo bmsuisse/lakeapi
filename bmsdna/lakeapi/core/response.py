@@ -252,6 +252,13 @@ async def create_response(
     format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
+    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
+    cache_expiration_time_seconds = cache_config.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS
+
+    if format == OutputFormats.JSON:
+        return Response(content=context.execute_sql(sql).to_json(), headers=headers, media_type=media_type)
+    if format == OutputFormats.ND_JSON:
+        return Response(content=context.execute_sql(sql).to_ndjson(), headers=headers, media_type=media_type)
 
     if format in [
         OutputFormats.JSON,
@@ -262,9 +269,6 @@ async def create_response(
     ]:
         content_dispositiont_type = "inline"
         filename = None
-
-    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    cache_expiration_time_seconds = cache_config.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS
 
     temp_file = get_temp_file(extension)
 
