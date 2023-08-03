@@ -100,7 +100,12 @@ def _setup_cache(backend: str):
 
 
 def is_json_response(result, args, kwargs, key=None):
-    return kwargs.get("format") == "json" or kwargs.get("request").headers.get("Accept") == "application/json"
+    return (
+        kwargs.get("format") == "json"
+        or kwargs.get("format") == "ndjson"
+        or kwargs.get("request").headers.get("Accept") == "application/json"
+        or kwargs.get("request").headers.get("Accept") == "application/x-ndjson"
+    )
 
 
 def create_config_endpoint(
