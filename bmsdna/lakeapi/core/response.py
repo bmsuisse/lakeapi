@@ -224,7 +224,7 @@ class TempFileWrapper:  # does not open the file which is important on windows
         os.unlink(self.path)
 
 
-def get_temp_file():
+def get_temp_file(extension: str):
     if os.name == "nt":
         temp_file = TempFileWrapper(os.environ["TEMP"] + "/" + str(uuid4()))
     else:
@@ -262,7 +262,7 @@ async def create_response(
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
     cache_expiration_time_seconds = cache_config.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS
 
-    temp_file = get_temp_file()
+    temp_file = get_temp_file(extension)
 
     def do_cache(*arg, **kwargs):
         return cache_config.cache_response and cache_expiration_time_seconds > 0
