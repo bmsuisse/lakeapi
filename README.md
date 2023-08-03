@@ -144,7 +144,7 @@ tables:
     version: 1
     allow_get_all_pages: true
     cache:
-      cache_json_response: true
+      cache_response: true
       expiration_time_seconds: 30
       backend: disk
     api_method:
@@ -247,11 +247,20 @@ ODBC is tested against MS SQL Server using ODBC Driver 17 for MS SQL Server
 
 ## Caching
 
-LakeAPI uses [cashews](https://github.com/Krukov/cashews) for caching. Caching can be controlled using environment variables.
+LakeAPI uses [cashews](https://github.com/Krukov/cashews) for caching. Caching can be controlled globally using environment variables.
 
 `CACHE_EXPIRATION_TIME_SECONDS` controls the expiration time. Set to 0 to disable caching.
 
 `CACHE_BACKEND` controls the backend. Memory, disk and redis are supported by `cashews`. See the [cashews docs](https://github.com/Krukov/cashews#configuration) for more information. By default, the backend is set to `auto`, where the json response is cached on disk and smaller intermediate steps are cached in memory.
+
+The cache can also be controlled at table level with the following parameters:
+
+```yaml
+cache:
+  cache_response: true
+  expiration_time_seconds: 30
+  backend: disk
+```
 
 ## Further projects
 
