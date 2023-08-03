@@ -281,7 +281,7 @@ async def create_response(
 
     @cache.iterator(
         ttl=cache_expiration_time_seconds,
-        key="sql:{sql}:url{url}:format{str(format)}",
+        key="sql:{sql}:url{url}:format{format}",
         condition=do_cache,
     )
     async def response_stream(context, sql, url, format):
