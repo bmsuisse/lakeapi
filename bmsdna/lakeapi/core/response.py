@@ -155,6 +155,10 @@ ContentStream = typing.Union[AsyncContentStream, SyncContentStream]
 
 
 class StreamingResponseWCharset(StreamingResponse):
+    """StreamingResponseWCharset
+    Combines file response with stream response
+    """
+
     body_iterator: AsyncContentStream
 
     def __init__(
