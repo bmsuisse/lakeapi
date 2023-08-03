@@ -293,7 +293,10 @@ async def create_response(
     def clean_up():
         if close_context:
             context.close()
-        temp_file.close()
+        try:
+            temp_file.close()
+        except FileNotFoundError:
+            pass
 
     return StreamingResponseWCharset(
         content=response_stream(context, sql, url, format),
