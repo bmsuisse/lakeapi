@@ -115,6 +115,7 @@ class SqliteExecutionContext(ExecutionContext):
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
         table_name: str | None = None,
+        version: str = "v1",
     ):
         assert file_type == "sqlite"
         self.connections[name] = connect(uri)

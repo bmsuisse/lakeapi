@@ -4,7 +4,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupporte
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig, CacheConfig
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.types import OutputFileType
+from bmsdna.lakeapi.core.types import OutputFileType, FileTypes
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
@@ -20,13 +20,13 @@ def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Con
         df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
         if df.file_exists():
             try:
-                con.register_datasource(df.tablename, df.uri, df.config.file_type, None, cfg.datasource.table_name)
+                con.register_datasource(df.tablename, df.uri, df.config.file_type, None, df.tablename, cfg.version_str)
             except FileTypeNotSupportedError as err:
                 logger.warning(f"Cannot query {df.tablename}")
 
 
 def _get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
-    assert engine not in ["odbc", "sqlite"]  # would be dangerous
+    assert engine not in ["odbc", "sqlite"]
     global sql_contexts
     if not engine in sql_contexts:
         sql_contexts[engine] = get_context_by_engine(engine, basic_config.default_chunk_size)

@@ -80,6 +80,11 @@ tables:
       uri: duckdb/faker.db
       file_type: duckdb
       table_name: fake
+    params:
+      - name: name
+        operators:
+          - "="
+          - "in"
 
   - name: fruits_duck
     tag: test

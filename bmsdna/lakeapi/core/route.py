@@ -96,19 +96,4 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 configs=configs,
             )
 
-        @router.on_event("startup")
-        @_repeat_every(seconds=60 * 60)  # 1 hour
-        def _persist_search_endpoints() -> None:
-            for config in configs:
-                if config.search:
-                    from bmsdna.lakeapi.core.datasource import Datasource
-
-                    assert config.datasource is not None
-                    with get_context_by_engine(basic_config.default_engine, basic_config.default_chunk_size) as ctx:
-                        realdataframe = Datasource(
-                            config.version_str, config.tag, config.name, config.datasource, ctx, basic_config
-                        )
-                        if realdataframe.file_exists():
-                            ctx.init_search(realdataframe.tablename, config.search)
-
         return router

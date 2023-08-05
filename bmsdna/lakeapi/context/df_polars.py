@@ -10,6 +10,7 @@ from pypika.terms import Term
 import pypika
 from uuid import uuid4
 
+
 if TYPE_CHECKING:
     import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
 
@@ -117,7 +118,6 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
-
         self.sql_context.register(name, ds)
 
     def close(self):
@@ -136,6 +136,7 @@ class PolarsExecutionContext(ExecutionContext):
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
         table_name: str | None = None,
+        version: str = "v1",
     ):
         import polars as pl
 
@@ -166,6 +167,7 @@ class PolarsExecutionContext(ExecutionContext):
                 df = pl.scan_ndjson(uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
+        name = f"{version}_{file_type}_{table_name}"
         self.sql_context.register(name, df)
 
     def execute_sql(

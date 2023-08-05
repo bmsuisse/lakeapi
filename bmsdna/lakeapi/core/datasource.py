@@ -80,7 +80,7 @@ class Datasource:
 
             df = df.select(
                 Star(
-                    table=pypika.Table(self.tablename),
+                    table=pypika.Table(f"{self.version}_{self.config.file_type}_{self.tablename}"),
                 )
             )
         return df
@@ -107,10 +107,15 @@ class Datasource:
             if "." in tn:
                 parts = tn.split(".")
                 if len(parts) == 3:
-                    return pypika.Table(parts[2], schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])))
+                    return pypika.Table(
+                        f"{self.version}_{self.config.file_type}_{parts[2]}",
+                        schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
+                    )
                 assert len(parts) == 2
-                return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
-        return pypika.Table(self.tablename)
+                return pypika.Table(
+                    f"{self.version}_{self.config.file_type}_{parts[1]}", schema=pypika.Schema(parts[0])
+                )
+        return pypika.Table(f"{self.version}_{self.config.file_type}_{self.tablename}")
 
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
@@ -142,7 +147,9 @@ class Datasource:
                 if self.config.in_memory and self.tablename in df_cache:
                     cache_date, df_t = df_cache[self.tablename]
                     if mod_date <= cache_date:
-                        self.sql_context.register_arrow(self.tablename, df_t)
+                        self.sql_context.register_arrow(
+                            f"{self.tablename}_{self.config.file_type}_{self.version}", df_t
+                        )
                         self.df = self.sql_context.execute_sql(self.query)
                     else:
                         df_cache.pop(self.tablename)
@@ -153,7 +160,8 @@ class Datasource:
                     self.uri,
                     self.config.file_type,
                     partitions=partitions,
-                    table_name=self.config.table_name,
+                    table_name=self.tablename,
+                    version=self.version,
                 )
                 self.df = self.sql_context.execute_sql(self.query)
             if self.config.in_memory and not self.tablename in df_cache and not endpoint in ["meta"]:

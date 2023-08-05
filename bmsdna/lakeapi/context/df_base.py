@@ -280,11 +280,12 @@ class ExecutionContext(ABC):
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
         table_name: str | None = None,
+        version: str = "v1",
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
         if os.path.exists(uri):
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
-        self.register_arrow(name, ds)
+        self.register_arrow(f"{version}_{file_type}_{name}", ds)
 
     @abstractmethod
     def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
