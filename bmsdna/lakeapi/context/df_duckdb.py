@@ -259,8 +259,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{uri}' AS {name}_db (READ_ONLY);")
-            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
+            self.con.execute(f"ATTACH '{uri}' AS {name}_duckdb (READ_ONLY);")
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_duckdb.{table_name}")
             return
 
         if file_type == "sqlite":
@@ -268,8 +268,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             self.con.execute("INSTALL sqlite;")
             self.con.execute("LOAD sqlite;")
 
-            self.con.execute(f"ATTACH '{uri}' AS {name}_db (TYPE SQLITE);")
-            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
+            self.con.execute(f"ATTACH '{uri}' AS {name}_sqlite (TYPE SQLITE);")
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_sqlite.{table_name}")
             return
 
         return super().register_datasource(name, uri, file_type, partitions)
