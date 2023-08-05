@@ -101,6 +101,26 @@ tables:
           - "="
           - "in"
 
+  - name: fruits_sqlite
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: sqlite/fruits.sqlite
+      file_type: sqlite
+      table_name: fruits
+    params:
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: cars
+        operators:
+          - "="
+          - "in"
+
   - name: fruits_partition
     tag: test
     version: 1

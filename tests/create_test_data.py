@@ -11,6 +11,7 @@ import pyarrow as pa
 import json
 import pyarrow.dataset as ds
 import duckdb
+import sqlite3
 
 try:
     from .utils import create_rows_faker
@@ -111,6 +112,14 @@ if __name__ == "__main__":
     con = duckdb.connect("tests/data/duckdb/fruits.db")
     con.execute("DROP TABLE IF EXISTS fruits;")
     con.execute("CREATE TABLE fruits as SELECT * FROM df_fruits;")
+
+    os.makedirs("tests/data/sqlite", exist_ok=True)
+    conn = sqlite3.connect("tests/data/sqlite/fruits.sqlite")
+    conn.execute("DROP TABLE IF EXISTS fruits;")
+    conn.execute("CREATE TABLE fruits (A int, fruits text, B int, cars text);")
+    df_fruits.to_sql("fruits", conn, if_exists="replace", index=False)
+    conn.commit()
+    conn.close()
 
     fruits_partition = df_fruits.copy()
     fruits_partition["my_empty_col"] = pd.Series(

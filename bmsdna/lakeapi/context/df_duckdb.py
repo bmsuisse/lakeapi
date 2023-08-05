@@ -264,6 +264,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
 
         if file_type == "sqlite":
+            # not the best way to use sqlite, but it works
+            self.con.execute("INSTALL sqlite;")
+            self.con.execute("LOAD sqlite;")
+
             self.con.execute(f"ATTACH '{uri}' AS {name}_db (TYPE SQLITE);")
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
             return
