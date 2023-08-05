@@ -273,7 +273,8 @@ async def create_response(
     temp_file = get_temp_file(extension)
 
     def do_cache(*arg, **kwargs):
-        is_cache = cache_config.cache_response and cache_expiration_time_seconds > 0
+        _format = kwargs.get("format", format)
+        is_cache = cache_config.cache_response and cache_expiration_time_seconds > 0 and _format != "duckdb"
         if is_cache:
             logger.info(f"Caching key: {kwargs.get('key', None)}")
             return True

@@ -259,8 +259,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{uri}' AS {name}_db")
+            self.con.execute(f"ATTACH '{uri}' AS {name}_db (READ_ONLY);")
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
+            return
 
+        if file_type == "sqlite":
+            self.con.execute(f"ATTACH '{uri}' AS {name}_db (TYPE SQLITE);")
             self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
             return
 
