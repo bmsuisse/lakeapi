@@ -17,22 +17,47 @@ logger = get_logger(__name__)
 def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
     for cfg in configs:
         assert cfg.datasource is not None
-        df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
+        df = Datasource(
+            cfg.version_str,
+            cfg.tag,
+            cfg.name,
+            cfg.datasource,
+            con,
+            basic_config,
+        )
         if df.file_exists():
             try:
-                con.register_datasource(df.tablename, df.uri, df.config.file_type, None, df.tablename, cfg.version_str)
+                con.register_datasource(
+                    df.tablename,
+                    df.uri,
+                    df.config.file_type,
+                    None,
+                )
             except FileTypeNotSupportedError as err:
                 logger.warning(f"Cannot query {df.tablename}")
 
 
-def _get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
+def _get_sql_context(
+    engine: Engines,
+    basic_config: BasicConfig,
+    configs: Configs,
+):
     assert engine not in ["odbc", "sqlite"]
     global sql_contexts
     if not engine in sql_contexts:
-        sql_contexts[engine] = get_context_by_engine(engine, basic_config.default_chunk_size)
-        init_duck_con(sql_contexts[engine], basic_config, configs)
+        sql_contexts[engine] = get_context_by_engine(
+            engine,
+            basic_config.default_chunk_size,
+        )
+        init_duck_con(
+            sql_contexts[engine],
+            basic_config,
+            configs,
+        )
         if basic_config.prepare_sql_db_hook is not None:
-            basic_config.prepare_sql_db_hook(sql_contexts[engine])
+            basic_config.prepare_sql_db_hook(
+                sql_contexts[engine],
+            )
 
     return sql_contexts[engine]
 
@@ -102,7 +127,12 @@ def create_sql_endpoint(
         sql: str,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine",
+            alias="$engine",
+            default="duckdb",
+            include_in_schema=False,
+        ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
 

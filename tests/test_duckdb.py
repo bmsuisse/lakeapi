@@ -54,22 +54,3 @@ def test_data_csv():
         reader = csv.DictReader(txt.splitlines())
         line1 = reader.__next__()
         assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
-
-
-def test_sqlite_on_duckdb_fruits_car_param():
-    for _ in range(2):
-        response = client.get(f"/api/v1/test/fruits_sqlite?limit=2&format=json&cars=lamborghini", auth=auth)
-        assert response.status_code == 200
-        assert response.json() == [{"A": 0, "fruits": "apple", "B": 5, "cars": "lamborghini"}]
-
-
-def test_sqlite_data_csv():
-    for _ in range(2):
-        response = client.get(f"/api/v1/test/fruits_sqlite?limit=1&format=csv&cars=audi", auth=auth)
-        assert response.status_code == 200
-        txt = response.text
-        import csv
-
-        reader = csv.DictReader(txt.splitlines())
-        line1 = reader.__next__()
-        assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}

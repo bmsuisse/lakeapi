@@ -152,8 +152,6 @@ class ODBCExecutionContext(ExecutionContext):
         uri: str,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
-        table_name: str | None = None,
-        version: str = "1",
     ):
         assert file_type == "odbc"
         self.datasources[name] = uri

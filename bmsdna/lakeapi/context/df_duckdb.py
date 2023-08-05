@@ -238,42 +238,32 @@ class DuckDbExecutionContextBase(ExecutionContext):
         uri: str,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
-        table_name: str | None = None,
-        version: str = "v1",
     ):
         if os.path.exists(uri):
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
-            self.con.execute(
-                f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM read_json_auto('{uri}', format='array')"
-            )
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
             return
         if file_type == "ndjson":
-            self.con.execute(
-                f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')"
-            )
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
             return
         if file_type == "parquet":
-            self.con.execute(f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM read_parquet('{uri}')")
+            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM read_parquet('{uri}')")
             return
         if file_type == "csv":
-            self.con.execute(
-                f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)"
-            )
+            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
             return
         if file_type == "delta" and os.path.exists(uri):
             dt = DeltaTable(uri)
 
             if only_fixed_supported(dt):
                 sql = get_sql_for_delta(dt)
-                self.con.execute(f"CREATE OR REPLACE VIEW {version}_{file_type}_{name} as {sql}")
+                self.con.execute(f"CREATE OR REPLACE VIEW  {name}  as {sql}")
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{uri}' AS {version}_{file_type}_{name}_duckdb (READ_ONLY);")
-            self.con.execute(
-                f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM {version}_{file_type}_{name}_duckdb.{table_name}"
-            )
+            self.con.execute(f"ATTACH '{uri}' AS  {name}_duckdb (READ_ONLY);")
+            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
             return
         """
         if file_type == "sqlite":
@@ -287,7 +277,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             )
             return
         """
-        return super().register_datasource(name, uri, file_type, partitions, table_name, version)
+        return super().register_datasource(name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(
