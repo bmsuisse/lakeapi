@@ -167,8 +167,8 @@ class PolarsExecutionContext(ExecutionContext):
                 df = pl.scan_ndjson(uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
-        name = f"{version}_{file_type}_{table_name}"
-        self.sql_context.register(name, df)
+        tname = f"{version}_{file_type}_{table_name}"
+        self.sql_context.register(tname, df)
 
     def execute_sql(
         self,

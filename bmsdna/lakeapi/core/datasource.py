@@ -148,7 +148,7 @@ class Datasource:
                     cache_date, df_t = df_cache[self.tablename]
                     if mod_date <= cache_date:
                         self.sql_context.register_arrow(
-                            f"{self.tablename}_{self.config.file_type}_{self.version}", df_t
+                            f"{self.version}_{self.config.file_type}_{self.tablename}", df_t
                         )
                         self.df = self.sql_context.execute_sql(self.query)
                     else:
