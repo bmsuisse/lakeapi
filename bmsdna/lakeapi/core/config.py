@@ -215,7 +215,11 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def _from_dict(cls, config: Dict, basic_config: BasicConfig):
+    def _from_dict(
+        cls,
+        config: Dict,
+        basic_config: BasicConfig,
+    ):
         name = config["name"]
         tag = config["tag"]
         datasource: dict[str, Any] = config.get("datasource", {})
@@ -225,7 +229,9 @@ class Config:
             if config.get("engine", None) not in ["odbc", "sqlite"]
             else config.get("engine", None),  # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
         )
-        uri = _expand_env_vars(datasource.get("uri", tag + "/" + name))
+        uri = _expand_env_vars(
+            datasource.get("uri", tag + "/" + name),
+        )
         if config.get("config_from_delta"):
             assert file_type == "delta"
             real_path = os.path.join(basic_config.data_path, uri)
@@ -316,7 +322,10 @@ class Config:
 
     @classmethod
     def from_dict(
-        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]
+        cls,
+        config: Dict,
+        basic_config: BasicConfig,
+        table_names: List[tuple[int, str, str]],
     ) -> List["Config"]:
         name = config["name"]
         tag = config["tag"]
@@ -423,5 +432,8 @@ class Configs:
 
         flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
         table_names = [(t.get("version", 1), t["tag"], t["name"]) for t in tables if t["name"] != "*"]
-        configs = flat_map(lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names), tables)
+        configs = flat_map(
+            lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names),
+            tables,
+        )
         return cls(configs, users)

@@ -78,7 +78,10 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
-        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000); DROP VIEW {uuidstr}"
+        full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
+                         COPY (SELECT *FROM {uuidstr})
+                         TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000);
+                         DROP VIEW {uuidstr}"""
         self.con.execute(full_query)
 
     def write_nd_json(self, file_name: str):
@@ -86,7 +89,10 @@ class DuckDBResultData(ResultData):
             return super().write_nd_json(file_name)
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT JSON); DROP VIEW {uuidstr}"
+        full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
+                         COPY (SELECT *FROM {uuidstr})
+                         TO '{file_name}' (FORMAT JSON);
+                         DROP VIEW {uuidstr}"""
         self.con.execute(full_query)
 
     def write_csv(self, file_name: str, *, separator: str):
@@ -94,7 +100,10 @@ class DuckDBResultData(ResultData):
             return super().write_csv(file_name, separator=separator)
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query};  COPY (SELECT *FROM {uuidstr}) TO '{file_name}' (FORMAT CSV, delim '{separator}', header True); DROP VIEW {uuidstr}"
+        full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
+                         COPY (SELECT *FROM {uuidstr}) 
+                         TO '{file_name}' (FORMAT CSV, delim '{separator}', header True);
+                         DROP VIEW {uuidstr};"""
         self.con.execute(full_query)
 
     def write_json(self, file_name: str):
@@ -102,7 +111,10 @@ class DuckDBResultData(ResultData):
             return super().write_json(file_name)
         query = get_sql(self.original_sql)
         uuidstr = _get_temp_table_name()
-        full_query = f"CREATE TEMP VIEW {uuidstr} AS {query}; COPY (SELECT *FROM {uuidstr})  TO '{file_name}' (FORMAT JSON, Array True); DROP VIEW {uuidstr}"
+        full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
+                         COPY (SELECT *FROM {uuidstr})  
+                         TO '{file_name}' (FORMAT JSON, Array True); 
+                         DROP VIEW {uuidstr};"""
         self.con.execute(full_query)
 
 
@@ -136,14 +148,22 @@ class Match25Term(Term):
 
 
 class DuckDbExecutionContextBase(ExecutionContext):
-    def __init__(self, con: duckdb.DuckDBPyConnection, chunk_size: int):
+    def __init__(
+        self,
+        con: duckdb.DuckDBPyConnection,
+        chunk_size: int,
+    ):
         super().__init__(chunk_size=chunk_size)
         self.con = con
         self.res_con = None
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
 
-    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
+    def register_arrow(
+        self,
+        name: str,
+        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+    ):
         # self.con.from_arrow(ds).create_view(name, replace=True)
         self.con.register(name, ds)
 
@@ -158,9 +178,20 @@ class DuckDbExecutionContextBase(ExecutionContext):
         ],
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
-            self.res_con = duckdb.connect(self.persistance_file_name, read_only=True)
-            return DuckDBResultData(sql, self.res_con, self.chunk_size)
-        return DuckDBResultData(sql, con=self.con, chunk_size=self.chunk_size)
+            self.res_con = duckdb.connect(
+                self.persistance_file_name,
+                read_only=True,
+            )
+            return DuckDBResultData(
+                sql,
+                self.res_con,
+                self.chunk_size,
+            )
+        return DuckDBResultData(
+            sql,
+            con=self.con,
+            chunk_size=self.chunk_size,
+        )
 
     def search_score_function(
         self,
@@ -170,7 +201,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
         alias: Optional[str],
     ):
         fields = ",".join(search_config.columns)
-        return Match25Term(source_view, pypika.queries.Field("__search_id"), search_text, fields)
+        return Match25Term(
+            source_view,
+            pypika.queries.Field("__search_id"),
+            search_text,
+            fields,
+        )
 
     def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
         return pypika.terms.Function("haversine", lat1, lon1, lat2, lon2)
@@ -242,16 +278,31 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if os.path.exists(uri):
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
-            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='array')")
+            self.con.execute(
+                f"""CREATE VIEW {name} as 
+                    SELECT *FROM read_json_auto('{uri}', format='array')
+                 """
+            )
             return
         if file_type == "ndjson":
-            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM read_json_auto('{uri}', format='newline_delimited')")
+            self.con.execute(
+                f"""CREATE VIEW {name} as 
+                    SELECT *FROM read_json_auto('{uri}', format='newline_delimited')
+                """
+            )
             return
         if file_type == "parquet":
-            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM read_parquet('{uri}')")
+            self.con.execute(
+                f"""CREATE VIEW  {name} as 
+                    SELECT *FROM read_parquet('{uri}')
+                """
+            )
             return
         if file_type == "csv":
-            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)")
+            self.con.execute(
+                f"""CREATE VIEW  {name} as 
+                            SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)"""
+            )
             return
         if file_type == "delta" and os.path.exists(uri):
             dt = DeltaTable(uri)
@@ -265,23 +316,14 @@ class DuckDbExecutionContextBase(ExecutionContext):
             self.con.execute(f"ATTACH '{uri}' AS  {name}_duckdb (READ_ONLY);")
             self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
             return
-        """
-        if file_type == "sqlite":
-            # not the best way to use sqlite, but it works
-            self.con.execute("INSTALL sqlite;")
-            self.con.execute("LOAD sqlite;")
 
-            self.con.execute(f"ATTACH '{uri}' AS {version}_{file_type}_{name}_sqlite (TYPE SQLITE);")
-            self.con.execute(
-                f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM {version}_{file_type}_{name}_sqlite.{table_name}"
-            )
-            return
-        """
         return super().register_datasource(name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(
-            "SELECT table_name as name, table_type from information_schema.tables where table_schema='main'"
+            """SELECT table_name as name, table_type 
+               from information_schema.tables where table_schema='main'
+            """
         )
 
     def __enter__(self):

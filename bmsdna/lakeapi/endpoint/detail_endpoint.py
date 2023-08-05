@@ -35,7 +35,11 @@ def _to_dict(tblmeta: Optional[Metadata]):
 
 
 def create_detailed_meta_endpoint(
-    schema: Optional[pa.Schema], config: Config, configs: Configs, router: APIRouter, basic_config: BasicConfig
+    schema: Optional[pa.Schema],
+    config: Config,
+    configs: Configs,
+    router: APIRouter,
+    basic_config: BasicConfig,
 ):
     route = config.route + "/metadata_detail"
     has_complex = True

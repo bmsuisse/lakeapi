@@ -67,7 +67,10 @@ class SqliteResultData(ResultData):
 
 
 class SqliteExecutionContext(ExecutionContext):
-    def __init__(self, chunk_size: int):
+    def __init__(
+        self,
+        chunk_size: int,
+    ):
         super().__init__(chunk_size=chunk_size)
         self.res_con = None
         self.connections: dict[str, Connection] = dict()

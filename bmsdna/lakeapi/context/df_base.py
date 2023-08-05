@@ -18,7 +18,9 @@ FLAVORS = Literal["ansi", "mssql"]
 
 
 def get_sql(
-    sql_or_pypika: str | pypika.queries.QueryBuilder, limit: int | None = None, flavor: FLAVORS = "ansi"
+    sql_or_pypika: str | pypika.queries.QueryBuilder,
+    limit: int | None = None,
+    flavor: FLAVORS = "ansi",
 ) -> str:
     if limit is not None:
         sql_or_pypika = (
@@ -131,7 +133,10 @@ class ResultData(ABC):
 
         batches = self.to_arrow_recordbatch(self.chunk_size)
 
-        with paparquet.ParquetWriter(file_name, batches.schema) as writer:
+        with paparquet.ParquetWriter(
+            file_name,
+            batches.schema,
+        ) as writer:
             for batch in batches:
                 writer.write_batch(batch)
 
@@ -156,7 +161,10 @@ class FileTypeNotSupportedError(Exception):
 
 
 class ExecutionContext(ABC):
-    def __init__(self, chunk_size: int) -> None:
+    def __init__(
+        self,
+        chunk_size: int,
+    ) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime] = {}
         self.chunk_size = chunk_size
@@ -182,14 +190,24 @@ class ExecutionContext(ABC):
                 import pyarrow.dataset as ds
 
                 return pa.dataset.dataset(
-                    uri, format=ds.ParquetFileFormat(read_options={"coerce_int96_timestamp_unit": "us"})
+                    uri,
+                    format=ds.ParquetFileFormat(
+                        read_options={"coerce_int96_timestamp_unit": "us"},
+                    ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
-                return pa.dataset.dataset(uri, format=file_type)
+                return pa.dataset.dataset(
+                    uri,
+                    format=file_type,
+                )
             case "ndjson" | "json":
                 import pandas
 
-                pd = pandas.read_json(uri, orient="records", lines=file_type == "ndjson")
+                pd = pandas.read_json(
+                    uri,
+                    orient="records",
+                    lines=file_type == "ndjson",
+                )
 
                 return pyarrow.Table.from_pandas(pd)
             case "avro":
@@ -206,13 +224,20 @@ class ExecutionContext(ABC):
                 if only_fixed_supported(dt):
                     return get_pyarrow_table(dt)
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                    partitions=partitions,
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
                 )
             case _:
-                raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
+                raise FileTypeNotSupportedError(
+                    f"Not supported file type {file_type}",
+                )
 
     @abstractmethod
-    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
+    def register_arrow(
+        self,
+        name: str,
+        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+    ):
         ...
 
     @abstractmethod
@@ -230,11 +255,21 @@ class ExecutionContext(ABC):
         pass
 
     @abstractmethod
-    def json_function(self, term: Term, assure_string=False) -> Term:
+    def json_function(
+        self,
+        term: Term,
+        assure_string=False,
+    ) -> Term:
         ...
 
     @abstractmethod
-    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term) -> Term:
+    def distance_m_function(
+        self,
+        lat1: Term,
+        lon1: Term,
+        lat2: Term,
+        lon2: Term,
+    ) -> Term:
         ...
 
     def search_score_function(
@@ -263,12 +298,19 @@ class ExecutionContext(ABC):
 
         return pypika.functions.NullIf(summ, Term.wrap_constant(0)).as_(alias)
 
-    def get_modified_date(self, uri: str, file_type: FileTypes) -> datetime:
+    def get_modified_date(
+        self,
+        uri: str,
+        file_type: FileTypes,
+    ) -> datetime:
         if file_type == "delta":
             dt = DeltaTable(
                 uri,
             )
-            return datetime.fromtimestamp(dt.history(1)[-1]["timestamp"] / 1000.0, tz=timezone.utc)
+            return datetime.fromtimestamp(
+                dt.history(1)[-1]["timestamp"] / 1000.0,
+                tz=timezone.utc,
+            )
         import os
 
         return datetime.fromtimestamp(os.path.getmtime(uri), tz=timezone.utc)

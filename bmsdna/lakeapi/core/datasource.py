@@ -166,7 +166,11 @@ class Datasource:
 
 
 @cached
-async def get_partition_filter(param, deltaMeta, param_def):
+async def get_partition_filter(
+    param,
+    deltaMeta,
+    param_def,
+):
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
     if not key or not value or key in ("limit", "offset"):
@@ -235,7 +239,11 @@ async def get_partition_filter(param, deltaMeta, param_def):
 
 
 @cached
-async def filter_partitions_based_on_params(deltaMeta, params, param_def):
+async def filter_partitions_based_on_params(
+    deltaMeta,
+    params,
+    param_def,
+):
     if len(deltaMeta.partition_columns) == 0:
         return None
 
@@ -247,9 +255,12 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
     return partition_filters if len(partition_filters) > 0 else None
 
 
+ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
+
+
 @cached
 async def concat_expr(
-    exprs: Union[list[pypika.Criterion], list[pa.compute.Expression]],
+    exprs: ExpType,
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
     expr: Optional[pypika.Criterion] = None
     for e in exprs:
@@ -261,7 +272,11 @@ async def concat_expr(
 
 
 @cached
-async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
+async def _create_inner_expr(
+    columns: Optional[List[str]],
+    prmdef,
+    e,
+):
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
         logger.debug(f"key = {ck}, value = {cv}, columns = {columns}")

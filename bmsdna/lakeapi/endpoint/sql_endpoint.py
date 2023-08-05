@@ -14,7 +14,11 @@ sql_contexts: dict[str, ExecutionContext] = {}
 logger = get_logger(__name__)
 
 
-def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
+def init_duck_con(
+    con: ExecutionContext,
+    basic_config: BasicConfig,
+    configs: Configs,
+):
     for cfg in configs:
         assert cfg.datasource is not None
         df = Datasource(
@@ -97,7 +101,12 @@ def create_sql_endpoint(
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine",
+            alias="$engine",
+            default="duckdb",
+            include_in_schema=False,
+        ),
     ):
         body = await request.body()
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
