@@ -275,7 +275,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM {version}_{file_type}_{name}_duckdb.{table_name}"
             )
             return
-
+        """
         if file_type == "sqlite":
             # not the best way to use sqlite, but it works
             self.con.execute("INSTALL sqlite;")
@@ -286,7 +286,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 f"CREATE VIEW {version}_{file_type}_{name} as SELECT *FROM {version}_{file_type}_{name}_sqlite.{table_name}"
             )
             return
-
+        """
         return super().register_datasource(name, uri, file_type, partitions, table_name, version)
 
     def list_tables(self) -> ResultData:
