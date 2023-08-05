@@ -39,6 +39,8 @@ from bmsdna.lakeapi.core.types import (
     NearbyConfig,
 )
 import expandvars
+from pathlib import Path
+from hashlib import md5
 
 if TYPE_CHECKING:
     from bmsdna.lakeapi.context.df_base import ExecutionContext
@@ -66,6 +68,13 @@ def get_default_config():
         default_chunk_size=10000,
         prepare_sql_db_hook=None,
     )
+
+
+basic_config = get_default_config()
+
+
+def get_md5_hash(key: str) -> str:
+    return md5(str(key).encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -118,6 +127,29 @@ class DatasourceConfig:
     table_name: Optional[str] = None
     in_memory: bool = False
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
+    hash_key: Optional[str] = None
+
+    def __post_init__(self):
+        self.hash_key = self.get_hash_key()
+
+    def get_hash_key(self):
+        hash_key = None
+        uri = os.path.join("tests", basic_config.data_path, self.uri)
+
+        try:
+            if self.file_type == "delta":
+                from deltalake import DeltaTable
+
+                dt = DeltaTable(os.path.join(uri))
+                hash_key = get_md5_hash(str(dt.metadata()))
+
+            else:
+                hash_key = get_md5_hash(str(Path(uri).stat()))
+
+        except Exception:
+            pass
+
+        return hash_key if hash_key else get_md5_hash(uri)
 
 
 @dataclass
@@ -142,6 +174,14 @@ class CacheConfig:
 
 
 @dataclass
+class DuckDBBackendConfig:
+    db_path: str
+    enable: bool = True
+    primary_key: Optional[str] = None
+    index: List[str] | None = None
+
+
+@dataclass
 class Config:
     name: str
     tag: str
@@ -158,6 +198,7 @@ class Config:
     engine: Optional[Engines] = None
     chunk_size: Optional[int] = None
     cache: Optional[CacheConfig] = None
+    duckdb_backend: Optional[DuckDBBackendConfig] = None
 
     def __post_init__(self):
         self.version_str = (

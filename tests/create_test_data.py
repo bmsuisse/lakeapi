@@ -10,6 +10,7 @@ from hashlib import md5
 import pyarrow as pa
 import json
 import pyarrow.dataset as ds
+import duckdb
 
 try:
     from .utils import create_rows_faker
@@ -106,6 +107,11 @@ if __name__ == "__main__":
         },
     )
 
+    os.makedirs("tests/data/duckdb", exist_ok=True)
+    con = duckdb.connect("tests/data/duckdb/fruits.db")
+    con.execute("DROP TABLE IF EXISTS fruits;")
+    con.execute("CREATE TABLE fruits as SELECT * FROM df_fruits;")
+
     fruits_partition = df_fruits.copy()
     fruits_partition["my_empty_col"] = pd.Series(
         data=[None for _ in range(0, fruits_partition.shape[0])], dtype="string"
@@ -169,6 +175,15 @@ if __name__ == "__main__":
     df_faker["name1"] = df_faker["name"]
 
     print(df_faker)
+
+    os.makedirs("tests/data/duckdb", exist_ok=True)
+    con = duckdb.connect("tests/data/duckdb/faker.db")
+    con.execute("DROP TABLE IF EXISTS fake;")
+    con.execute("CREATE TABLE fake as SELECT * FROM df_faker;")
+
+    for _ in range(10):
+        con.execute("insert into fake select * from df_faker;")
+
     store_df_as_delta(df_faker, "delta/fake", partition_by=None)
     # store_df_as_delta(df_faker, "delta/fake_partition", partition_by=None)
 

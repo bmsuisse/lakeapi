@@ -279,6 +279,7 @@ class ExecutionContext(ABC):
         uri: str,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
+        table_name: str | None = None,
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
         if os.path.exists(uri):

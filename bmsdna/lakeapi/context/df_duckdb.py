@@ -230,7 +230,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
         )
 
     def register_datasource(
-        self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
+        self,
+        name: str,
+        uri: str,
+        file_type: FileTypes,
+        partitions: List[Tuple[str, str, Any]] | None,
+        table_name: str | None = None,
     ):
         if os.path.exists(uri):
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
@@ -252,6 +257,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 sql = get_sql_for_delta(dt)
                 self.con.execute(f"CREATE OR REPLACE VIEW {name} as {sql}")
                 return
+
+        if file_type == "duckdb":
+            self.con.execute(f"ATTACH '{uri}' AS {name}_db")
+
+            self.con.execute(f"CREATE VIEW {name} as SELECT *FROM {name}_db.{table_name}")
+            return
+
         return super().register_datasource(name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:

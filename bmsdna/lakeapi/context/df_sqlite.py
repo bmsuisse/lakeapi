@@ -109,7 +109,12 @@ class SqliteExecutionContext(ExecutionContext):
         raise NotImplementedError("Not supported")
 
     def register_datasource(
-        self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
+        self,
+        name: str,
+        uri: str,
+        file_type: FileTypes,
+        partitions: List[Tuple[str, str, Any]] | None,
+        table_name: str | None = None,
     ):
         assert file_type == "sqlite"
         self.connections[name] = connect(uri)

@@ -20,7 +20,7 @@ def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Con
         df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
         if df.file_exists():
             try:
-                con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
+                con.register_datasource(df.tablename, df.uri, df.config.file_type, None, cfg.datasource.table_name)
             except FileTypeNotSupportedError as err:
                 logger.warning(f"Cannot query {df.tablename}")
 

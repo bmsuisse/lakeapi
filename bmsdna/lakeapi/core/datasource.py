@@ -153,6 +153,7 @@ class Datasource:
                     self.uri,
                     self.config.file_type,
                     partitions=partitions,
+                    table_name=self.config.table_name,
                 )
                 self.df = self.sql_context.execute_sql(self.query)
             if self.config.in_memory and not self.tablename in df_cache and not endpoint in ["meta"]:

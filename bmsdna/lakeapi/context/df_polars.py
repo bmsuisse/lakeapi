@@ -135,6 +135,7 @@ class PolarsExecutionContext(ExecutionContext):
         uri: str,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
+        table_name: str | None = None,
     ):
         import polars as pl
 
