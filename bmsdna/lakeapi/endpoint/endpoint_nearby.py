@@ -20,7 +20,11 @@ def _to_geo(v: dict | GeoModel):
     return GeoModel(**v) if isinstance(v, dict) else v
 
 
-def get_nearby_filter(nearby_config: list[NearbyConfig], params: BaseModel, basic_config: BasicConfig) -> NearbyType:
+def get_nearby_filter(
+    nearby_config: list[NearbyConfig],
+    params: BaseModel,
+    basic_config: BasicConfig,
+) -> NearbyType:
     nearby_dict = {c.name.lower(): c for c in nearby_config}
     v = [
         (_to_geo(v), nearby_dict[k.lower()])
@@ -41,7 +45,11 @@ def handle_nearby_request(
 ):
     if config.nearby is None:
         return query
-    nearbyes = get_nearby_filter(config.nearby, params, basic_config)
+    nearbyes = get_nearby_filter(
+        config.nearby,
+        params,
+        basic_config,
+    )
     if nearbyes is None:
         return query
     context.init_spatial()

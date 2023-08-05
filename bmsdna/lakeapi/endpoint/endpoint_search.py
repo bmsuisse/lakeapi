@@ -8,7 +8,11 @@ from bmsdna.lakeapi.core.types import SearchConfig
 SearchesType = list[tuple[str, SearchConfig]] | None  # list of config with values
 
 
-def get_searches(search_config: list[SearchConfig], params: BaseModel, basic_config: BasicConfig) -> SearchesType:
+def get_searches(
+    search_config: list[SearchConfig],
+    params: BaseModel,
+    basic_config: BasicConfig,
+) -> SearchesType:
     search_dict = {c.name.lower(): c for c in search_config}
     v = [
         (v, search_dict[k.lower()])

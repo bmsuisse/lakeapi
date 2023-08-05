@@ -23,7 +23,13 @@ cached = cache(ttl=timedelta(hours=3))
 
 def _make_model(v, name):
     if type(v) is dict:
-        return create_model(name, **{k: _make_model(v, k) for k, v in v.items()}), ...  # type: ignore
+        return (
+            create_model(
+                name,
+                **{k: _make_model(v, k) for k, v in v.items()},
+            ),
+            ...,
+        )  # type: ignore
     return type(v), None
 
 
@@ -121,7 +127,12 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
     raise ValueError("Not supported")
 
 
-def _get_datatype(schema: Optional[pa.Schema], name: str, *, inner: bool = False):
+def _get_datatype(
+    schema: Optional[pa.Schema],
+    name: str,
+    *,
+    inner: bool = False,
+):
     if schema is None:
         return str | None
     try:
@@ -133,7 +144,9 @@ def _get_datatype(schema: Optional[pa.Schema], name: str, *, inner: bool = False
         return str | None
 
 
-def _fix_space_names(query_params: dict[str, tuple[str, Any]]):
+def _fix_space_names(
+    query_params: dict[str, tuple[str, Any]],
+):
     res_dict = {}
     for key, value in query_params.items():
         if " " in key or key.startswith("_"):
@@ -214,7 +227,10 @@ class TypeBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def create_response_model(name: str, schema: pa.Schema) -> type[BaseModel]:
+def create_response_model(
+    name: str,
+    schema: pa.Schema,
+) -> type[BaseModel]:
     props = {
         k: get_schema_for(name, schema.field(k).name, schema.field(k).type)
         for k in schema.names

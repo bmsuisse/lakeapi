@@ -10,13 +10,17 @@ from pypika.terms import Term
 import pypika
 from uuid import uuid4
 
+
 if TYPE_CHECKING:
     import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
 
 
 class PolarsResultData(ResultData):
     def __init__(
-        self, df: "Union[polars.DataFrame, polars.LazyFrame]", sql_context: "polars.SQLContext", chunk_size: int
+        self,
+        df: "Union[polars.DataFrame, polars.LazyFrame]",
+        sql_context: "polars.SQLContext",
+        chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size)
         self.df = df
@@ -106,18 +110,25 @@ class PolarsResultData(ResultData):
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(self, chunk_size: int, sql_context: "Optional[polars.SQLContext]" = None):
+    def __init__(
+        self,
+        chunk_size: int,
+        sql_context: "Optional[polars.SQLContext]" = None,
+    ):
         super().__init__(chunk_size=chunk_size)
         import polars as pl
 
         self.len_func = "length"
         self.sql_context = sql_context or pl.SQLContext()
 
-    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
+    def register_arrow(
+        self,
+        name: str,
+        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+    ):
         import polars as pl
 
         ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
-
         self.sql_context.register(name, ds)
 
     def close(self):
@@ -126,7 +137,13 @@ class PolarsExecutionContext(ExecutionContext):
     def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
 
-    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
+    def distance_m_function(
+        self,
+        lat1: Term,
+        lon1: Term,
+        lat2: Term,
+        lon2: Term,
+    ):
         raise NotImplementedError("Not implemented")
 
     def register_datasource(

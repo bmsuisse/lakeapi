@@ -67,7 +67,10 @@ class SqliteResultData(ResultData):
 
 
 class SqliteExecutionContext(ExecutionContext):
-    def __init__(self, chunk_size: int):
+    def __init__(
+        self,
+        chunk_size: int,
+    ):
         super().__init__(chunk_size=chunk_size)
         self.res_con = None
         self.connections: dict[str, Connection] = dict()
@@ -109,7 +112,11 @@ class SqliteExecutionContext(ExecutionContext):
         raise NotImplementedError("Not supported")
 
     def register_datasource(
-        self, name: str, uri: str, file_type: FileTypes, partitions: List[Tuple[str, str, Any]] | None
+        self,
+        name: str,
+        uri: str,
+        file_type: FileTypes,
+        partitions: List[Tuple[str, str, Any]] | None,
     ):
         assert file_type == "sqlite"
         self.connections[name] = connect(uri)

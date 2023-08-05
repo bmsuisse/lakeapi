@@ -39,6 +39,8 @@ from bmsdna.lakeapi.core.types import (
     NearbyConfig,
 )
 import expandvars
+from pathlib import Path
+from hashlib import md5
 
 if TYPE_CHECKING:
     from bmsdna.lakeapi.context.df_base import ExecutionContext
@@ -66,6 +68,13 @@ def get_default_config():
         default_chunk_size=10000,
         prepare_sql_db_hook=None,
     )
+
+
+basic_config = get_default_config()
+
+
+def get_md5_hash(key: str) -> str:
+    return md5(str(key).encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -118,6 +127,29 @@ class DatasourceConfig:
     table_name: Optional[str] = None
     in_memory: bool = False
     cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
+    hash_key: Optional[str] = None
+
+    def __post_init__(self):
+        self.hash_key = self.get_hash_key()
+
+    def get_hash_key(self):
+        hash_key = None
+        uri = os.path.join("tests", basic_config.data_path, self.uri)
+
+        try:
+            if self.file_type == "delta":
+                from deltalake import DeltaTable
+
+                dt = DeltaTable(os.path.join(uri))
+                hash_key = get_md5_hash(str(dt.metadata()))
+
+            else:
+                hash_key = get_md5_hash(str(Path(uri).stat()))
+
+        except Exception:
+            pass
+
+        return hash_key if hash_key else get_md5_hash(uri)
 
 
 @dataclass
@@ -142,6 +174,14 @@ class CacheConfig:
 
 
 @dataclass
+class DuckDBBackendConfig:
+    db_path: str
+    enable: bool = True
+    primary_key: Optional[str] = None
+    index: List[str] | None = None
+
+
+@dataclass
 class Config:
     name: str
     tag: str
@@ -158,6 +198,7 @@ class Config:
     engine: Optional[Engines] = None
     chunk_size: Optional[int] = None
     cache: Optional[CacheConfig] = None
+    duckdb_backend: Optional[DuckDBBackendConfig] = None
 
     def __post_init__(self):
         self.version_str = (
@@ -174,7 +215,11 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def _from_dict(cls, config: Dict, basic_config: BasicConfig):
+    def _from_dict(
+        cls,
+        config: Dict,
+        basic_config: BasicConfig,
+    ):
         name = config["name"]
         tag = config["tag"]
         datasource: dict[str, Any] = config.get("datasource", {})
@@ -184,7 +229,9 @@ class Config:
             if config.get("engine", None) not in ["odbc", "sqlite"]
             else config.get("engine", None),  # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
         )
-        uri = _expand_env_vars(datasource.get("uri", tag + "/" + name))
+        uri = _expand_env_vars(
+            datasource.get("uri", tag + "/" + name),
+        )
         if config.get("config_from_delta"):
             assert file_type == "delta"
             real_path = os.path.join(basic_config.data_path, uri)
@@ -275,7 +322,10 @@ class Config:
 
     @classmethod
     def from_dict(
-        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]]
+        cls,
+        config: Dict,
+        basic_config: BasicConfig,
+        table_names: List[tuple[int, str, str]],
     ) -> List["Config"]:
         name = config["name"]
         tag = config["tag"]
@@ -382,5 +432,8 @@ class Configs:
 
         flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
         table_names = [(t.get("version", 1), t["tag"], t["name"]) for t in tables if t["name"] != "*"]
-        configs = flat_map(lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names), tables)
+        configs = flat_map(
+            lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names),
+            tables,
+        )
         return cls(configs, users)

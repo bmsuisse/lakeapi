@@ -27,7 +27,11 @@ from starlette.responses import Response
 logger = get_logger(__name__)
 
 
-async def get_partitions(datasource: Datasource, params: BaseModel, config: Config) -> Optional[list]:
+async def get_partitions(
+    datasource: Datasource,
+    params: BaseModel,
+    config: Config,
+) -> Optional[list]:
     parts = (
         await filter_partitions_based_on_params(
             DeltaTable(datasource.uri).metadata(),
@@ -40,7 +44,10 @@ async def get_partitions(datasource: Datasource, params: BaseModel, config: Conf
     return parts
 
 
-def remove_search_nearby(prm_dict: dict, config: Config):
+def remove_search_nearby(
+    prm_dict: dict,
+    config: Config,
+):
     if (not config.search and not config.nearby) or len(prm_dict) == 0:
         return prm_dict
     search_nearby_cols = [s.name.lower() for s in (config.search or [])] + [
@@ -50,7 +57,10 @@ def remove_search_nearby(prm_dict: dict, config: Config):
 
 
 async def get_params_filter_expr(
-    context: ExecutionContext, columns: List[str], config: Config, params: BaseModel
+    context: ExecutionContext,
+    columns: List[str],
+    config: Config,
+    params: BaseModel,
 ) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         context,
@@ -61,7 +71,10 @@ async def get_params_filter_expr(
     return expr
 
 
-def get_response_model(config: Config, schema: pa.Schema) -> Optional[Type[BaseModel]]:
+def get_response_model(
+    config: Config,
+    schema: pa.Schema,
+) -> Optional[Type[BaseModel]]:
     response_model: Optional[type[BaseModel]] = None
     try:
         response_model = create_response_model(config.tag + "_" + config.name, schema)
@@ -71,12 +84,17 @@ def get_response_model(config: Config, schema: pa.Schema) -> Optional[Type[BaseM
     return response_model
 
 
-def exclude_cols(columns: List[str]) -> List[str]:
+def exclude_cols(
+    columns: List[str],
+) -> List[str]:
     columns = [c for c in columns if not should_hide_colname(c)]
     return columns
 
 
-def is_complex_type(schema: pa.Schema, col_name: str):
+def is_complex_type(
+    schema: pa.Schema,
+    col_name: str,
+):
     f = schema.field(col_name)
     return pa.types.is_nested(f.type)
 
@@ -99,7 +117,12 @@ def _setup_cache(backend: str):
         _setup_caches.add(backend)
 
 
-def is_json_response(result, args, kwargs, key=None):
+def is_json_response(
+    result,
+    args,
+    kwargs,
+    key=None,
+):
     return (
         kwargs.get("format") == "json"
         or kwargs.get("format") == "ndjson"
@@ -151,7 +174,9 @@ def create_config_endpoint(
     cache_config = config.cache
 
     if not cache_config:
-        cache_config = CacheConfig(expiration_time_seconds=CACHE_EXPIRATION_TIME_SECONDS)
+        cache_config = CacheConfig(
+            expiration_time_seconds=CACHE_EXPIRATION_TIME_SECONDS,
+        )
 
     api_method = api_method_mapping[apimethod]
     has_complex = True
@@ -170,12 +195,37 @@ def create_config_endpoint(
         Accept: Union[str, None] = Header(default=None),
         limit: Optional[int] = 100,
         offset: Optional[int] = 0,
-        select: Union[str, None] = Query(title="$select", alias="$select", default=None, include_in_schema=False),
-        distinct: bool = Query(title="$distinct", alias="$distinct", default=False, include_in_schema=False),
-        engine: Engines | None = Query(title="$engine", alias="$engine", default=None, include_in_schema=False),
+        select: Union[str, None] = Query(
+            title="$select",
+            alias="$select",
+            default=None,
+            include_in_schema=False,
+        ),
+        distinct: bool = Query(
+            title="$distinct",
+            alias="$distinct",
+            default=False,
+            include_in_schema=False,
+        ),
+        engine: Engines
+        | None = Query(
+            title="$engine",
+            alias="$engine",
+            default=None,
+            include_in_schema=False,
+        ),
         format: Optional[OutputFileType] = "json",
-        jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
-        chunk_size: int | None = Query(title="$chunk_size", include_in_schema=False, default=None),
+        jsonify_complex: bool = Query(
+            title="jsonify_complex",
+            include_in_schema=has_complex,
+            default=False,
+        ),
+        chunk_size: int
+        | None = Query(
+            title="$chunk_size",
+            include_in_schema=False,
+            default=None,
+        ),
     ):  # type: ignore
         logger.debug(f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
 
@@ -183,15 +233,32 @@ def create_config_endpoint(
 
         logger.debug(f"Engine: {engine}")
         real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
-        context = get_context_by_engine(engine, chunk_size=real_chunk_size)
+        context = get_context_by_engine(
+            engine,
+            chunk_size=real_chunk_size,
+        )
         assert config.datasource is not None
         realdataframe = Datasource(
-            config.version_str, config.tag, config.name, config.datasource, context, basic_config=basic_config
+            config.version_str,
+            config.tag,
+            config.name,
+            config.datasource,
+            context,
+            basic_config=basic_config,
         )
-        parts = await get_partitions(realdataframe, params, config)
+        parts = await get_partitions(
+            realdataframe,
+            params,
+            config,
+        )
         df = realdataframe.get_df(parts or None)
 
-        expr = await get_params_filter_expr(context, df.columns(), config, params)
+        expr = await get_params_filter_expr(
+            context,
+            df.columns(),
+            config,
+            params,
+        )
         base_schema = df.arrow_schema()
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
@@ -231,10 +298,20 @@ def create_config_endpoint(
             new_query = new_query.offset(offset or 0).limit(limit)
 
         new_query = handle_search_request(
-            context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            context,
+            config,
+            params,
+            basic_config,
+            source_view=realdataframe.tablename,
+            query=new_query,
         )
         new_query = handle_nearby_request(
-            context, config, params, basic_config, source_view=realdataframe.tablename, query=new_query
+            context,
+            config,
+            params,
+            basic_config,
+            source_view=realdataframe.tablename,
+            query=new_query,
         )
         logger.debug(f"Query: {get_sql(new_query)}")
 

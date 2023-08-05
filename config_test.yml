@@ -70,6 +70,62 @@ tables:
         - by: A
           direction: desc
 
+  - name: fake_duck
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: duckdb/faker.db
+      file_type: duckdb
+      table_name: fake
+    params:
+      - name: name
+        operators:
+          - "="
+          - "in"
+
+  - name: fruits_duck
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: duckdb/fruits.db
+      file_type: duckdb
+      table_name: fruits
+    params:
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: cars
+        operators:
+          - "="
+          - "in"
+
+  - name: fruits_sqlite
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: sqlite/fruits.sqlite
+      file_type: sqlite
+      table_name: fruits
+    params:
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: cars
+        operators:
+          - "="
+          - "in"
+
   - name: fruits_partition
     tag: test
     version: 1

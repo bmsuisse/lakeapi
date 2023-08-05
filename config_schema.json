@@ -17,18 +17,11 @@
             "$ref": "#/$defs/AppConfig"
         }
     },
-    "required": [
-        "users",
-        "app",
-        "tables"
-    ],
+    "required": ["users", "app", "tables"],
     "$defs": {
         "Config": {
             "type": "object",
-            "required": [
-                "name",
-                "tag"
-            ],
+            "required": ["name", "tag"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -48,32 +41,20 @@
                     ]
                 },
                 "config_from_delta": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "type": ["boolean", "null"]
                 },
                 "version": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "api_method": {
                     "oneOf": [
                         {
-                            "enum": [
-                                "get",
-                                "post"
-                            ]
+                            "enum": ["get", "post"]
                         },
                         {
                             "type": "array",
                             "items": {
-                                "enum": [
-                                    "get",
-                                    "post"
-                                ]
+                                "enum": ["get", "post"]
                             }
                         }
                     ]
@@ -92,23 +73,14 @@
                     }
                 },
                 "timestamp": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
+                    "type": ["string", "null"],
                     "format": "date-time"
                 },
                 "cache_expiration_time_seconds": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "allow_get_all_pages": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "type": ["boolean", "null"]
                 },
                 "search": {
                     "type": "array",
@@ -123,18 +95,10 @@
                     }
                 },
                 "engine": {
-                    "enum": [
-                        "duckdb",
-                        "polars",
-                        "odbc",
-                        "sqlite"
-                    ]
+                    "enum": ["duckdb", "polars", "odbc", "sqlite"]
                 },
                 "chunk_size": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "cache": {
                     "oneOf": [
@@ -145,14 +109,22 @@
                             "$ref": "#/$defs/CacheConfig"
                         }
                     ]
+                },
+                "duckdb_backend": {
+                    "oneOf": [
+                        {
+                            "type": "null"
+                        },
+                        {
+                            "$ref": "#/$defs/DuckDBBackendConfig"
+                        }
+                    ]
                 }
             }
         },
         "DatasourceConfig": {
             "type": "object",
-            "required": [
-                "uri"
-            ],
+            "required": ["uri"],
             "additionalProperties": false,
             "properties": {
                 "uri": {
@@ -169,7 +141,8 @@
                         "json",
                         "ndjson",
                         "odbc",
-                        "sqlite"
+                        "sqlite",
+                        "duckdb"
                     ]
                 },
                 "select": {
@@ -197,85 +170,55 @@
                     }
                 },
                 "table_name": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 },
                 "in_memory": {
                     "type": "boolean"
                 },
                 "cache_expiration_time_seconds": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
+                },
+                "hash_key": {
+                    "type": ["string", "null"]
                 }
             }
         },
         "Column": {
             "type": "object",
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "additionalProperties": false,
             "properties": {
                 "name": {
                     "type": "string"
                 },
                 "alias": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 }
             }
         },
         "SortBy": {
             "type": "object",
-            "required": [
-                "by"
-            ],
+            "required": ["by"],
             "additionalProperties": false,
             "properties": {
                 "by": {
                     "type": "string"
                 },
                 "direction": {
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ]
+                    "enum": ["asc", "desc"]
                 }
             }
         },
         "Filter": {
             "type": "object",
-            "required": [
-                "key",
-                "operator",
-                "value"
-            ],
+            "required": ["key", "operator", "value"],
             "additionalProperties": false,
             "properties": {
                 "key": {
                     "type": "string"
                 },
                 "operator": {
-                    "enum": [
-                        "=",
-                        ">",
-                        "<",
-                        ">=",
-                        "<=",
-                        "<>",
-                        "!=",
-                        "==",
-                        "between",
-                        "not between",
-                        "in",
-                        "not in"
-                    ]
+                    "enum": ["=", ">", "<", ">=", "<=", "<>", "!=", "==", "between", "not between", "in", "not in"]
                 },
                 "value": {
                     "oneOf": [
@@ -285,10 +228,7 @@
                             "minItems": 2,
                             "maxItems": 2,
                             "additionalItems": false,
-                            "prefixItems": [
-                                {},
-                                {}
-                            ]
+                            "prefixItems": [{}, {}]
                         }
                     ]
                 }
@@ -296,9 +236,7 @@
         },
         "Param": {
             "type": "object",
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -311,16 +249,10 @@
                     }
                 },
                 "default": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 },
                 "required": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "type": ["boolean", "null"]
                 },
                 "operators": {
                     "type": "array",
@@ -345,19 +277,13 @@
                     }
                 },
                 "colname": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 }
             }
         },
         "SearchConfig": {
             "type": "object",
-            "required": [
-                "name",
-                "columns"
-            ],
+            "required": ["name", "columns"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -373,11 +299,7 @@
         },
         "NearbyConfig": {
             "type": "object",
-            "required": [
-                "name",
-                "lat_col",
-                "lon_col"
-            ],
+            "required": ["name", "lat_col", "lon_col"],
             "additionalProperties": false,
             "properties": {
                 "name": {
@@ -400,22 +322,35 @@
                     "type": "boolean"
                 },
                 "expiration_time_seconds": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
                 },
                 "backend": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "type": ["string", "null"]
                 },
                 "max_size": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "type": ["integer", "null"]
+                }
+            }
+        },
+        "DuckDBBackendConfig": {
+            "type": "object",
+            "required": ["db_path"],
+            "additionalProperties": false,
+            "properties": {
+                "db_path": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "primary_key": {
+                    "type": ["string", "null"]
+                },
+                "index": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

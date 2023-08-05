@@ -10,7 +10,12 @@ def should_hide_colname(name: str):
     return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name or "_md5_mod_" in name
 
 
-def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_config: "BasicConfig", uri: str):
+def _with_implicit_parameters(
+    paramslist: "List[Param]",
+    file_type: str,
+    basic_config: "BasicConfig",
+    uri: str,
+):
     if file_type == "delta":
         delta_uri = os.path.join(
             basic_config.data_path,

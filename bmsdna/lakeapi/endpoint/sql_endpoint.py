@@ -4,7 +4,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupporte
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig, CacheConfig
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.types import OutputFileType
+from bmsdna.lakeapi.core.types import OutputFileType, FileTypes
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
@@ -14,25 +14,54 @@ sql_contexts: dict[str, ExecutionContext] = {}
 logger = get_logger(__name__)
 
 
-def init_duck_con(con: ExecutionContext, basic_config: BasicConfig, configs: Configs):
+def init_duck_con(
+    con: ExecutionContext,
+    basic_config: BasicConfig,
+    configs: Configs,
+):
     for cfg in configs:
         assert cfg.datasource is not None
-        df = Datasource(cfg.version_str, cfg.tag, cfg.name, cfg.datasource, con, basic_config)
+        df = Datasource(
+            cfg.version_str,
+            cfg.tag,
+            cfg.name,
+            cfg.datasource,
+            con,
+            basic_config,
+        )
         if df.file_exists():
             try:
-                con.register_datasource(df.tablename, df.uri, df.config.file_type, None)
+                con.register_datasource(
+                    df.tablename,
+                    df.uri,
+                    df.config.file_type,
+                    None,
+                )
             except FileTypeNotSupportedError as err:
                 logger.warning(f"Cannot query {df.tablename}")
 
 
-def _get_sql_context(engine: Engines, basic_config: BasicConfig, configs: Configs):
-    assert engine not in ["odbc", "sqlite"]  # would be dangerous
+def _get_sql_context(
+    engine: Engines,
+    basic_config: BasicConfig,
+    configs: Configs,
+):
+    assert engine not in ["odbc", "sqlite"]
     global sql_contexts
     if not engine in sql_contexts:
-        sql_contexts[engine] = get_context_by_engine(engine, basic_config.default_chunk_size)
-        init_duck_con(sql_contexts[engine], basic_config, configs)
+        sql_contexts[engine] = get_context_by_engine(
+            engine,
+            basic_config.default_chunk_size,
+        )
+        init_duck_con(
+            sql_contexts[engine],
+            basic_config,
+            configs,
+        )
         if basic_config.prepare_sql_db_hook is not None:
-            basic_config.prepare_sql_db_hook(sql_contexts[engine])
+            basic_config.prepare_sql_db_hook(
+                sql_contexts[engine],
+            )
 
     return sql_contexts[engine]
 
@@ -72,7 +101,12 @@ def create_sql_endpoint(
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine",
+            alias="$engine",
+            default="duckdb",
+            include_in_schema=False,
+        ),
     ):
         body = await request.body()
         from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
@@ -102,7 +136,12 @@ def create_sql_endpoint(
         sql: str,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine",
+            alias="$engine",
+            default="duckdb",
+            include_in_schema=False,
+        ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
 

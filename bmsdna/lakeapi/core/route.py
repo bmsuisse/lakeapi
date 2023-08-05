@@ -13,7 +13,10 @@ logger = get_logger(__name__)
 all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
 
-def init_routes(configs: Configs, basic_config: BasicConfig):
+def init_routes(
+    configs: Configs,
+    basic_config: BasicConfig,
+):
     from bmsdna.lakeapi.endpoint.endpoint import (
         get_response_model,
         create_config_endpoint,
@@ -24,7 +27,10 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
-    with ExecutionContextManager(basic_config.default_engine, basic_config.default_chunk_size) as mgr:
+    with ExecutionContextManager(
+        basic_config.default_engine,
+        basic_config.default_chunk_size,
+    ) as mgr:
         for config in configs:
             methods = (
                 cast(list[Literal["get", "post"]], [config.api_method])
@@ -67,9 +73,20 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
                 schema = None
 
-            response_model = get_response_model(config=config, schema=schema) if schema is not None else None
+            response_model = (
+                get_response_model(
+                    config=config,
+                    schema=schema,
+                )
+                if schema is not None
+                else None
+            )
             create_detailed_meta_endpoint(
-                schema=schema, config=config, configs=configs, router=router, basic_config=basic_config
+                schema=schema,
+                config=config,
+                configs=configs,
+                router=router,
+                basic_config=basic_config,
             )
             for am in methods:
                 create_config_endpoint(
@@ -95,20 +112,5 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 basic_config=basic_config,
                 configs=configs,
             )
-
-        @router.on_event("startup")
-        @_repeat_every(seconds=60 * 60)  # 1 hour
-        def _persist_search_endpoints() -> None:
-            for config in configs:
-                if config.search:
-                    from bmsdna.lakeapi.core.datasource import Datasource
-
-                    assert config.datasource is not None
-                    with get_context_by_engine(basic_config.default_engine, basic_config.default_chunk_size) as ctx:
-                        realdataframe = Datasource(
-                            config.version_str, config.tag, config.name, config.datasource, ctx, basic_config
-                        )
-                        if realdataframe.file_exists():
-                            ctx.init_search(realdataframe.tablename, config.search)
 
         return router

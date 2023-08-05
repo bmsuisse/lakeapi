@@ -16,14 +16,24 @@ userhashmap: dict[str, str] | None = None
 
 
 @cached
-async def is_correct(hash: str, pwd_str: str):
+async def is_correct(
+    hash: str,
+    pwd_str: str,
+):
     import argon2
 
     ph = argon2.PasswordHasher()
-    return ph.verify(hash.encode("utf-8"), pwd_str.encode("utf-8"))
+    return ph.verify(
+        hash.encode("utf-8"),
+        pwd_str.encode("utf-8"),
+    )
 
 
-def add_user_middlware(app: FastAPI, basic_config: BasicConfig, users: Sequence[UserConfig]):
+def add_user_middlware(
+    app: FastAPI,
+    basic_config: BasicConfig,
+    users: Sequence[UserConfig],
+):
     @app.middleware("http")
     async def get_username(request: Request, call_next):
         import json

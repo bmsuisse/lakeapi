@@ -13,7 +13,7 @@ client = TestClient(get_app())
 auth = get_auth()
 
 engines = ("duckdb", "polars")
-# engines = ("duckdb")
+# engines = ("duckdb",)
 
 
 def test_no_authentication():
