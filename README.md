@@ -161,6 +161,27 @@ tables:
       uri: delta/fake
       file_type: delta
 
+  # use duckdb database as file
+  - name: fruits_duck
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: duckdb/fruits.db
+      file_type: duckdb
+      table_name: fruits
+    params:
+      - name: fruits
+        operators:
+          - "="
+          - in
+      - name: cars
+        operators:
+          - "="
+          - "in"
+
   - name: fake_delta_partition
     tag: test
     version: 1
