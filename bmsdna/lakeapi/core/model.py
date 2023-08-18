@@ -62,6 +62,7 @@ _operator_postfix_map: dict[OperatorType, str] = {
     "between": "_between",
     "not between": "_not_between",
     "has": "_has",
+    "startswith": "_startswith",
 }
 
 

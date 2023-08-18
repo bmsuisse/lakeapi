@@ -348,6 +348,8 @@ async def filter_df_based_on_params(
                     exprs.append(fn.Field(colname).not_like("%" + value + "%"))
                 case "contains":
                     exprs.append(fn.Field(colname).like("%" + value + "%"))
+                case "startswith":
+                    exprs.append(fn.Field(colname).like(value + "%"))
                 case "has":
                     exprs.append(
                         fn.Function(

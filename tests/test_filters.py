@@ -59,6 +59,22 @@ def test_contains():
             assert item["fruits"] in ["banana", "ananas"]
 
 
+def test_startswith():
+    for e in engines:
+        response = client.post(
+            f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
+            auth=auth,
+            json={"fruits_startswith": "anan"},
+        )
+        assert response.status_code == 200
+        jsd = response.json()
+        assert len(jsd) > 0
+
+        for item in jsd:
+            assert item["fruits"] in ["ananas"]
+            assert item["fruits"] not in ["banana"]
+
+
 def test_not_contains():
     for e in engines:
         response = client.post(
