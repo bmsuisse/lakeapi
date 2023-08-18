@@ -100,9 +100,9 @@ if __name__ == "__main__":
         configuration={
             "lakeapi.config": {
                 "params": [
-                    {"name": "fruits", "operators": ["not in", "in", "contains", "not contains", "<>"]},
-                    {"name": "cars", "operators": ["not in", "in", "contains", "not contains", "<>"]},
-                    {"name": "B", "operators": [">", "<", "<=", ">=", "between", "not between"]},
+                    {"name": "fruits", "operators": ["not in", "in", "contains", "startswith", "not contains", "<>"]},
+                    {"name": "cars", "operators": ["not in", "in", "contains", "startswith", "not contains", "<>"]},
+                    {"name": "B", "operators": [">", "<", "<=", ">=", "between", "startswith", "not between"]},
                 ]
             }
         },

@@ -43,6 +43,7 @@ OperatorType = Literal[
     "between",
     "not between",
     "has",
+    "startswith",
 ]
 DeltaOperatorTypes = Literal["<", "=", ">", ">=", "<=", "in", "not in"]
 PolaryTypeFunction = Literal[
