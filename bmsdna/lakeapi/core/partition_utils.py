@@ -32,6 +32,8 @@ def _with_implicit_parameters(paramslist: "List[Param]", file_type: str, basic_c
 
                         new_params.append(Param(pc, operators=["="], colname=pc))
                 return new_params
+        except FileNotFoundError as err:
+            return paramslist  # this is not critical here
         except DeltaError as err:
             return paramslist  # this is not critical here
 
