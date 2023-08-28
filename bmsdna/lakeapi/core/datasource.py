@@ -162,7 +162,6 @@ class Datasource:
         return self.df  # type: ignore
 
 
-@cached
 async def get_partition_filter(param, deltaMeta, param_def):
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
@@ -231,7 +230,6 @@ async def get_partition_filter(param, deltaMeta, param_def):
     )
 
 
-@cached
 async def filter_partitions_based_on_params(deltaMeta, params, param_def):
     if len(deltaMeta.partition_columns) == 0:
         return None
@@ -244,7 +242,6 @@ async def filter_partitions_based_on_params(deltaMeta, params, param_def):
     return partition_filters if len(partition_filters) > 0 else None
 
 
-@cached
 async def concat_expr(
     exprs: Union[list[pypika.Criterion], list[pa.compute.Expression]],
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
@@ -257,7 +254,6 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
-@cached
 async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
@@ -272,7 +268,6 @@ async def _create_inner_expr(columns: Optional[List[str]], prmdef, e):
     return inner_expr
 
 
-@cached
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
