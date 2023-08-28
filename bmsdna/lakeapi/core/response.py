@@ -49,7 +49,6 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
-@cached
 async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":

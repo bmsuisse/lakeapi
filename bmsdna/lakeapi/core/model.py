@@ -66,7 +66,6 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
-@cached
 async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold().replace(" ", "_")
     for param in paramdef:
