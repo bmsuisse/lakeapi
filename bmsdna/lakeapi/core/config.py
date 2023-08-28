@@ -122,7 +122,7 @@ class DatasourceConfig:
 
 @dataclass
 class CacheConfig:
-    cache_json_response: bool = CACHE_JSON_RESPONSES or True
+    cache_response: bool = CACHE_JSON_RESPONSES or True
     expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS or None
     backend: Optional[str] = CACHE_BACKEND or None
     max_size: Optional[int] = CACHE_MAX_MEMORY_SIZE or None
@@ -238,7 +238,7 @@ class Config:
 
         _cache = config.get("cache", {})
         cache = CacheConfig(
-            cache_json_response=_cache.get("cache_json_response", CACHE_JSON_RESPONSES),
+            cache_response=_cache.get("cache_response", CACHE_JSON_RESPONSES),
             expiration_time_seconds=_cache.get("expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS),
             backend=_cache.get("backend", CACHE_BACKEND),
             max_size=_cache.get("max_size", CACHE_MAX_DISK_SIZE),

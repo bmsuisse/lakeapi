@@ -517,7 +517,6 @@ optional = false
 python-versions = ">=3.7"
 files = [
     {file = "deltalake-0.10.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:1aef72679268324e7cc556f03969b92235076b6edcecae7a2f85ac930b5fb9b9"},
-    {file = "deltalake-0.10.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:91e801b78e298946950b07bf0573e4cf012d6259ac294bcac662b6d746f95596"},
     {file = "deltalake-0.10.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:437f8ee9f28a9cd8454e8700c3dd88f5ad33c2ec9a7192356b55b23fee50259c"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f532b3c3dc8437fc26279a296bc576bdf79b167e1d4864847ca7c5ec7b3915b6"},
     {file = "deltalake-0.10.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:42212ee879735d476772a9c1d1ca3e43ef15893a301796baffe94db3578e98ca"},
