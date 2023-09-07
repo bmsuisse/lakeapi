@@ -250,6 +250,8 @@ class Config:
                     )  # get data source again, could have select, columns etc
                 except json.JSONDecodeError as err:
                     logger.warning(f"Not correct json: {real_path}\n{err}")
+                except Exception as err:
+                    logger.warning(f"Error reading delta: {real_path}\n{err}")
 
         version = config.get("version", 1)
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))
