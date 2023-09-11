@@ -52,7 +52,7 @@ httpx = "^0.24.0"
 pytest-env = "^0.8.1"
 pytest-cov = "^4.0.0"
 pytest-benchmark = "^4.0.0"
-pandas = "==2.0.0"
+pandas = ">2.0.0, < 2.1.0"
 pytest-monitor = "^1.6.5"
 coverage = { extras = ["toml"], version = "^7.2.7" }
 docker = "^6.1.3"
