@@ -285,8 +285,8 @@ async def create_response(
     )
     async def response_stream(context, sql, url, format):
         chunk_size = 64 * 1024
-        content = await anyio.to_thread.run_sync(context.execute_sql, sql)
-        additional_files = await anyio.to_thread.run_sync(
+        content = await anyio.to_thread.run_sync(context.execute_sql, sql)  # type: ignore
+        additional_files = await anyio.to_thread.run_sync(  # type: ignore
             write_frame, url, content, format, temp_file.name, basic_config
         )
 
