@@ -6,6 +6,7 @@ import pypika.functions as fn
 import pypika.queries
 import pypika.terms
 from deltalake import DeltaTable
+from deltalake.exceptions import TableNotFoundError
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
@@ -32,15 +33,19 @@ async def get_partitions(
     params: BaseModel,
     config: Config,
 ) -> Optional[list]:
-    parts = (
-        await filter_partitions_based_on_params(
-            DeltaTable(datasource.uri).metadata(),
-            params.model_dump(exclude_unset=True) if params else {},
-            config.params or [],
+    try:
+        parts = (
+            await filter_partitions_based_on_params(
+                DeltaTable(datasource.uri).metadata(),
+                params.model_dump(exclude_unset=True) if params else {},
+                config.params or [],
+            )
+            if not config.datasource or config.datasource.file_type == "delta"
+            else None
         )
-        if not config.datasource or config.datasource.file_type == "delta"
-        else None
-    )
+    except (TableNotFoundError, FileNotFoundError) as err:
+        logger.warning(f"Could not get partitions for {datasource.uri}", exc_info=err)
+        parts = None
     return parts
 
 
