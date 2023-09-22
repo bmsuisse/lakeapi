@@ -12,8 +12,10 @@ cache.setup("mem://")
 security = HTTPBasic()
 userhashmap: dict[str, str] | None = None
 
+cached = cache(ttl=timedelta(hours=24 * 3))
 
-@cache(ttl=timedelta(days=3), key="{hash}{pwd_str}")
+
+@cached
 async def is_correct(
     hash: str,
     pwd_str: str,
