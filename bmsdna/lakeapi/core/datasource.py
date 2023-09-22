@@ -131,8 +131,6 @@ class Datasource:
             query = pypika.Query.from_(self.table)
             self.query = self._prep_df(query, endpoint=endpoint)
             mod_date: datetime | None = None
-            if self.config.in_memory and not endpoint in ["meta"]:
-                mod_date = self.sql_context.get_modified_date(self.uri, self.config.file_type)
 
             if self.df is None:
                 self.sql_context.register_datasource(

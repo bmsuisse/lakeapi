@@ -7,15 +7,12 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
 from datetime import timedelta
 
-cache.setup("mem://")
 
 security = HTTPBasic()
 userhashmap: dict[str, str] | None = None
 
-cached = cache(ttl=timedelta(hours=24 * 3))
 
-
-@cached
+@cache(ttl=timedelta(hours=24 * 3))
 async def is_correct(
     hash: str,
     pwd_str: str,

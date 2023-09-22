@@ -41,7 +41,6 @@ tables:
           - cars
           - B
     datasource:
-      in_memory: true
       uri: delta/fruits
       file_type: delta
 

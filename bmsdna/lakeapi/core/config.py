@@ -118,7 +118,6 @@ class DatasourceConfig:
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
     table_name: Optional[str] = None
-    in_memory: bool = False
     hash_key: Optional[str] = None
 
     def __post_init__(self):
@@ -256,7 +255,6 @@ class Config:
             file_type=file_type,
             select=select,
             exclude=exclude,
-            in_memory=datasource.get("in_memory", False),
             sortby=sortby,
             table_name=datasource.get("table_name", None),
             filters=None,

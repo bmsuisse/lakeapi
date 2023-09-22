@@ -17,7 +17,7 @@
             "$ref": "#/$defs/AppConfig"
         }
     },
-    "required": ["tables", "app", "users"],
+    "required": ["tables", "users", "app"],
     "$defs": {
         "Config": {
             "type": "object",

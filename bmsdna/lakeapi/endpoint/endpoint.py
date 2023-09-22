@@ -167,6 +167,7 @@ def create_config_endpoint(
     if schema is not None:
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
 
+    @api_method
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore

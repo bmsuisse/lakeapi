@@ -143,15 +143,15 @@ tests = ["pytest"]
 
 [[package]]
 name = "arrow-odbc"
-version = "1.2.3"
+version = "1.2.5"
 description = "Read the data of an ODBC data source as sequence of Apache Arrow record batches."
 optional = true
 python-versions = "*"
 files = [
-    {file = "arrow_odbc-1.2.3-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:5a8894a85e4c2f1454c3702478184e894dd96de5135120ac5310ac9191466519"},
-    {file = "arrow_odbc-1.2.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:73bfa5617f481ef1847085380ec59e43ee7967d7914d7ecbc98fa4d894cf88d8"},
-    {file = "arrow_odbc-1.2.3-py3-none-win_amd64.whl", hash = "sha256:87f3f55b8fc6ad992020a79a976d3f73b9d566e123dedf946f4e67812504babd"},
-    {file = "arrow_odbc-1.2.3.tar.gz", hash = "sha256:3897463cf4f0dd3950f3f88e1b5be7e69e62493aea11cf1af2ff096318698a66"},
+    {file = "arrow_odbc-1.2.5-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:7ef07635079c6cefaf521e20f1fc860a8ad87e245fed607cc1cf99a8f8637401"},
+    {file = "arrow_odbc-1.2.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1c5612ca107b73cb723ffca7a40f50d13601af3bb34120c34e15c1c56d785bca"},
+    {file = "arrow_odbc-1.2.5-py3-none-win_amd64.whl", hash = "sha256:5f536713328ef749f66032f8097a72347884097e698c7354e438d1dca35d9eac"},
+    {file = "arrow_odbc-1.2.5.tar.gz", hash = "sha256:1136d05f825375b7cb3aafd104ef6adc95eac94ad109eb9a66bfdd6bb2ec504b"},
 ]
 
 [package.dependencies]
@@ -2023,4 +2023,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "eb09044fa8dd2a48ff208a8b6908bd13d8fd3c4e1e9cf3bc43d8385a7ef1e96c"
+content-hash = "8c591d4e09b402a90990481392375cb04b096389ec4bc86726d3b3e8533823db"
