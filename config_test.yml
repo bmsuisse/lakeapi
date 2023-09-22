@@ -209,31 +209,6 @@ tables:
       uri: delta/fake
       file_type: delta
 
-  - name: fake_delta_cache
-    tag: test
-    version: 1
-    cache:
-      cache_response: true
-      expiration_time_seconds: 30
-      backend: disk
-    allow_get_all_pages: true
-    api_method:
-      - get
-      - post
-    params:
-      - name: name
-        operators:
-          - "="
-      - name: name1
-        operators:
-          - "="
-      - name: fakeparam
-        operators:
-          - "="
-    datasource:
-      uri: delta/fake
-      file_type: delta
-
   - name: fake_delta_partition
     tag: test
     version: 1
