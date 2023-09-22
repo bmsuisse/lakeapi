@@ -12,15 +12,13 @@ from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, CacheConfig
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
-from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
-from cashews import cache
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.responses import Response
@@ -113,15 +111,6 @@ def split_csv(csv_str: str) -> list[str]:
     raise ValueError("cannot happen")
 
 
-_setup_caches = set()
-
-
-def _setup_cache(backend: str):
-    if backend not in _setup_caches:
-        cache.setup(backend)
-        _setup_caches.add(backend)
-
-
 def is_json_response(
     result,
     args,
@@ -173,27 +162,11 @@ def create_config_endpoint(
         ),
     }
 
-    cache_backend = config.cache.backend or CACHE_BACKEND  # type: ignore
-    _setup_cache("disk://" if cache_backend == "auto" else cache_backend)
-
-    cache_config = config.cache
-
-    if not cache_config:
-        cache_config = CacheConfig(
-            expiration_time_seconds=CACHE_EXPIRATION_TIME_SECONDS,
-        )
-
     api_method = api_method_mapping[apimethod]
     has_complex = True
     if schema is not None:
         has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
 
-    @api_method
-    @cache(
-        ttl=config.cache.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS,  # type: ignore
-        key="{request.url}:{params.model_dump}:{limit}:{offset}:{select}:{distinct}:{engine}:{format}:{jsonify_complex}:{chunk_size}",
-        condition=is_json_response,
-    )
     async def data(
         request: Request,
         params: query_model = (Depends() if apimethod == "get" else None),  # type: ignore
@@ -327,7 +300,6 @@ def create_config_endpoint(
                 context=context,
                 sql=new_query,
                 basic_config=basic_config,
-                cache_config=cache_config,
                 close_context=True,
             )
         except Exception as err:

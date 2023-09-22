@@ -19,13 +19,6 @@ from typing import (
 from typing_extensions import TypedDict, NotRequired, Required
 import copy
 import yaml
-from bmsdna.lakeapi.core.cache import (
-    CACHE_EXPIRATION_TIME_SECONDS,
-    CACHE_JSON_RESPONSES,
-    CACHE_BACKEND,
-    CACHE_MAX_DISK_SIZE,
-    CACHE_MAX_MEMORY_SIZE,
-)
 
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
@@ -126,7 +119,6 @@ class DatasourceConfig:
     filters: Optional[List[Filter]] = None
     table_name: Optional[str] = None
     in_memory: bool = False
-    cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
     hash_key: Optional[str] = None
 
     def __post_init__(self):
@@ -153,27 +145,6 @@ class DatasourceConfig:
 
 
 @dataclass
-class CacheConfig:
-    cache_response: bool = CACHE_JSON_RESPONSES or True
-    expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS or None
-    backend: Optional[str] = CACHE_BACKEND or None
-    max_size: Optional[int] = CACHE_MAX_MEMORY_SIZE or None
-
-    def __post_init__(self):
-        valid_prefix = ["mem://", "disk://", "memory", "disk", "auto", "redis://"]
-        if self.backend is not None:
-            assert any(
-                self.backend.startswith(prefix) for prefix in valid_prefix
-            ), f"Backend is not valid {self.backend}. See cashews config for more info"
-        if not self.backend:
-            self.backend = "auto"
-        if self.backend == "memory":
-            self.backend = "mem://"
-        if self.backend == "disk":
-            self.backend = "disk://"
-
-
-@dataclass
 class DuckDBBackendConfig:
     db_path: str
     enable: bool = True
@@ -191,13 +162,11 @@ class Config:
     api_method: Union[Literal["get", "post"], List[Literal["get", "post"]]] = "get"
     params: Optional[List[Union[Param, str]]] = None
     timestamp: Optional[datetime] = None
-    cache_expiration_time_seconds: Optional[int] = CACHE_EXPIRATION_TIME_SECONDS
     allow_get_all_pages: Optional[bool] = False
     search: Optional[List[SearchConfig]] = None
     nearby: Optional[List[NearbyConfig]] = None
     engine: Optional[Engines] = None
     chunk_size: Optional[int] = None
-    cache: Optional[CacheConfig] = None
     duckdb_backend: Optional[DuckDBBackendConfig] = None
 
     def __post_init__(self):
@@ -261,9 +230,6 @@ class Config:
         select = datasource.get("select") if datasource else None
         exclude = datasource.get("exclude") if datasource else None
         sortby = datasource.get("sortby") if datasource else None
-        cache_expiration_time_seconds = (
-            datasource.get("cache_expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS) if datasource else None
-        )
         orderby = datasource.get("orderby") if datasource else None
         search_config = [SearchConfig(**c) for c in config["search"]] if "search" in config else None
         nearby_config = [NearbyConfig(**c) for c in config["nearby"]] if "nearby" in config else None
@@ -285,14 +251,6 @@ class Config:
         if select:
             select = [Column(name=c.get("name"), alias=c.get("alias")) for c in select]
 
-        _cache = config.get("cache", {})
-        cache = CacheConfig(
-            cache_response=_cache.get("cache_response", CACHE_JSON_RESPONSES),
-            expiration_time_seconds=_cache.get("expiration_time_seconds", CACHE_EXPIRATION_TIME_SECONDS),
-            backend=_cache.get("backend", CACHE_BACKEND),
-            max_size=_cache.get("max_size", CACHE_MAX_DISK_SIZE),
-        )
-
         datasource_obj = DatasourceConfig(
             uri=uri,
             file_type=file_type,
@@ -302,7 +260,6 @@ class Config:
             sortby=sortby,
             table_name=datasource.get("table_name", None),
             filters=None,
-            cache_expiration_time_seconds=cache_expiration_time_seconds,
         )
         new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
 
@@ -318,8 +275,6 @@ class Config:
             params=new_params,  # type: ignore
             allow_get_all_pages=config.get("allow_get_all_pages", False),
             datasource=datasource_obj,
-            cache_expiration_time_seconds=cache_expiration_time_seconds,
-            cache=cache,
         )
 
     @classmethod

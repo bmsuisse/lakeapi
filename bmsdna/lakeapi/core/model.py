@@ -3,7 +3,6 @@
 import datetime
 from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
 from bmsdna.lakeapi.context.df_base import ResultData
-from cashews import cache
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from pydantic.fields import FieldInfo
@@ -11,14 +10,10 @@ from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 import pyarrow as pa
-from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
-
-cached = cache(ttl=timedelta(hours=3))
 
 
 def _make_model(v, name):

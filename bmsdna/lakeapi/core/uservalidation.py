@@ -5,17 +5,15 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from datetime import timedelta
 
-cached = cache(ttl=timedelta(hours=3))
+cache.setup("mem://")
 
 security = HTTPBasic()
-
 userhashmap: dict[str, str] | None = None
 
 
-@cached
+@cache(ttl=timedelta(days=3))
 async def is_correct(
     hash: str,
     pwd_str: str,

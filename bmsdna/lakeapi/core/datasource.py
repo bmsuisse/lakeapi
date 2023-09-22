@@ -9,25 +9,17 @@ import pyarrow.parquet
 import pypika
 import pypika.terms
 import pypika.queries as fn
-from cashews import cache
 from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
-from bmsdna.lakeapi.core.cache import CACHE_EXPIRATION_TIME_SECONDS, CACHE_BACKEND
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes, FileTypes
-from datetime import timedelta
+from bmsdna.lakeapi.core.types import DeltaOperatorTypes
 
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
-
-cached = cache(ttl=timedelta(hours=3))
-
-
-df_cache: dict[str, tuple[datetime, pyarrow.Table]] = {}
 
 
 class Datasource:
@@ -138,17 +130,9 @@ class Datasource:
         if self.df is None:
             query = pypika.Query.from_(self.table)
             self.query = self._prep_df(query, endpoint=endpoint)
-            global df_cache
             mod_date: datetime | None = None
             if self.config.in_memory and not endpoint in ["meta"]:
                 mod_date = self.sql_context.get_modified_date(self.uri, self.config.file_type)
-                if self.config.in_memory and self.tablename in df_cache:
-                    cache_date, df_t = df_cache[self.tablename]
-                    if mod_date <= cache_date:
-                        self.sql_context.register_arrow(self.tablename, df_t)
-                        self.df = self.sql_context.execute_sql(self.query)
-                    else:
-                        df_cache.pop(self.tablename)
 
             if self.df is None:
                 self.sql_context.register_datasource(
@@ -158,9 +142,6 @@ class Datasource:
                     partitions=partitions,
                 )
                 self.df = self.sql_context.execute_sql(self.query)
-            if self.config.in_memory and not self.tablename in df_cache and not endpoint in ["meta"]:
-                assert mod_date is not None
-                df_cache[self.tablename] = mod_date, self.df.to_arrow_table()
 
         return self.df  # type: ignore
 
