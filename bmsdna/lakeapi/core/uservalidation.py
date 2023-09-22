@@ -13,7 +13,7 @@ security = HTTPBasic()
 userhashmap: dict[str, str] | None = None
 
 
-@cache(ttl=timedelta(days=3))
+@cache(ttl=timedelta(days=3), key="{hash}{pwd_str}")
 async def is_correct(
     hash: str,
     pwd_str: str,
