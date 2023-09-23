@@ -17,7 +17,6 @@ from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
-from bmsdna.lakeapi.core.env import CACHE_EXPIRATION_TIME_SECONDS
 from bmsdna.lakeapi.core.types import MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
 
 from typing import Optional

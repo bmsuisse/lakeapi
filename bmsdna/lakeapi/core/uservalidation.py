@@ -1,22 +1,18 @@
 from typing import Sequence
 
-from cashews import cache
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from datetime import timedelta
-
-cached = cache(ttl=timedelta(hours=3))
+from functools import lru_cache
 
 security = HTTPBasic()
-
 userhashmap: dict[str, str] | None = None
 
 
-@cached
-async def is_correct(
+@lru_cache
+def is_correct(
     hash: str,
     pwd_str: str,
 ):
@@ -62,7 +58,7 @@ def add_user_middlware(
 
         is_correct_password = is_correct(hash, pwd_str)
         if not isinstance(is_correct_password, bool):
-            is_correct_password = await is_correct_password
+            is_correct_password = is_correct_password
         if not is_correct_password:
             return Response(
                 status_code=401, headers={"WWW-Authenticate": "Basic"}, content="Incorrect email or password"

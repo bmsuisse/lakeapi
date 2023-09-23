@@ -12,11 +12,9 @@ from starlette.responses import FileResponse, Response, StreamingResponse
 from email.utils import format_datetime, formatdate
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
-from bmsdna.lakeapi.core.config import BasicConfig, CacheConfig
+from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
-from cashews import cache
-from bmsdna.lakeapi.core.cache import CACHE_BACKEND, CACHE_EXPIRATION_TIME_SECONDS
 from datetime import timedelta
 import typing
 from urllib.parse import quote
@@ -29,8 +27,6 @@ import anyio
 from starlette._compat import md5_hexdigest
 
 logger = get_logger(__name__)
-
-cached = cache(ttl=timedelta(hours=3))
 
 
 class OutputFormats(Enum):
@@ -241,7 +237,6 @@ async def create_response(
     context: ExecutionContext,
     sql: QueryBuilder | str,
     basic_config: BasicConfig,
-    cache_config: CacheConfig,
     close_context=False,
 ):
     headers = {}
@@ -252,7 +247,6 @@ async def create_response(
     content_dispositiont_type = "attachment"
     filename = "file" + extension
     media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
-    cache_expiration_time_seconds = cache_config.expiration_time_seconds or CACHE_EXPIRATION_TIME_SECONDS
 
     if format == OutputFormats.JSON:
         return Response(content=context.execute_sql(sql).to_json(), headers=headers, media_type=media_type)
@@ -271,18 +265,6 @@ async def create_response(
 
     temp_file = get_temp_file(extension)
 
-    def do_cache(*arg, **kwargs):
-        is_cache = cache_config.cache_response and cache_expiration_time_seconds > 0
-        if is_cache:
-            logger.info(f"Caching key: {kwargs.get('key', None)}")
-            return True
-        return False
-
-    @cache.iterator(
-        ttl=cache_expiration_time_seconds,
-        key="sql:{sql}:url{url}:format{format}",
-        condition=do_cache,
-    )
     async def response_stream(context, sql, url, format):
         chunk_size = 64 * 1024
         content = await anyio.to_thread.run_sync(context.execute_sql, sql)  # type: ignore

@@ -19,6 +19,7 @@ from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 from pypika.terms import Term
 from bmsdna.lakeapi.core.log import get_logger
+import multiprocessing
 
 
 logger = get_logger(__name__)
@@ -341,9 +342,8 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
     def __enter__(self):
         super().__enter__()
         self.con.__enter__()
-        self.con.execute("SET memory_limit='200MB'")
-        self.con.execute("SET threads =2")
-        self.con.execute("SET enable_object_cache=true")
+        self.con.execute(f"SET memory_limit='500MB'")
+        self.con.execute(f"SET threads={int(multiprocessing.cpu_count() / 2)}")
         self.con.execute("SET default_null_order='nulls_first'")  # align with polars
         return self
 
