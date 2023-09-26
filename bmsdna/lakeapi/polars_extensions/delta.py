@@ -34,7 +34,7 @@ def _scan_pyarrow_dataset_impl(
 def _scan_pyarrow_dataset(ds: pa.dataset.Dataset, allow_pyarrow_filter: bool = True) -> LazyFrame:
     func = partial(_scan_pyarrow_dataset_impl, ds)
     func_serialized = pickle.dumps(func)
-    return LazyFrame._scan_python_function(ds.schema, func_serialized, pyarrow=allow_pyarrow_filter)
+    return LazyFrame._scan_python_function(ds.schema, func_serialized, allow_pyarrow_filter)
 
 
 def scan_delta2(
