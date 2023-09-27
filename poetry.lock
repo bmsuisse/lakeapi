@@ -490,18 +490,18 @@ toml = ["tomli"]
 
 [[package]]
 name = "deltalake"
-version = "0.10.2"
+version = "0.11.0"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "deltalake-0.10.2-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:61bc3864a8b5958c5e1eb9165529ff844a7d21f40cf78b9ddc6b6855515bb169"},
-    {file = "deltalake-0.10.2-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:a4b2bcf189b81b3afa8f3c4bf48181bc11c8811e348be43aa8517739929a4d1d"},
-    {file = "deltalake-0.10.2-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:6a1801ceb642d41bf5b4061e62fe091d9c394c88b4bbedc534acf001a66f1836"},
-    {file = "deltalake-0.10.2-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:298579bb74d69bbf2b87b858ab361af7b3baa2af1c1f136a7a9f08ee8e12d98d"},
-    {file = "deltalake-0.10.2-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:901ab93da046c48a25e7411daabcd3267869c5acfb581552ad3a4fd0e2c65c5d"},
-    {file = "deltalake-0.10.2-cp37-abi3-win_amd64.whl", hash = "sha256:8dc8ddd146e1a10df6c524e0393ce495cbf8ca24ed28a513361955fa9fc4d2c2"},
-    {file = "deltalake-0.10.2.tar.gz", hash = "sha256:fe3a2d69387b49d80c20bd7c3f8b2977970460239734fe9db1dfcb401e96a8c7"},
+    {file = "deltalake-0.11.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:6047823ca14438a07ee18ad891f972a4b022d4f08ee4d621be3e7f6738d5eb5d"},
+    {file = "deltalake-0.11.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:c09f8827de75476647aaba3f29fd16471587c5f4789bc2fe9096ac4e29bdc969"},
+    {file = "deltalake-0.11.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:cb2004f606179bbd9f0db5328a7cee186ccae41585a9f4500390a5e563feb67e"},
+    {file = "deltalake-0.11.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:72804e95afea41a8337be9d8726c892f582b1abe2a2b365a7e29022141f296b3"},
+    {file = "deltalake-0.11.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c3eb17e7693eb36029c9fcb92e77750098e0531f76c3a6534172c7b1c160ee8e"},
+    {file = "deltalake-0.11.0-cp37-abi3-win_amd64.whl", hash = "sha256:3969eb8d1c08de92674bdc2b49c03b9fc51be7e3ad3742091c82d143fc02b506"},
+    {file = "deltalake-0.11.0.tar.gz", hash = "sha256:bd36d6ec81eda468aacd6a67e78ed36aed15029a0f80d471cdce61ed44b602b5"},
 ]
 
 [package.dependencies]
@@ -1430,13 +1430,13 @@ files = [
 
 [[package]]
 name = "pyright"
-version = "1.1.327"
+version = "1.1.329"
 description = "Command line wrapper for pyright"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyright-1.1.327-py3-none-any.whl", hash = "sha256:3462cda239e9140276238bbdbd0b59d77406f1c2e14d8cb8c20c8e25639c6b3c"},
-    {file = "pyright-1.1.327.tar.gz", hash = "sha256:ba74148ad64f22020dbbed6781c4bdb38ecb8a7ca90dc3c87a4f08d1c0e11592"},
+    {file = "pyright-1.1.329-py3-none-any.whl", hash = "sha256:c16f88a7ac14ddd0513e62fec56d69c37e3c6b412161ad16aa23a9c7e3dabaf4"},
+    {file = "pyright-1.1.329.tar.gz", hash = "sha256:5baf82ff5ecb8c8b3ac400e8536348efbde0b94a09d83d5b440c0d143fd151a8"},
 ]
 
 [package.dependencies]
@@ -2091,4 +2091,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "53a861bcc2b93d959b985510e32c665ba83498e318926c1063cc5b1d3ca6ed34"
+content-hash = "1998bebd3a17bdc271608de7d0fa43e25718778f37081b249d38c7e3447ecb6f"
