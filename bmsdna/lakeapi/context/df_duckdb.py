@@ -284,9 +284,14 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.modified_dates[name] = self.get_modified_date(uri, file_type)
         remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure")
         if uri.account and remote_opts and not self._account_mapped:
+            AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
+            if AZURE_EXT_LOC:
+                self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
+            else:
+                self.con.install_extension("azure")
+                self.con.load_extension("azure")
             if "connection_string" in remote_opts:
                 cr = remote_opts["connection_string"]
-                self.con.install_extension("azure")
                 self.con.execute(f"SET azure_storage_connection_string = '{cr}';")
             elif "account_name" in remote_opts and "account_key" in remote_opts:
                 an = remote_opts["account_name"]

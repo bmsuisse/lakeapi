@@ -60,3 +60,33 @@ def start_mssql_server() -> Container:
                 sleep(25)
     print("Successfully created sql container...")
     return sql_server
+
+
+def start_azurite() -> Container:
+    client = docker.from_env()  # code taken from https://github.com/fsspec/adlfs/blob/main/adlfs/tests/conftest.py#L72
+    azurite_server: Container | None = None
+    try:
+        m = cast(Container, client.containers.get("test4azurite"))
+        if m.status == "running":
+            return m
+        else:
+            sql_server = m
+    except docker.errors.NotFound as err:
+        pass
+
+    if azurite_server is None:
+        # using podman:  podman run  --env-file=TESTS/SQL_DOCKER.ENV --publish=1439:1433 --name=mssql1 chriseaton/adventureworks:light
+        #                podman kill mssql1
+        azurite_server = client.containers.run(
+            "mcr.microsoft.com/azure-storage/azurite",
+            detach=True,
+            name="test4azurite",
+            ports={"10000/tcp": "10000", "10001/tcp": "10001", "10002/tcp": "10002"},
+        )  # type: ignore
+    assert azurite_server is not None
+    azurite_server.start()
+    print(azurite_server.status)
+    sleep(45)  # the install script takes a sleep of 30s to create the db and then restores adventureworks
+
+    print("Successfully created azurite container...")
+    return azurite_server
