@@ -10,6 +10,7 @@ import polars as pl
 from bmsdna.lakeapi.core.config import SearchConfig
 from pypika.terms import Term
 import os
+from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -181,30 +182,34 @@ class ExecutionContext(ABC):
 
     def get_pyarrow_dataset(
         self,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ) -> Optional[pa.dataset.Dataset | pa.Table]:
+        spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
 
                 return pa.dataset.dataset(
-                    uri,
+                    spec_uri,
+                    filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
                         read_options={"coerce_int96_timestamp_unit": "us"},
                     ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 return pa.dataset.dataset(
-                    uri,
+                    spec_uri,
+                    filesystem=spec_fs,
                     format=file_type,
                 )
             case "ndjson" | "json":
                 import pandas
 
                 pd = pandas.read_json(
-                    uri,
+                    spec_uri,
+                    filesystem=spec_fs,
                     orient="records",
                     lines=file_type == "ndjson",
                 )
@@ -213,19 +218,18 @@ class ExecutionContext(ABC):
             case "avro":
                 import polars as pl
 
-                pd = pl.read_avro(uri).to_arrow()
+                with spec_fs.open(spec_uri) as f:
+                    pd = pl.read_avro(f).to_arrow()
                 return pd
             case "delta":
                 from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
 
-                dt = DeltaTable(
-                    uri,
-                )
+                ab_uri, ab_opts = uri.get_uri_options()
+                dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if only_fixed_supported(dt):
                     return get_pyarrow_table(dt)
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions,
-                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
+                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -300,25 +304,24 @@ class ExecutionContext(ABC):
 
     def get_modified_date(
         self,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
     ) -> datetime:
         if file_type == "delta":
-            dt = DeltaTable(
-                uri,
-            )
+            ab_uri, ab_opts = uri.get_uri_options()
+            dt = DeltaTable(ab_uri, storage_options=ab_opts)
             return datetime.fromtimestamp(
                 dt.history(1)[-1]["timestamp"] / 1000.0,
                 tz=timezone.utc,
             )
-        import os
 
-        return datetime.fromtimestamp(os.path.getmtime(uri), tz=timezone.utc)
+        fs, fs_uri = uri.get_fs_spec()
+        return fs.modified(fs_uri)
 
     def register_datasource(
         self,
         name: str,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):

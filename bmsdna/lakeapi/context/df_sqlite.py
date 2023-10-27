@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 from adbc_driver_sqlite.dbapi import Connection, Cursor, connect
+from .source_uri import SourceUri
 
 
 class SqliteResultData(ResultData):
@@ -114,12 +115,13 @@ class SqliteExecutionContext(ExecutionContext):
     def register_datasource(
         self,
         name: str,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         assert file_type == "sqlite"
-        self.connections[name] = connect(uri)
+        assert uri.account is None
+        self.connections[name] = connect(uri.uri)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SELECT type as table_type, name from sqlite_schema where type='table'")

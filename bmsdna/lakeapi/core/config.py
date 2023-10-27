@@ -112,6 +112,7 @@ def _expand_env_vars(uri: str):
 @dataclass
 class DatasourceConfig:
     uri: str
+    account: Optional[str] = None
     file_type: FileTypes = "delta"
     select: Optional[List[Column]] = None
     exclude: Optional[List[str]] = None
@@ -253,6 +254,7 @@ class Config:
         datasource_obj = DatasourceConfig(
             uri=uri,
             file_type=file_type,
+            account=datasource.get("account"),
             select=select,
             exclude=exclude,
             sortby=sortby,
@@ -339,6 +341,7 @@ class YamlData(TypedDict):
     tables: list[Config]
     users: list[UserConfig]
     app: AppConfig
+    accounts: dict[str, dict]
 
 
 @dataclass(frozen=True)

@@ -9,7 +9,7 @@ import pypika.queries
 from pypika.terms import Term
 import pypika
 from uuid import uuid4
-
+from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
@@ -149,13 +149,14 @@ class PolarsExecutionContext(ExecutionContext):
     def register_datasource(
         self,
         name: str,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         import polars as pl
 
-        if os.path.exists(uri):
+        fs, fs_uri = uri.get_fs_spec()
+        if fs.exists(fs_uri):
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":

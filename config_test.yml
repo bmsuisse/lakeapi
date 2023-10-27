@@ -7,6 +7,11 @@ app:
   static_file_path: assets
   logo_path: assets/logo-color.png
 
+accounts:
+  test_account:
+    connection_string: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
+    account_name: "devstoreaccount1"
+
 tables:
   - name: fruits
     tag: test
@@ -483,6 +488,13 @@ tables:
       table_name: "HumanResources.Department"
     params:
       - GroupName
+
+  - name: blob_test
+    tag: blobb
+    api_method: get
+    datasource:
+      uri: "abfs://testlake/td/faker.parquet"
+      account: "test_account"
 
 # --------------------------------
 # User / Password

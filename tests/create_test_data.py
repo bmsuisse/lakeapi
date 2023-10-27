@@ -64,6 +64,19 @@ def store_df_as_delta(
     return dfp if isinstance(dfp, pd.DataFrame) else dfp.to_pandas()
 
 
+def get_test_blobstorage():
+    constr = os.getenv(
+        "TEST_BLOB_CONSTR",
+        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;",
+    )
+    from azure.storage.blob import ContainerClient
+
+    cc = ContainerClient.from_connection_string(constr, "testlake")
+    if not cc.exists():
+        cc.create_container()
+    return cc
+
+
 if __name__ == "__main__":
     if not os.path.exists("tests/data/parquet/search.parquet"):
         os.makedirs("tests/data/parquet", exist_ok=True)
@@ -212,3 +225,8 @@ if __name__ == "__main__":
     fakeit = Faker()
     df_ns["ts"] = pl.Series("ts", [fakeit.date_time() for _ in range(0, df_ns.shape[0])], pl.Datetime(time_unit="ns"))
     df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")
+
+    faker_pq = "tests/data/startest/faker.parquet"
+    with get_test_blobstorage() as cc:
+        with open(faker_pq) as f:
+            cc.upload_blob("td/faker.parquet", f)

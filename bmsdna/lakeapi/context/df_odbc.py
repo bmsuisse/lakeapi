@@ -17,7 +17,7 @@ import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
-
+from .source_uri import SourceUri
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
@@ -149,12 +149,13 @@ class ODBCExecutionContext(ExecutionContext):
     def register_datasource(
         self,
         name: str,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         assert file_type == "odbc"
-        self.datasources[name] = uri
+        assert uri.account is None
+        self.datasources[name] = uri.uri
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SELECT table_schema, table_name as name, table_type from information_schema.tables")

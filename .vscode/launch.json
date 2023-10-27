@@ -9,12 +9,20 @@
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
-            "args": ["start_test_instance:app", "--host", "0.0.0.0", "--port", "8080", "--reload"],
+            "args": [
+                "start_test_instance:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8080",
+                "--reload"
+            ],
             "jinja": false,
             "justMyCode": false,
             "env": {
                 "KEEP_SQL_SERVER": "1",
-                "MY_SQL_PWD": "MyPass@word4tests"
+                "MY_SQL_PWD": "MyPass@word4tests",
+                "NO_SQL_SERVER": "1"
             }
         }
     ]

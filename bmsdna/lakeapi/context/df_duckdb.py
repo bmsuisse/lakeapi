@@ -20,6 +20,7 @@ from uuid import uuid4
 from pypika.terms import Term
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
+from .source_uri import SourceUri
 
 
 logger = get_logger(__name__)
@@ -272,11 +273,11 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def register_datasource(
         self,
         name: str,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
-        if os.path.exists(uri):
+        if uri.exists():
             self.modified_dates[name] = self.get_modified_date(uri, file_type)
         if file_type == "json":
             self.con.execute(
