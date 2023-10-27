@@ -286,6 +286,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         if uri.account and remote_opts and not self._account_mapped:
             if "connection_string" in remote_opts:
                 cr = remote_opts["connection_string"]
+                self.con.execute("INSTALL azure;LOAD azure;")
                 self.con.execute(f"SET azure_storage_connection_string = '{cr}';")
             elif "account_name" in remote_opts and "account_key" in remote_opts:
                 an = remote_opts["account_name"]
