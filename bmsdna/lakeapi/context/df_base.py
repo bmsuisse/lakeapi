@@ -7,13 +7,14 @@ from deltalake import DeltaTable
 import pyarrow.dataset
 import pypika.queries
 import polars as pl
-from bmsdna.lakeapi.core.config import SearchConfig
+
 from pypika.terms import Term
 import os
 from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
+    from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "mssql"]
 
@@ -252,7 +253,7 @@ class ExecutionContext(ABC):
     def init_search(
         self,
         source_view: str,
-        search_configs: list[SearchConfig],
+        search_configs: "list[SearchConfig]",
     ):
         pass
 
@@ -281,7 +282,7 @@ class ExecutionContext(ABC):
         self,
         source_view: str,
         search_text: str,
-        search_config: SearchConfig,
+        search_config: "SearchConfig",
         alias: Optional[str],
     ) -> Term:
         import pypika.terms

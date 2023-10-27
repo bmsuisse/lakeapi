@@ -71,6 +71,9 @@ def init_routes(
                 )
 
             except Exception as err:
+                import traceback
+
+                print(traceback.format_exc())
                 logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
                 schema = None
 

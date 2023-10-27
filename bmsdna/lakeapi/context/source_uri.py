@@ -22,7 +22,7 @@ class SourceUri:
 
     def get_fs_spec(self) -> tuple[fsspec.AbstractFileSystem, str]:
         if self.account is None:
-            return fsspec.implementations.local.LocalFileSystem(), self.real_uri  # type: ignore
+            return fsspec.filesystem("file"), self.real_uri
         opts = self.accounts.get(self.account, {})
         if self.is_azure():
             return adlfs.AzureBlobFileSystem(**opts), self.real_uri
@@ -43,3 +43,6 @@ class SourceUri:
             return os.path.exists(self.real_uri)
         fs, fs_path = self.get_fs_spec()
         return fs.exists(fs_path)
+
+    def __str__(self):
+        return self.real_uri

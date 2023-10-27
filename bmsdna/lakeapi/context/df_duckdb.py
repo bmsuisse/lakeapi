@@ -334,7 +334,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{uri}' AS  {name}_duckdb (READ_ONLY);")
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {name}_duckdb (READ_ONLY);")
             self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
             return
 

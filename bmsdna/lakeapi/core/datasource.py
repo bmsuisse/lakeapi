@@ -120,7 +120,8 @@ class Datasource:
             assert dt is not None
             schema = dt.schema().to_pyarrow()
         if self.config.file_type == "parquet" and self.file_exists():
-            schema = pyarrow.parquet.read_schema(self.uri)
+            fs, fs_uri = self.uri.get_fs_spec()
+            schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
         if schema is not None:
             if self.config.select:
                 fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
