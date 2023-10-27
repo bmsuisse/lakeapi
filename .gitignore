@@ -169,3 +169,8 @@ out
 profile.txt
 
 _temp
+
+__azurite*
+__blobstorage__
+__tablestorage__
+__queuestorage__
