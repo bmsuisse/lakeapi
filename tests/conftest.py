@@ -17,3 +17,17 @@ def spawn_sql():
         yield sql_server
         if os.getenv("KEEP_SQL_SERVER", "0") == "0":  # can be handy during development
             sql_server.stop()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def spawn_azurite():
+    import test_server
+    import os
+
+    if os.getenv("NO_AZURITE_DOCKER", "0") == "1":
+        yield None
+    else:
+        azurite = test_server.start_azurite()
+        yield sql_server
+        if os.getenv("KEEP_AZURITE_DOCKER", "0") == "0":  # can be handy during development
+            azurite.stop()
