@@ -28,6 +28,6 @@ def spawn_azurite():
         yield None
     else:
         azurite = test_server.start_azurite()
-        yield sql_server
+        yield azurite
         if os.getenv("KEEP_AZURITE_DOCKER", "0") == "0":  # can be handy during development
             azurite.stop()
