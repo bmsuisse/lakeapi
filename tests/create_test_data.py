@@ -228,5 +228,5 @@ if __name__ == "__main__":
 
     faker_pq = "tests/data/startest/faker.parquet"
     with get_test_blobstorage() as cc:
-        with open(faker_pq) as f:
+        with open(faker_pq, "rb") as f:
             cc.upload_blob("td/faker.parquet", f)
