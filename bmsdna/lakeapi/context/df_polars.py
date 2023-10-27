@@ -156,31 +156,34 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         fs, fs_uri = uri.get_fs_spec()
-        if fs.exists(fs_uri):
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        ab_uri, uri_opts = uri.get_uri_options()
+        self.modified_dates[name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
                 from bmsdna.lakeapi.polars_extensions.delta import scan_delta2
 
                 df = pl.scan_delta2(  # type: ignore
-                    uri,
+                    fs_uri,
                     pyarrow_options={
                         "partitions": partitions,
+                        "filesystem": fs,
                         "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
                     },
                 )
             case "parquet":
-                df = pl.scan_parquet(uri)
+                df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
             case "arrow":
-                df = pl.scan_ipc(uri)
-            case "avro":
-                df = cast(pl.LazyFrame, pl.read_avro(uri))
-            case "csv":
-                df = pl.scan_csv(uri)
-            case "json":
-                df = cast(pl.LazyFrame, pl.read_json(uri))
-            case "ndjson":
-                df = pl.scan_ndjson(uri)
+                df = pl.scan_ipc(ab_uri, storage_options=uri_opts)
+            case "avro" if uri_opts is None:
+                df = cast(pl.LazyFrame, pl.read_avro(ab_uri))
+            case "csv" if uri_opts is None:
+                df = pl.scan_csv(ab_uri)
+            case "csv" if uri_opts is not None:
+                df = pl.read_csv(ab_uri)
+            case "json" if uri_opts is None:
+                df = cast(pl.LazyFrame, pl.read_json(ab_uri))
+            case "ndjson" if uri_opts is None:
+                df = pl.scan_ndjson(ab_uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(name, df)

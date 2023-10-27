@@ -167,7 +167,7 @@ class ExecutionContext(ABC):
         chunk_size: int,
     ) -> None:
         super().__init__()
-        self.modified_dates: dict[str, datetime] = {}
+        self.modified_dates: dict[str, datetime | None] = {}
         self.chunk_size = chunk_size
         self.len_func = "LEN"
         self.array_contains_func = "array_contains"
@@ -207,9 +207,10 @@ class ExecutionContext(ABC):
             case "ndjson" | "json":
                 import pandas
 
+                ab_uri, ab_opts = uri.get_uri_options()
                 pd = pandas.read_json(
-                    spec_uri,
-                    filesystem=spec_fs,
+                    ab_uri,
+                    storage_options=ab_opts,
                     orient="records",
                     lines=file_type == "ndjson",
                 )
@@ -218,8 +219,8 @@ class ExecutionContext(ABC):
             case "avro":
                 import polars as pl
 
-                with spec_fs.open(spec_uri) as f:
-                    pd = pl.read_avro(f).to_arrow()
+                with spec_fs.open(spec_uri, "rb") as f:
+                    pd = pl.read_avro(f).to_arrow()  # type: ignore
                 return pd
             case "delta":
                 from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
@@ -306,7 +307,10 @@ class ExecutionContext(ABC):
         self,
         uri: SourceUri,
         file_type: FileTypes,
-    ) -> datetime:
+    ) -> datetime | None:
+        fs, fs_uri = uri.get_fs_spec()
+        if not fs.exists(fs_uri):
+            return None
         if file_type == "delta":
             ab_uri, ab_opts = uri.get_uri_options()
             dt = DeltaTable(ab_uri, storage_options=ab_opts)
@@ -326,8 +330,7 @@ class ExecutionContext(ABC):
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
-        if os.path.exists(uri):
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        self.modified_dates[name] = self.get_modified_date(uri, file_type)
         self.register_arrow(name, ds)
 
     @abstractmethod

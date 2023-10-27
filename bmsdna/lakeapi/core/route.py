@@ -45,9 +45,10 @@ def init_routes(
                     config.version_str,
                     config.tag,
                     config.name,
-                    config.datasource,
+                    config=config.datasource,
                     sql_context=mgr.get_context(config.engine),
                     basic_config=basic_config,
+                    accounts=configs.accounts,
                 )
                 if not realdataframe.file_exists():
                     logger.warning(

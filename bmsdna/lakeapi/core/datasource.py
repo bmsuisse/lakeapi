@@ -3,7 +3,7 @@ import hashlib
 import os
 from datetime import datetime
 from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
-
+from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
 import pyarrow.parquet
 import pypika
@@ -28,6 +28,8 @@ class Datasource:
         version: str,
         tag: str,
         name: str,
+        *,
+        accounts: dict,
         config: DatasourceConfig,
         sql_context: ExecutionContext,
         basic_config: BasicConfig,
@@ -40,24 +42,28 @@ class Datasource:
         self.df = df
         self.sql_context = sql_context
         self.basic_config = basic_config
-
-    @property
-    def uri(self):
-        if "://" in self.config.uri or self.config.file_type in ["odbc"]:
-            return self.config.uri
-        return os.path.join(
-            self.basic_config.data_path,
-            self.config.uri,
+        self.uri = SourceUri(
+            config.uri,
+            config.account,
+            accounts,
+            basic_config.data_path if not config.file_type in ["odbc"] else None,
         )
 
     def file_exists(self):
         if self.config.file_type in ["odbc", "sqlite"]:
             return True  # the uri is not really a file here
-        if not os.path.exists(self.uri):
-            return False
-        if self.config.file_type == "delta" and not os.path.exists(os.path.join(self.uri, "_delta_log")):
+        if not self.uri.exists():
             return False
         return True
+
+    def get_delta_table(self):
+        if self.config.file_type == "delta":
+            if self.uri.exists():
+                from deltalake import DeltaTable
+
+                df_uri, df_opts = self.uri.get_uri_options()
+                return DeltaTable(df_uri, storage_options=df_opts)
+        return None
 
     def select_df(self, df: QueryBuilder) -> QueryBuilder:
         if self.config.select:
@@ -110,9 +116,9 @@ class Datasource:
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
-            from deltalake import DeltaTable
-
-            schema = DeltaTable(self.uri).schema().to_pyarrow()
+            dt = self.get_delta_table()
+            assert dt is not None
+            schema = dt.schema().to_pyarrow()
         if self.config.file_type == "parquet" and self.file_exists():
             schema = pyarrow.parquet.read_schema(self.uri)
         if schema is not None:

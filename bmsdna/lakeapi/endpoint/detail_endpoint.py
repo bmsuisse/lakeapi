@@ -68,9 +68,10 @@ def create_detailed_meta_endpoint(
                 config.version_str,
                 config.tag,
                 config.name,
-                config.datasource,
-                context,
+                config=config.datasource,
+                sql_context=context,
                 basic_config=basic_config,
+                accounts=configs.accounts,
             )
 
             if not realdataframe.file_exists():
@@ -80,7 +81,8 @@ def create_detailed_meta_endpoint(
             delta_tbl = None
             df = realdataframe.get_df(None)
             if config.datasource.file_type == "delta":
-                delta_tbl = DeltaTable(realdataframe.uri)
+                delta_tbl = realdataframe.get_delta_table()
+                assert delta_tbl is not None
                 partition_columns = delta_tbl.metadata().partition_columns
                 partition_columns = [
                     c for c in partition_columns if not should_hide_colname(c)

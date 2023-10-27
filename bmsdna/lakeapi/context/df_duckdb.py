@@ -225,6 +225,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         search_configs: list[SearchConfig],
     ):
         modified_date = self.modified_dates[source_view]
+        if modified_date is None:
+            return
         persistence_name = source_view
         search_columns = []
         for cfg in search_configs:
@@ -270,6 +272,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     )"""
         )
 
+    _account_mapped: str = ""
+
     def register_datasource(
         self,
         name: str,
@@ -277,37 +281,52 @@ class DuckDbExecutionContextBase(ExecutionContext):
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
-        if uri.exists():
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure")
+        if uri.account and remote_opts and not self._account_mapped:
+            if "connection_string" in remote_opts:
+                cr = remote_opts["connection_string"]
+                self.con.execute(f"SET azure_storage_connection_string = '{cr}';")
+            elif "account_name" in remote_opts and "account_key" in remote_opts:
+                an = remote_opts["account_name"]
+                ak = remote_opts["account_key"]
+                conn_str = f"AccountName={an};AccountKey={ak};BlobEndpoint=https://{an}.blob.core.windows.net;"
+            elif "account_name" in remote_opts:
+                an = remote_opts["account_name"]
+                self.con.execute(f"SET azure_account_name = '{an}';")
+                self.con.execute(f"SET azure_credential_chain = default;")
+            self._account_mapped = uri.account
+
         if file_type == "json":
             self.con.execute(
                 f"""CREATE VIEW {name} as 
-                    SELECT *FROM read_json_auto('{uri}', format='array')
+                    SELECT *FROM read_json_auto('{remote_uri}', format='array')
                  """
             )
             return
         if file_type == "ndjson":
             self.con.execute(
                 f"""CREATE VIEW {name} as 
-                    SELECT *FROM read_json_auto('{uri}', format='newline_delimited')
+                    SELECT *FROM read_json_auto('{remote_uri}', format='newline_delimited')
                 """
             )
             return
         if file_type == "parquet":
             self.con.execute(
                 f"""CREATE VIEW  {name} as 
-                    SELECT *FROM read_parquet('{uri}')
+                    SELECT *FROM read_parquet('{remote_uri}')
                 """
             )
             return
         if file_type == "csv":
             self.con.execute(
                 f"""CREATE VIEW  {name} as 
-                            SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)"""
+                            SELECT *FROM read_csv_auto('{remote_uri}', delim=',', header=True)"""
             )
             return
-        if file_type == "delta" and os.path.exists(uri):
-            dt = DeltaTable(uri)
+        if file_type == "delta" and uri.exists():
+            ab_uri, uri_opts = uri.get_uri_options()
+            dt = DeltaTable(ab_uri, storage_options=uri_opts)
 
             if only_fixed_supported(dt):
                 sql = get_sql_for_delta(dt)

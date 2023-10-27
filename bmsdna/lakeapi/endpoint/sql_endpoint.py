@@ -24,9 +24,10 @@ def init_duck_con(
             cfg.version_str,
             cfg.tag,
             cfg.name,
-            cfg.datasource,
-            con,
-            basic_config,
+            config=cfg.datasource,
+            sql_context=con,
+            accounts=configs.accounts,
+            basic_config=basic_config,
         )
         if df.file_exists():
             try:

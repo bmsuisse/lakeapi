@@ -184,11 +184,7 @@ class Config:
         return "{}({})".format(type(self).__name__, ", ".join(kws))
 
     @classmethod
-    def _from_dict(
-        cls,
-        config: Dict,
-        basic_config: BasicConfig,
-    ):
+    def _from_dict(cls, config: Dict, basic_config: BasicConfig, accounts: dict):
         name = config["name"]
         tag = config["tag"]
         datasource: dict[str, Any] = config.get("datasource", {})
@@ -261,7 +257,15 @@ class Config:
             table_name=datasource.get("table_name", None),
             filters=None,
         )
-        new_params = _with_implicit_parameters(_params, file_type, basic_config, datasource_obj.uri)
+        from bmsdna.lakeapi.context.source_uri import SourceUri
+
+        suri = SourceUri(
+            datasource_obj.uri,
+            datasource_obj.account,
+            accounts=accounts,
+            data_path=basic_config.data_path if not file_type in ["odbc"] else None,
+        )
+        new_params = _with_implicit_parameters(_params, file_type, suri)
 
         return cls(
             name=name,
@@ -279,10 +283,7 @@ class Config:
 
     @classmethod
     def from_dict(
-        cls,
-        config: Dict,
-        basic_config: BasicConfig,
-        table_names: List[tuple[int, str, str]],
+        cls, config: Dict, basic_config: BasicConfig, table_names: List[tuple[int, str, str]], accounts: dict
     ) -> List["Config"]:
         name = config["name"]
         tag = config["tag"]
@@ -307,10 +308,10 @@ class Config:
                     if tbl_name not in table_names and (
                         (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
                     ):
-                        ls.append(cls._from_dict(config_sub, basic_config))
+                        ls.append(cls._from_dict(config_sub, basic_config, accounts))
             return ls
         else:
-            return [cls._from_dict(config, basic_config)]
+            return [cls._from_dict(config, basic_config, accounts)]
 
     async def to_dict(self) -> dict:
         return self.__dict__
@@ -348,6 +349,7 @@ class YamlData(TypedDict):
 class Configs:
     configs: Sequence[Config]
     users: Sequence[UserConfig]
+    accounts: dict[str, dict]
 
     def get_config_by_route(self, route: str):
         for config in self.configs:
@@ -377,6 +379,7 @@ class Configs:
 
         tables = []
         users = []
+        accounts: dict = {}
         for file in files:
             if file.endswith(".yml"):
                 with open(file, encoding="utf-8") as f:
@@ -387,11 +390,12 @@ class Configs:
                     yaml_data_users = y.get("users")
                     if yaml_data_users:
                         users += yaml_data_users
+                    accounts.update(y.get("accounts", {}))
 
         flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
         table_names = [(t.get("version", 1), t["tag"], t["name"]) for t in tables if t["name"] != "*"]
         configs = flat_map(
-            lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names),
+            lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names, accounts=accounts),
             tables,
         )
-        return cls(configs, users)
+        return cls(configs, users, accounts)
