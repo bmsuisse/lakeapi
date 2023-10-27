@@ -227,6 +227,10 @@ if __name__ == "__main__":
     df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")
 
     faker_pq = "tests/data/startest/faker.parquet"
+    if os.getenv("NO_AZURITE_DOCKER", "0") == "0":
+        import test_server
+
+        test_server.start_azurite()
     with get_test_blobstorage() as cc:
         with open(faker_pq, "rb") as f:
             cc.upload_blob("td/faker.parquet", f)
