@@ -51,12 +51,13 @@ def init_routes(
                     accounts=configs.accounts,
                 )
                 if not realdataframe.file_exists():
-                    logger.warning(
-                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
-                    )
                     schema = None
                 else:
                     schema = realdataframe.get_schema()
+                if schema is None:
+                    logger.warning(
+                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
+                    )
                 metadata.append(
                     {
                         "name": config.name,

@@ -1,4 +1,3 @@
-import jsonschema
 import json
 import yaml
 import pydantic

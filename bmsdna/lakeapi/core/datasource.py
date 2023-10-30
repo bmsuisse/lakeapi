@@ -10,6 +10,7 @@ import pypika
 import pypika.terms
 import pypika.queries as fn
 from pypika.queries import QueryBuilder
+from deltalake.exceptions import TableNotFoundError
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
@@ -59,10 +60,13 @@ class Datasource:
     def get_delta_table(self):
         if self.config.file_type == "delta":
             if self.uri.exists():
-                from deltalake import DeltaTable
+                try:
+                    from deltalake import DeltaTable
 
-                df_uri, df_opts = self.uri.get_uri_options()
-                return DeltaTable(df_uri, storage_options=df_opts)
+                    df_uri, df_opts = self.uri.get_uri_options()
+                    return DeltaTable(df_uri, storage_options=df_opts)
+                except TableNotFoundError:
+                    return None
         return None
 
     def select_df(self, df: QueryBuilder) -> QueryBuilder:
@@ -117,8 +121,7 @@ class Datasource:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table()
-            assert dt is not None
-            schema = dt.schema().to_pyarrow()
+            schema = dt.schema().to_pyarrow() if dt else None
         if self.config.file_type == "parquet" and self.file_exists():
             fs, fs_uri = self.uri.get_fs_spec()
             schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
