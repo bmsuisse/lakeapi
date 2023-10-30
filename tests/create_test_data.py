@@ -122,6 +122,8 @@ if __name__ == "__main__":
     )
 
     os.makedirs("tests/data/duckdb", exist_ok=True)
+    if os.path.exists("tests/data/duckdb/fruits.db"):
+        os.remove("tests/data/duckdb/fruits.db")
     con = duckdb.connect("tests/data/duckdb/fruits.db")
     con.execute("DROP TABLE IF EXISTS fruits;")
     con.execute("CREATE TABLE fruits as SELECT * FROM df_fruits;")
@@ -199,6 +201,8 @@ if __name__ == "__main__":
     print(df_faker)
 
     os.makedirs("tests/data/duckdb", exist_ok=True)
+    if os.path.exists("tests/data/duckdb/faker.db"):
+        os.remove("tests/data/duckdb/faker.db")
     con = duckdb.connect("tests/data/duckdb/faker.db")
     con.execute("DROP TABLE IF EXISTS fake;")
     con.execute("CREATE TABLE fake as SELECT * FROM df_faker;")
@@ -234,3 +238,7 @@ if __name__ == "__main__":
     with get_test_blobstorage() as cc:
         with open(faker_pq, "rb") as f:
             cc.upload_blob("td/faker.parquet", f)
+        for root, _, fls in os.walk("tests/delta/fake"):
+            for fl in fls:
+                with open(os.path.join(root, fl), "rb") as f:
+                    cc.upload_blob(f"td/delta/fake/{fl}", f)
