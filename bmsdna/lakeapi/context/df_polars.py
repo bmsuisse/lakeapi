@@ -10,6 +10,7 @@ from pypika.terms import Term
 import pypika
 from uuid import uuid4
 from .source_uri import SourceUri
+from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
 
 if TYPE_CHECKING:
     import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
@@ -161,14 +162,17 @@ class PolarsExecutionContext(ExecutionContext):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
-                df = pl.scan_delta(  # type: ignore
-                    ab_uri,
-                    storage_options=uri_opts,
-                    pyarrow_options={
-                        "partitions": partitions,
-                        "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
-                    },
-                )
+                try:
+                    df = pl.scan_delta(  # type: ignore
+                        ab_uri,
+                        storage_options=uri_opts,
+                        pyarrow_options={
+                            "partitions": partitions,
+                            "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
+                        },
+                    )
+                except DeltaProtocolError as de:
+                    raise FileTypeNotSupportedError(f"Delta table version {ab_uri} not supported") from de
             case "parquet":
                 df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
             case "arrow":
@@ -183,6 +187,10 @@ class PolarsExecutionContext(ExecutionContext):
                 df = cast(pl.LazyFrame, pl.read_json(ab_uri))
             case "ndjson" if uri_opts is None:
                 df = pl.scan_ndjson(ab_uri)
+            case "sqlite" if uri_opts is None:
+                query = "SELECT * FROM " + (source_table_name or target_name)
+
+                df = pl.read_database_uri(query=query, uri="sqlite://" + ab_uri, engine="adbc")
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(target_name, df)
