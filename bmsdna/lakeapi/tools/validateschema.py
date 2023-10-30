@@ -16,11 +16,7 @@ def validate_schema(schema_file: str, yaml_file: str):
     with open(yaml_file, "r", encoding="utf-8") as r:
         data = yaml.safe_load(r)
         json_str = json.dumps(data, indent=4)
-        jsondt = json.loads(json_str)
-        jsonschema.validate(
-            jsondt,
-            schema,
-        )
+        td.validate_json(json_str)
         print("ok")
 
 
