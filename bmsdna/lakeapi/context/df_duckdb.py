@@ -343,6 +343,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
             self.con.execute(f"ATTACH '{remote_uri}' AS  {name}_duckdb (READ_ONLY);")
             self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
             return
+        if file_type == "sqlite":
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {name}_sqlite (TYPE sqlite, READ_ONLY);")
+            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_sqlite.{name}")
+            return
 
         return super().register_datasource(name, uri, file_type, partitions)
 

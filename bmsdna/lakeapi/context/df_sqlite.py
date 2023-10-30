@@ -121,7 +121,7 @@ class SqliteExecutionContext(ExecutionContext):
     ):
         assert file_type == "sqlite"
         assert uri.account is None
-        self.connections[name] = connect(uri.uri)
+        self.connections[name] = connect(uri.real_uri)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SELECT type as table_type, name from sqlite_schema where type='table'")
