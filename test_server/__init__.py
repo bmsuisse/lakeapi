@@ -4,7 +4,7 @@ from time import sleep
 from typing import cast
 import docker.errors
 import os
-from azure.core.exceptions import ResourceNotModifiedError
+from azure.core.exceptions import ResourceExistsError
 
 
 def _getenvs():
@@ -83,12 +83,15 @@ def upload_to_azurite():
         try:
             with open(faker_pq, "rb") as f:
                 cc.upload_blob("td/faker.parquet", f)
-            for root, _, fls in os.walk("tests/delta/fake"):
-                for fl in fls:
+        except ResourceExistsError:
+            pass  # already uploaded
+        for root, _, fls in os.walk("tests/delta/fake"):
+            for fl in fls:
+                try:
                     with open(os.path.join(root, fl), "rb") as f:
                         cc.upload_blob(f"td/delta/fake/{fl}", f)
-        except ResourceNotModifiedError:
-            pass  # already uploaded
+                except ResourceExistsError:
+                    pass  # already uploaded
 
 
 def start_azurite() -> Container:
