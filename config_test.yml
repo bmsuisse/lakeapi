@@ -497,6 +497,13 @@ tables:
       file_type: parquet
       account: "test_account"
 
+  - name: blob_test_delta
+    tag: blobb
+    api_method: get
+    datasource:
+      uri: "abfs://testlake/td/delta/fake"
+      file_type: delta
+      account: "test_account"
 # --------------------------------
 # User / Password
 # --------------------------------
