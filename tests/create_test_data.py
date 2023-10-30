@@ -218,8 +218,8 @@ if __name__ == "__main__":
     df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")
 
     import test_server
-    if os.getenv("NO_AZURITE_DOCKER", "0") == "0":
 
+    if os.getenv("NO_AZURITE_DOCKER", "0") == "0":
         test_server.start_azurite()
     else:
         test_server.upload_to_azurite()

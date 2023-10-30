@@ -4,6 +4,7 @@ from time import sleep
 from typing import cast
 import docker.errors
 import os
+from azure.core.exceptions import ResourceNotModifiedError
 
 
 def _getenvs():
@@ -79,13 +80,15 @@ def get_test_blobstorage():
 def upload_to_azurite():
     with get_test_blobstorage() as cc:
         faker_pq = "tests/data/startest/faker.parquet"
-
-        with open(faker_pq, "rb") as f:
-            cc.upload_blob("td/faker.parquet", f)
-        for root, _, fls in os.walk("tests/delta/fake"):
-            for fl in fls:
-                with open(os.path.join(root, fl), "rb") as f:
-                    cc.upload_blob(f"td/delta/fake/{fl}", f)
+        try:
+            with open(faker_pq, "rb") as f:
+                cc.upload_blob("td/faker.parquet", f)
+            for root, _, fls in os.walk("tests/delta/fake"):
+                for fl in fls:
+                    with open(os.path.join(root, fl), "rb") as f:
+                        cc.upload_blob(f"td/delta/fake/{fl}", f)
+        except ResourceNotModifiedError:
+            pass  # already uploaded
 
 
 def start_azurite() -> Container:
