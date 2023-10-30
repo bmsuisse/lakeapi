@@ -19,15 +19,22 @@
         "accounts": {
             "type": "object",
             "additionalProperties": {
-                "type": {}
+                "type": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         }
     },
     "required": [
-        "tables",
         "app",
-        "users",
-        "accounts"
+        "tables",
+        "accounts",
+        "users"
     ],
     "$defs": {
         "Config": {
