@@ -4,6 +4,7 @@ from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
+from deltalake.exceptions import TableNotFoundError
 import pyarrow.dataset
 import pypika.queries
 import polars as pl
@@ -313,12 +314,15 @@ class ExecutionContext(ABC):
         if not fs.exists(fs_uri):
             return None
         if file_type == "delta":
-            ab_uri, ab_opts = uri.get_uri_options()
-            dt = DeltaTable(ab_uri, storage_options=ab_opts)
-            return datetime.fromtimestamp(
-                dt.history(1)[-1]["timestamp"] / 1000.0,
-                tz=timezone.utc,
-            )
+            try:
+                ab_uri, ab_opts = uri.get_uri_options()
+                dt = DeltaTable(ab_uri, storage_options=ab_opts)
+                return datetime.fromtimestamp(
+                    dt.history(1)[-1]["timestamp"] / 1000.0,
+                    tz=timezone.utc,
+                )
+            except (TableNotFoundError, FileNotFoundError):
+                return None
 
         fs, fs_uri = uri.get_fs_spec()
         return fs.modified(fs_uri)
