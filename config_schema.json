@@ -1,178 +1,270 @@
 {
-    "type": "object",
-    "properties": {
-        "tables": {
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/Config"
-            }
-        },
-        "users": {
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/UserConfig"
-            }
-        },
-        "app": {
-            "$ref": "#/$defs/AppConfig"
-        },
-        "accounts": {
-            "type": "object",
-            "additionalProperties": {
-                "type": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "required": [
-        "app",
-        "tables",
-        "accounts",
-        "users"
-    ],
     "$defs": {
-        "Config": {
-            "type": "object",
-            "required": [
-                "name",
-                "tag"
-            ],
-            "additionalProperties": false,
+        "AppConfig": {
+            "properties": {
+                "tile": {
+                    "title": "Tile",
+                    "type": "string"
+                },
+                "description": {
+                    "title": "Description",
+                    "type": "string"
+                },
+                "version": {
+                    "title": "Version",
+                    "type": "string"
+                },
+                "static_file_path": {
+                    "title": "Static File Path",
+                    "type": "string"
+                },
+                "logo_path": {
+                    "title": "Logo Path",
+                    "type": "string"
+                }
+            },
+            "title": "AppConfig",
+            "type": "object"
+        },
+        "Column": {
             "properties": {
                 "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "alias": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Alias"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "Column",
+            "type": "object"
+        },
+        "Config": {
+            "properties": {
+                "name": {
+                    "title": "Name",
                     "type": "string"
                 },
                 "tag": {
+                    "title": "Tag",
                     "type": "string"
                 },
                 "datasource": {
-                    "oneOf": [
-                        {
-                            "type": "null"
-                        },
+                    "anyOf": [
                         {
                             "$ref": "#/$defs/DatasourceConfig"
+                        },
+                        {
+                            "type": "null"
                         }
-                    ]
+                    ],
+                    "default": null
                 },
                 "config_from_delta": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": false,
+                    "title": "Config From Delta"
                 },
                 "version": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": 1,
+                    "title": "Version"
                 },
                 "api_method": {
-                    "oneOf": [
+                    "anyOf": [
                         {
                             "enum": [
                                 "get",
                                 "post"
-                            ]
+                            ],
+                            "type": "string"
                         },
                         {
-                            "type": "array",
                             "items": {
                                 "enum": [
                                     "get",
                                     "post"
-                                ]
-                            }
+                                ],
+                                "type": "string"
+                            },
+                            "type": "array"
                         }
-                    ]
+                    ],
+                    "default": "get",
+                    "title": "Api Method"
                 },
                 "params": {
-                    "type": "array",
-                    "items": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/$defs/Param"
-                            },
-                            {
-                                "type": "string"
-                            }
-                        ]
-                    }
-                },
-                "timestamp": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "format": "date-time"
-                },
-                "allow_get_all_pages": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "search": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/SearchConfig"
-                    }
-                },
-                "nearby": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/NearbyConfig"
-                    }
-                },
-                "engine": {
-                    "enum": [
-                        "duckdb",
-                        "polars",
-                        "odbc",
-                        "sqlite"
-                    ]
-                },
-                "chunk_size": {
-                    "type": [
-                        "integer",
-                        "null"
-                    ]
-                },
-                "duckdb_backend": {
-                    "oneOf": [
+                    "anyOf": [
                         {
-                            "type": "null"
+                            "items": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/$defs/Param"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            },
+                            "type": "array"
                         },
                         {
-                            "$ref": "#/$defs/DuckDBBackendConfig"
+                            "type": "null"
                         }
-                    ]
+                    ],
+                    "default": null,
+                    "title": "Params"
+                },
+                "timestamp": {
+                    "anyOf": [
+                        {
+                            "format": "date-time",
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Timestamp"
+                },
+                "allow_get_all_pages": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": false,
+                    "title": "Allow Get All Pages"
+                },
+                "search": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SearchConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Search"
+                },
+                "nearby": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/NearbyConfig"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Nearby"
+                },
+                "engine": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "duckdb",
+                                "polars",
+                                "odbc",
+                                "sqlite"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Engine"
+                },
+                "chunk_size": {
+                    "anyOf": [
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Chunk Size"
+                },
+                "duckdb_backend": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/DuckDBBackendConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null
                 }
-            }
+            },
+            "required": [
+                "name",
+                "tag"
+            ],
+            "title": "Config",
+            "type": "object"
         },
         "DatasourceConfig": {
-            "type": "object",
-            "required": [
-                "uri"
-            ],
-            "additionalProperties": false,
             "properties": {
                 "uri": {
+                    "title": "Uri",
                     "type": "string"
                 },
                 "account": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Account"
                 },
                 "file_type": {
+                    "default": "delta",
                     "enum": [
                         "delta",
                         "parquet",
@@ -185,92 +277,150 @@
                         "odbc",
                         "sqlite",
                         "duckdb"
-                    ]
+                    ],
+                    "title": "File Type",
+                    "type": "string"
                 },
                 "select": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Column"
-                    }
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/Column"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Select"
                 },
                 "exclude": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Exclude"
                 },
                 "sortby": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/SortBy"
-                    }
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/SortBy"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Sortby"
                 },
                 "filters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/$defs/Filter"
-                    }
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/$defs/Filter"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Filters"
                 },
                 "table_name": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Table Name"
                 },
                 "hash_key": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Hash Key"
                 }
-            }
-        },
-        "Column": {
-            "type": "object",
+            },
             "required": [
-                "name"
+                "uri"
             ],
-            "additionalProperties": false,
+            "title": "DatasourceConfig",
+            "type": "object"
+        },
+        "DuckDBBackendConfig": {
             "properties": {
-                "name": {
+                "db_path": {
+                    "title": "Db Path",
                     "type": "string"
                 },
-                "alias": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "SortBy": {
-            "type": "object",
-            "required": [
-                "by"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "by": {
-                    "type": "string"
+                "enable": {
+                    "default": true,
+                    "title": "Enable",
+                    "type": "boolean"
                 },
-                "direction": {
-                    "enum": [
-                        "asc",
-                        "desc"
-                    ]
+                "primary_key": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Primary Key"
+                },
+                "index": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Index"
                 }
-            }
+            },
+            "required": [
+                "db_path"
+            ],
+            "title": "DuckDBBackendConfig",
+            "type": "object"
         },
         "Filter": {
-            "type": "object",
-            "required": [
-                "key",
-                "operator",
-                "value"
-            ],
-            "additionalProperties": false,
             "properties": {
                 "key": {
+                    "title": "Key",
                     "type": "string"
                 },
                 "operator": {
@@ -287,181 +437,258 @@
                         "not between",
                         "in",
                         "not in"
-                    ]
+                    ],
+                    "title": "Operator",
+                    "type": "string"
                 },
                 "value": {
-                    "oneOf": [
+                    "anyOf": [
                         {},
                         {
-                            "type": "array",
-                            "minItems": 2,
                             "maxItems": 2,
-                            "additionalItems": false,
+                            "minItems": 2,
                             "prefixItems": [
                                 {},
                                 {}
-                            ]
+                            ],
+                            "type": "array"
                         }
-                    ]
+                    ],
+                    "title": "Value"
                 }
-            }
-        },
-        "Param": {
-            "type": "object",
+            },
             "required": [
-                "name"
+                "key",
+                "operator",
+                "value"
             ],
-            "additionalProperties": false,
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "combi": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "default": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "required": {
-                    "type": [
-                        "boolean",
-                        "null"
-                    ]
-                },
-                "operators": {
-                    "type": "array",
-                    "items": {
-                        "enum": [
-                            "<",
-                            "=",
-                            ">",
-                            ">=",
-                            "<=",
-                            "<>",
-                            "contains",
-                            "in",
-                            "not contains",
-                            "not in",
-                            "not null",
-                            "null",
-                            "between",
-                            "not between",
-                            "has",
-                            "startswith"
-                        ]
-                    }
-                },
-                "colname": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                }
-            }
-        },
-        "SearchConfig": {
-            "type": "object",
-            "required": [
-                "name",
-                "columns"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "columns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
+            "title": "Filter",
+            "type": "object"
         },
         "NearbyConfig": {
-            "type": "object",
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "lat_col": {
+                    "title": "Lat Col",
+                    "type": "string"
+                },
+                "lon_col": {
+                    "title": "Lon Col",
+                    "type": "string"
+                }
+            },
             "required": [
                 "name",
                 "lat_col",
                 "lon_col"
             ],
-            "additionalProperties": false,
+            "title": "NearbyConfig",
+            "type": "object"
+        },
+        "Param": {
             "properties": {
                 "name": {
+                    "title": "Name",
                     "type": "string"
                 },
-                "lat_col": {
-                    "type": "string"
+                "combi": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Combi"
                 },
-                "lon_col": {
-                    "type": "string"
+                "default": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Default"
+                },
+                "required": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": false,
+                    "title": "Required"
+                },
+                "operators": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "enum": [
+                                    "<",
+                                    "=",
+                                    ">",
+                                    ">=",
+                                    "<=",
+                                    "<>",
+                                    "contains",
+                                    "in",
+                                    "not contains",
+                                    "not in",
+                                    "not null",
+                                    "null",
+                                    "between",
+                                    "not between",
+                                    "has",
+                                    "startswith"
+                                ],
+                                "type": "string"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Operators"
+                },
+                "colname": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Colname"
                 }
-            }
-        },
-        "DuckDBBackendConfig": {
-            "type": "object",
+            },
             "required": [
-                "db_path"
+                "name"
             ],
-            "additionalProperties": false,
+            "title": "Param",
+            "type": "object"
+        },
+        "SearchConfig": {
             "properties": {
-                "db_path": {
+                "name": {
+                    "title": "Name",
                     "type": "string"
                 },
-                "enable": {
-                    "type": "boolean"
-                },
-                "primary_key": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "index": {
-                    "type": "array",
+                "columns": {
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "title": "Columns",
+                    "type": "array"
                 }
-            }
+            },
+            "required": [
+                "name",
+                "columns"
+            ],
+            "title": "SearchConfig",
+            "type": "object"
+        },
+        "SortBy": {
+            "properties": {
+                "by": {
+                    "title": "By",
+                    "type": "string"
+                },
+                "direction": {
+                    "anyOf": [
+                        {
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ],
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": "asc",
+                    "title": "Direction"
+                }
+            },
+            "required": [
+                "by"
+            ],
+            "title": "SortBy",
+            "type": "object"
         },
         "UserConfig": {
-            "type": "object",
             "properties": {
                 "name": {
+                    "title": "Name",
                     "type": "string"
                 },
                 "passwordhash": {
+                    "title": "Passwordhash",
                     "type": "string"
                 }
-            }
-        },
-        "AppConfig": {
-            "type": "object",
-            "properties": {
-                "tile": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                },
-                "static_file_path": {
-                    "type": "string"
-                },
-                "logo_path": {
-                    "type": "string"
-                }
-            }
+            },
+            "required": [
+                "name",
+                "passwordhash"
+            ],
+            "title": "UserConfig",
+            "type": "object"
         }
     },
-    "$schema": "https://json-schema.org/draft/2020-12/schema"
+    "properties": {
+        "tables": {
+            "items": {
+                "$ref": "#/$defs/Config"
+            },
+            "title": "Tables",
+            "type": "array"
+        },
+        "users": {
+            "items": {
+                "$ref": "#/$defs/UserConfig"
+            },
+            "title": "Users",
+            "type": "array"
+        },
+        "app": {
+            "$ref": "#/$defs/AppConfig"
+        },
+        "accounts": {
+            "additionalProperties": {
+                "additionalProperties": {
+                    "type": "string"
+                },
+                "type": "object"
+            },
+            "title": "Accounts",
+            "type": "object"
+        }
+    },
+    "required": [
+        "tables",
+        "users",
+        "app",
+        "accounts"
+    ],
+    "title": "YamlData",
+    "type": "object"
 }

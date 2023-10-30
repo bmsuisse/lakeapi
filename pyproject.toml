@@ -16,7 +16,6 @@ polars = "0.18.0"
 
 # schema stuff
 jsonschema = { version = "^4.17.3", optional = true }
-python2jsonschema = { version = "^0.8", optional = true }
 
 # polars stuff
 xlsx2csv = { version = "^0.8.1", optional = true }
@@ -72,7 +71,7 @@ typeCheckingMode = "basic"
 line-length = 119
 
 [tool.poetry.extras]
-schema = ["jsonschema", "python2jsonschema"]
+schema = ["jsonschema"]
 polars = ["xlsx2csv"]
 auth = ["argon2-cffi", "pyjwt"]
 useradd = ["ruamel.yaml"]
