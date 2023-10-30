@@ -33,6 +33,7 @@ def init_duck_con(
         if df.file_exists():
             try:
                 con.register_datasource(
+                    df.unique_table_name,
                     df.tablename,
                     df.uri,
                     df.config.file_type,

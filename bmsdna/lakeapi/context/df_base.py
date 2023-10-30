@@ -329,14 +329,15 @@ class ExecutionContext(ABC):
 
     def register_datasource(
         self,
-        name: str,
+        target_name: str,
+        source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
-        self.register_arrow(name, ds)
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
+        self.register_arrow(target_name, ds)
 
     @abstractmethod
     def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:

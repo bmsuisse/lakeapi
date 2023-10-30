@@ -276,12 +276,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
     def register_datasource(
         self,
-        name: str,
+        target_name: str,
+        source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure")
         if uri.account and remote_opts and not self._account_mapped:
             AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
@@ -305,28 +306,28 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
         if file_type == "json":
             self.con.execute(
-                f"""CREATE VIEW {name} as 
+                f"""CREATE VIEW {target_name} as 
                     SELECT *FROM read_json_auto('{remote_uri}', format='array')
                  """
             )
             return
         if file_type == "ndjson":
             self.con.execute(
-                f"""CREATE VIEW {name} as 
+                f"""CREATE VIEW {target_name} as 
                     SELECT *FROM read_json_auto('{remote_uri}', format='newline_delimited')
                 """
             )
             return
         if file_type == "parquet":
             self.con.execute(
-                f"""CREATE VIEW  {name} as 
+                f"""CREATE VIEW  {target_name} as 
                     SELECT *FROM read_parquet('{remote_uri}')
                 """
             )
             return
         if file_type == "csv":
             self.con.execute(
-                f"""CREATE VIEW  {name} as 
+                f"""CREATE VIEW  {target_name} as 
                             SELECT *FROM read_csv_auto('{remote_uri}', delim=',', header=True)"""
             )
             return
@@ -336,19 +337,23 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
             if only_fixed_supported(dt):
                 sql = get_sql_for_delta(dt)
-                self.con.execute(f"CREATE OR REPLACE VIEW  {name}  as {sql}")
+                self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{remote_uri}' AS  {name}_duckdb (READ_ONLY);")
-            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_duckdb (READ_ONLY);")
+            self.con.execute(
+                f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_duckdb.{source_table_name or target_name}"
+            )
             return
         if file_type == "sqlite":
-            self.con.execute(f"ATTACH '{remote_uri}' AS  {name}_sqlite (TYPE sqlite, READ_ONLY);")
-            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_sqlite.{name}")
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_sqlite (TYPE sqlite, READ_ONLY);")
+            self.con.execute(
+                f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_sqlite.{source_table_name or target_name}"
+            )
             return
 
-        return super().register_datasource(name, uri, file_type, partitions)
+        return super().register_datasource(target_name, source_table_name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(

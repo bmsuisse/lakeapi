@@ -148,7 +148,8 @@ class PolarsExecutionContext(ExecutionContext):
 
     def register_datasource(
         self,
-        name: str,
+        target_name: str,
+        source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
@@ -157,7 +158,7 @@ class PolarsExecutionContext(ExecutionContext):
 
         fs, fs_uri = uri.get_fs_spec()
         ab_uri, uri_opts = uri.get_uri_options()
-        self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
                 df = pl.scan_delta(  # type: ignore
@@ -184,7 +185,7 @@ class PolarsExecutionContext(ExecutionContext):
                 df = pl.scan_ndjson(ab_uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
-        self.sql_context.register(name, df)
+        self.sql_context.register(target_name, df)
 
     def execute_sql(
         self,

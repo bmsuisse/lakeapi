@@ -114,14 +114,15 @@ class SqliteExecutionContext(ExecutionContext):
 
     def register_datasource(
         self,
-        name: str,
+        target_name: str,
+        source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         assert file_type == "sqlite"
         assert uri.account is None
-        self.connections[name] = connect(uri.real_uri)
+        self.connections[target_name] = connect(uri.real_uri)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SELECT type as table_type, name from sqlite_schema where type='table'")

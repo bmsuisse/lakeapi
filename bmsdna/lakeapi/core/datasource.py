@@ -103,6 +103,12 @@ class Datasource:
         return self.tag + "_" + self.name + "_" + self.version
 
     @property
+    def unique_table_name(self):
+        if self.version in ["1", "v1"]:
+            return self.tag + "_" + self.name
+        return self.tag + "_" + self.name + "_" + self.version
+
+    @property
     def table(self):
         if self.config.table_name:
             tn = self.config.table_name
@@ -144,6 +150,7 @@ class Datasource:
 
             if self.df is None:
                 self.sql_context.register_datasource(
+                    self.tablename,
                     self.tablename,
                     self.uri,
                     self.config.file_type,
