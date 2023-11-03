@@ -398,4 +398,9 @@ class Configs:
             lambda x: Config.from_dict(x, basic_config=basic_config, table_names=table_names, accounts=accounts),
             tables,
         )
+
+        def _expand_vars(vld: dict):
+            return {k_s: expandvars.expandvars(v) for k_s, v in vld.items()}
+
+        accounts = {k: _expand_vars(vld) for k, vld in accounts.items()} if accounts else {}
         return cls(configs, users, accounts)

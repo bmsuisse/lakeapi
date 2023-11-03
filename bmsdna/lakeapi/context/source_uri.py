@@ -3,6 +3,7 @@ import fsspec
 import adlfs
 import os
 import urllib.parse
+import expandvars
 
 
 def _convert_options(options: dict | None, flavor: Literal["fsspec", "object_store"]):
@@ -22,7 +23,7 @@ class SourceUri:
     def __init__(self, uri: str, account: str | None, accounts: dict, data_path: str | None):
         self.uri = uri
         self.account = account
-        self.accounts = accounts
+        self.accounts = accounts or {}
         self.data_path = data_path
         self.real_uri = (
             uri if "://" in uri or account is not None or data_path is None else os.path.join(data_path, uri)
