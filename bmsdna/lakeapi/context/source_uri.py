@@ -29,7 +29,7 @@ def _convert_options(
 ):
     if options is None:
         return None
-    use_emulator: bool = options.get("use_emulator", "0") in ["1", "true"]
+    use_emulator: bool = options.get("use_emulator", "0").lower() in ["1", "true"]
     if flavor == "fsspec" and "connection_string" not in options and use_emulator:
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
         return {"connection_string": constr}
