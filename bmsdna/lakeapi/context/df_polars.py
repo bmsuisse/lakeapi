@@ -1,3 +1,4 @@
+from deltalake import DeltaTable
 from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
 
 import os
@@ -9,6 +10,8 @@ import pypika.queries
 from pypika.terms import Term
 import pypika
 from uuid import uuid4
+
+from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
 
@@ -163,18 +166,25 @@ class PolarsExecutionContext(ExecutionContext):
 
         fs, fs_uri = uri.get_fs_spec()
         ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
+
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
                 try:
-                    df = pl.scan_delta(
-                        ab_uri,
-                        storage_options=uri_opts,
-                        pyarrow_options={
-                            "partitions": partitions,
-                            "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
-                        },
-                    )
+                    dt = DeltaTable(ab_uri, storage_options=uri_opts)
+                    if only_fixed_supported(dt):
+                        from bmsdna.lakeapi.polars_extensions.scan_delta_union import scan_delta_union
+
+                        df = scan_delta_union(dt)
+                    else:
+                        df = pl.scan_delta(
+                            ab_uri,
+                            storage_options=uri_opts,
+                            pyarrow_options={
+                                "partitions": partitions,
+                                "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
+                            },
+                        )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(f"Delta table version {ab_uri} not supported") from de
             case "parquet":
