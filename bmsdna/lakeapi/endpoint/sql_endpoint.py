@@ -7,6 +7,7 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType, FileTypes
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
+from deltalake.exceptions import TableNotFoundError
 
 sql_contexts: dict[str, ExecutionContext] = {}
 
@@ -24,19 +25,22 @@ def init_duck_con(
             cfg.version_str,
             cfg.tag,
             cfg.name,
-            cfg.datasource,
-            con,
-            basic_config,
+            config=cfg.datasource,
+            sql_context=con,
+            accounts=configs.accounts,
+            basic_config=basic_config,
         )
-        if df.file_exists():
+
+        if cfg.engine != "odbc" and df.file_exists():
             try:
                 con.register_datasource(
+                    df.unique_table_name,
                     df.tablename,
                     df.uri,
                     df.config.file_type,
                     None,
                 )
-            except FileTypeNotSupportedError as err:
+            except (FileTypeNotSupportedError, TableNotFoundError, FileNotFoundError) as err:
                 logger.warning(f"Cannot query {df.tablename}")
 
 

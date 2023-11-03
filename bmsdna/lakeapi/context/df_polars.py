@@ -9,7 +9,8 @@ import pypika.queries
 from pypika.terms import Term
 import pypika
 from uuid import uuid4
-
+from .source_uri import SourceUri
+from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
 
 if TYPE_CHECKING:
     import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
@@ -121,6 +122,10 @@ class PolarsExecutionContext(ExecutionContext):
         self.len_func = "length"
         self.sql_context = sql_context or pl.SQLContext()
 
+    @property
+    def supports_view_creation(self) -> bool:
+        return True
+
     def register_arrow(
         self,
         name: str,
@@ -148,41 +153,54 @@ class PolarsExecutionContext(ExecutionContext):
 
     def register_datasource(
         self,
-        name: str,
-        uri: str,
+        target_name: str,
+        source_table_name: Optional[str],
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         import polars as pl
 
-        if os.path.exists(uri):
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        fs, fs_uri = uri.get_fs_spec()
+        ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
-                from bmsdna.lakeapi.polars_extensions.delta import scan_delta2
-
-                df = pl.scan_delta2(  # type: ignore
-                    uri,
-                    pyarrow_options={
-                        "partitions": partitions,
-                        "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
-                    },
-                )
+                try:
+                    df = pl.scan_delta(
+                        ab_uri,
+                        storage_options=uri_opts,
+                        pyarrow_options={
+                            "partitions": partitions,
+                            "parquet_read_options": {"coerce_int96_timestamp_unit": "us"},
+                        },
+                    )
+                except DeltaProtocolError as de:
+                    raise FileTypeNotSupportedError(f"Delta table version {ab_uri} not supported") from de
             case "parquet":
-                df = pl.scan_parquet(uri)
+                df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
             case "arrow":
-                df = pl.scan_ipc(uri)
-            case "avro":
-                df = cast(pl.LazyFrame, pl.read_avro(uri))
-            case "csv":
-                df = pl.scan_csv(uri)
-            case "json":
-                df = cast(pl.LazyFrame, pl.read_json(uri))
-            case "ndjson":
-                df = pl.scan_ndjson(uri)
+                df = pl.scan_ipc(ab_uri, storage_options=uri_opts)
+            case "avro" if uri_opts is None:
+                df = cast(pl.LazyFrame, pl.read_avro(ab_uri))
+            case "csv" if uri_opts is None:
+                df = pl.scan_csv(ab_uri)
+            case "csv" if uri_opts is not None:
+                df = pl.read_csv(ab_uri)
+            case "json" if uri_opts is None:
+                df = cast(pl.LazyFrame, pl.read_json(ab_uri))
+            case "ndjson" if uri_opts is None:
+                df = pl.scan_ndjson(ab_uri)
+            case "sqlite" if uri_opts is None:
+                query = "SELECT * FROM " + (source_table_name or target_name)
+
+                df = pl.read_database_uri(query=query, uri="sqlite://" + ab_uri, engine="adbc")
+            # case "odbc": to be tested, attention on security!
+            #             #    query = "SELECT * FROM " + (source_table_name or target_name)
+            #    df = pl.read_database(query=query, connection=uri.uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
-        self.sql_context.register(name, df)
+        self.sql_context.register(target_name, df)
 
     def execute_sql(
         self,

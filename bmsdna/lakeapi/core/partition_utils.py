@@ -1,5 +1,6 @@
 from typing import List, TYPE_CHECKING
 import os
+from bmsdna.lakeapi.context.source_uri import SourceUri
 
 if TYPE_CHECKING:
     from bmsdna.lakeapi.core.config import BasicConfig
@@ -13,21 +14,18 @@ def should_hide_colname(name: str):
 def _with_implicit_parameters(
     paramslist: "List[Param]",
     file_type: str,
-    basic_config: "BasicConfig",
-    uri: str,
+    uri: SourceUri,
 ):
     if file_type == "delta":
-        delta_uri = os.path.join(
-            basic_config.data_path,
-            uri,
-        )
-        if not os.path.exists(os.path.join(delta_uri, "_delta_log")):
+        fs, fs_spec = uri.get_fs_spec()
+        if not fs.exists(fs_spec + "/_delta_log"):
             return paramslist
         from deltalake import DeltaTable
         from deltalake.exceptions import DeltaError
 
         try:
-            part_cols = DeltaTable(delta_uri).metadata().partition_columns
+            dt_uri, dt_opts = uri.get_uri_options(flavor="object_store")
+            part_cols = DeltaTable(dt_uri, storage_options=dt_opts).metadata().partition_columns
             if part_cols and len(part_cols) > 0:
                 all_names = [(p.colname or p.name).lower() for p in paramslist]
                 new_params = list(paramslist)

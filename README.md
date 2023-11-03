@@ -217,7 +217,7 @@ tables:
   - name: mssql_department
     tag: mssql
     api_method: get
-    engine: odbc #requires the odbc extra, same for sqlite
+    engine: odbc #requires the odbc extra
     datasource:
       uri: DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=${MY_SQL_PWD};Database=AdventureWorks
       table_name: "HumanResources.Department"
@@ -253,14 +253,30 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - Config in delta table as json, by using the lakeapi.config Table property. Example in the tests. This allows to have the config for the lakeapi along with your data
 - Good test coverage
 
-## ODBC and Sqlite Support
+## ODBC Support / Sqlite Support
 
-If you want to use ODBC or Sqlite, install the required extra (named `odbc`/`sqlite`).
+If you want to use ODBC , install the required extra (named `odbc`).
 
-ODBC / Sqlite Tables cannot be queried through the sql endpoint for now because of Security Implications.
+ODBC Tables cannot be queried through the sql endpoint for now because of Security Implications.
 We might allow this later if needed via explicit flag.
 
 ODBC is tested against MS SQL Server using ODBC Driver 17 for MS SQL Server
+
+To use Sqlite, you will need to install `adbc_driver_sqlite` yourself (`pip install adbc_driver_sqlite`).
+
+## Azure Support
+
+Azure Support is tested and supported. S3/GCP could work in theory but is not tested.
+Supported configs are taken from object_store create and fsspec:
+
+- https://docs.rs/object_store/latest/object_store/azure/enum.AzureConfigKey.html#variants
+- https://github.com/fsspec/adlfs#setting-credentials
+
+Supported settings are only those which are supported by BOTH projects. In practice you can currently use:
+
+- account_name
+- account_key
+- use_emulator (we add that one for fsspec)
 
 ## Further projects
 

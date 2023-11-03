@@ -1,14 +1,13 @@
-import jsonschema
 import json
 import yaml
-from python2jsonschema import get_json_schema_for_type
+import pydantic
 from bmsdna.lakeapi.core.config import Config, YamlData
 
 
 def validate_schema(schema_file: str, yaml_file: str):
-    schema = get_json_schema_for_type(YamlData)
+    td = pydantic.TypeAdapter(YamlData)
     with open(schema_file, "w") as str:
-        json.dump(schema, str, indent=4)
+        json.dump(td.json_schema(), str, indent=4)
 
     with open(schema_file, "r") as str2:
         schema = json.load(str2)
@@ -16,11 +15,7 @@ def validate_schema(schema_file: str, yaml_file: str):
     with open(yaml_file, "r", encoding="utf-8") as r:
         data = yaml.safe_load(r)
         json_str = json.dumps(data, indent=4)
-        jsondt = json.loads(json_str)
-        jsonschema.validate(
-            jsondt,
-            schema,
-        )
+        td.validate_json(json_str)
         print("ok")
 
 

@@ -20,6 +20,7 @@ from uuid import uuid4
 from pypika.terms import Term
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
+from .source_uri import SourceUri
 
 
 logger = get_logger(__name__)
@@ -160,6 +161,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
 
+    @property
+    def supports_view_creation(self) -> bool:
+        return True
+
     def register_arrow(
         self,
         name: str,
@@ -224,6 +229,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         search_configs: list[SearchConfig],
     ):
         modified_date = self.modified_dates[source_view]
+        if modified_date is None:
+            return
         persistence_name = source_view
         search_columns = []
         for cfg in search_configs:
@@ -269,56 +276,88 @@ class DuckDbExecutionContextBase(ExecutionContext):
     )"""
         )
 
+    _account_mapped: str = ""
+
     def register_datasource(
         self,
-        name: str,
-        uri: str,
+        target_name: str,
+        source_table_name: Optional[str],
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: List[Tuple[str, str, Any]] | None,
     ):
-        if os.path.exists(uri):
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
+        remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure", flavor="fsspec")
+        if uri.account and remote_opts and not self._account_mapped:
+            AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
+            if AZURE_EXT_LOC:
+                self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
+            else:
+                self.con.install_extension("azure")
+                self.con.load_extension("azure")
+            if "connection_string" in remote_opts:
+                cr = remote_opts["connection_string"]
+                self.con.execute(f"SET azure_storage_connection_string = '{cr}';")
+            elif "account_name" in remote_opts and "account_key" in remote_opts:
+                an = remote_opts["account_name"]
+                ak = remote_opts["account_key"]
+                conn_str = f"AccountName={an};AccountKey={ak};BlobEndpoint=https://{an}.blob.core.windows.net;"
+            elif "account_name" in remote_opts:
+                an = remote_opts["account_name"]
+                self.con.execute(f"SET azure_account_name = '{an}';")
+                self.con.execute(f"SET azure_credential_chain = default;")
+            self._account_mapped = uri.account
+
         if file_type == "json":
             self.con.execute(
-                f"""CREATE VIEW {name} as 
-                    SELECT *FROM read_json_auto('{uri}', format='array')
+                f"""CREATE VIEW {target_name} as 
+                    SELECT *FROM read_json_auto('{remote_uri}', format='array')
                  """
             )
             return
         if file_type == "ndjson":
             self.con.execute(
-                f"""CREATE VIEW {name} as 
-                    SELECT *FROM read_json_auto('{uri}', format='newline_delimited')
+                f"""CREATE VIEW {target_name} as 
+                    SELECT *FROM read_json_auto('{remote_uri}', format='newline_delimited')
                 """
             )
             return
         if file_type == "parquet":
             self.con.execute(
-                f"""CREATE VIEW  {name} as 
-                    SELECT *FROM read_parquet('{uri}')
+                f"""CREATE VIEW  {target_name} as 
+                    SELECT *FROM read_parquet('{remote_uri}')
                 """
             )
             return
         if file_type == "csv":
             self.con.execute(
-                f"""CREATE VIEW  {name} as 
-                            SELECT *FROM read_csv_auto('{uri}', delim=',', header=True)"""
+                f"""CREATE VIEW  {target_name} as 
+                            SELECT *FROM read_csv_auto('{remote_uri}', delim=',', header=True)"""
             )
             return
-        if file_type == "delta" and os.path.exists(uri):
-            dt = DeltaTable(uri)
+        if file_type == "delta" and uri.exists():
+            ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
+            dt = DeltaTable(ab_uri, storage_options=uri_opts)
 
             if only_fixed_supported(dt):
                 sql = get_sql_for_delta(dt)
-                self.con.execute(f"CREATE OR REPLACE VIEW  {name}  as {sql}")
+                self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
                 return
 
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{uri}' AS  {name}_duckdb (READ_ONLY);")
-            self.con.execute(f"CREATE VIEW  {name} as SELECT *FROM  {name}_duckdb.{name}")
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_duckdb (READ_ONLY);")
+            self.con.execute(
+                f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_duckdb.{source_table_name or target_name}"
+            )
+            return
+        if file_type == "sqlite":
+            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_sqlite (TYPE sqlite, READ_ONLY);")
+            self.con.execute(
+                f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_sqlite.{source_table_name or target_name}"
+            )
             return
 
-        return super().register_datasource(name, uri, file_type, partitions)
+        return super().register_datasource(target_name, source_table_name, uri, file_type, partitions)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(

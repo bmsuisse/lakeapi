@@ -7,6 +7,10 @@ app:
   static_file_path: assets
   logo_path: assets/logo-color.png
 
+accounts:
+  test_account:
+    use_emulator: "true"
+
 tables:
   - name: fruits
     tag: test
@@ -465,8 +469,8 @@ tables:
   - name: sqlite_customers
     tag: sqlite
     api_method: get
-    engine: sqlite
     datasource:
+      file_type: sqlite
       uri: chinook.db
       table_name: customers
     params:
@@ -484,6 +488,21 @@ tables:
     params:
       - GroupName
 
+  - name: blob_test
+    tag: blobb
+    api_method: get
+    datasource:
+      uri: "abfs://testlake/td/faker.parquet"
+      file_type: parquet
+      account: "test_account"
+
+  - name: blob_test_delta
+    tag: blobb
+    api_method: get
+    datasource:
+      uri: "abfs://testlake/td/delta/fake"
+      file_type: delta
+      account: "test_account"
 # --------------------------------
 # User / Password
 # --------------------------------

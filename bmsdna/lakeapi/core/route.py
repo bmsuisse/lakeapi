@@ -45,17 +45,19 @@ def init_routes(
                     config.version_str,
                     config.tag,
                     config.name,
-                    config.datasource,
+                    config=config.datasource,
                     sql_context=mgr.get_context(config.engine),
                     basic_config=basic_config,
+                    accounts=configs.accounts,
                 )
                 if not realdataframe.file_exists():
-                    logger.warning(
-                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
-                    )
                     schema = None
                 else:
                     schema = realdataframe.get_schema()
+                if schema is None:
+                    logger.warning(
+                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
+                    )
                 metadata.append(
                     {
                         "name": config.name,
@@ -70,6 +72,9 @@ def init_routes(
                 )
 
             except Exception as err:
+                import traceback
+
+                print(traceback.format_exc())
                 logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
                 schema = None
 

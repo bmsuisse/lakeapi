@@ -3,13 +3,14 @@ import hashlib
 import os
 from datetime import datetime
 from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
-
+from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
 import pyarrow.parquet
 import pypika
 import pypika.terms
 import pypika.queries as fn
 from pypika.queries import QueryBuilder
+from deltalake.exceptions import TableNotFoundError
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
@@ -28,6 +29,8 @@ class Datasource:
         version: str,
         tag: str,
         name: str,
+        *,
+        accounts: dict,
         config: DatasourceConfig,
         sql_context: ExecutionContext,
         basic_config: BasicConfig,
@@ -40,24 +43,31 @@ class Datasource:
         self.df = df
         self.sql_context = sql_context
         self.basic_config = basic_config
-
-    @property
-    def uri(self):
-        if "://" in self.config.uri or self.config.file_type in ["odbc"]:
-            return self.config.uri
-        return os.path.join(
-            self.basic_config.data_path,
-            self.config.uri,
+        self.uri = SourceUri(
+            config.uri,
+            config.account,
+            accounts,
+            basic_config.data_path if not config.file_type in ["odbc"] else None,
         )
 
     def file_exists(self):
         if self.config.file_type in ["odbc", "sqlite"]:
             return True  # the uri is not really a file here
-        if not os.path.exists(self.uri):
-            return False
-        if self.config.file_type == "delta" and not os.path.exists(os.path.join(self.uri, "_delta_log")):
+        if not self.uri.exists():
             return False
         return True
+
+    def get_delta_table(self):
+        if self.config.file_type == "delta":
+            if self.uri.exists():
+                try:
+                    from deltalake import DeltaTable
+
+                    df_uri, df_opts = self.uri.get_uri_options(flavor="object_store")
+                    return DeltaTable(df_uri, storage_options=df_opts)
+                except TableNotFoundError:
+                    return None
+        return None
 
     def select_df(self, df: QueryBuilder) -> QueryBuilder:
         if self.config.select:
@@ -93,28 +103,33 @@ class Datasource:
         return self.tag + "_" + self.name + "_" + self.version
 
     @property
-    def table(self):
-        if self.config.table_name:
-            tn = self.config.table_name
-            if "." in tn:
-                parts = tn.split(".")
-                if len(parts) == 3:
-                    return pypika.Table(
-                        parts[2],
-                        schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
-                    )
-                assert len(parts) == 2
-                return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
-        return pypika.Table(self.tablename)
+    def unique_table_name(self):
+        if self.version in ["1", "v1"]:
+            return self.tag + "_" + self.name
+        return self.tag + "_" + self.name + "_" + self.version
+
+    def get_table_name(self, force_unique_name: bool) -> pypika.Table:
+        tname = self.tablename if not force_unique_name else self.unique_table_name
+
+        if "." in tname:
+            parts = tname.split(".")
+            if len(parts) == 3:
+                return pypika.Table(
+                    parts[2],
+                    schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
+                )
+            assert len(parts) == 2
+            return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
+        return pypika.Table(tname)
 
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
-            from deltalake import DeltaTable
-
-            schema = DeltaTable(self.uri).schema().to_pyarrow()
+            dt = self.get_delta_table()
+            schema = dt.schema().to_pyarrow() if dt else None
         if self.config.file_type == "parquet" and self.file_exists():
-            schema = pyarrow.parquet.read_schema(self.uri)
+            fs, fs_uri = self.uri.get_fs_spec()
+            schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
         if schema is not None:
             if self.config.select:
                 fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
@@ -128,12 +143,13 @@ class Datasource:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            query = pypika.Query.from_(self.table)
+            unique_table_name = endpoint == "meta" and self.sql_context.supports_view_creation
+            query = pypika.Query.from_(self.get_table_name(unique_table_name))
             self.query = self._prep_df(query, endpoint=endpoint)
-            mod_date: datetime | None = None
 
             if self.df is None:
                 self.sql_context.register_datasource(
+                    self.unique_table_name if unique_table_name else self.tablename,
                     self.tablename,
                     self.uri,
                     self.config.file_type,

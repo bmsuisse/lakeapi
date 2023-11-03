@@ -1,18 +1,21 @@
-from abc import abstractmethod, ABC
+from abc import abstractmethod, ABC, abstractproperty
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
+from deltalake.exceptions import TableNotFoundError
 import pyarrow.dataset
 import pypika.queries
 import polars as pl
-from bmsdna.lakeapi.core.config import SearchConfig
+
 from pypika.terms import Term
 import os
+from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
+    from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "mssql"]
 
@@ -166,10 +169,16 @@ class ExecutionContext(ABC):
         chunk_size: int,
     ) -> None:
         super().__init__()
-        self.modified_dates: dict[str, datetime] = {}
+        self.modified_dates: dict[str, datetime | None] = {}
         self.chunk_size = chunk_size
         self.len_func = "LEN"
+
         self.array_contains_func = "array_contains"
+
+    @property
+    @abstractmethod
+    def supports_view_creation(self) -> bool:
+        ...
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -181,30 +190,35 @@ class ExecutionContext(ABC):
 
     def get_pyarrow_dataset(
         self,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ) -> Optional[pa.dataset.Dataset | pa.Table]:
+        spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
 
                 return pa.dataset.dataset(
-                    uri,
+                    spec_uri,
+                    filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
                         read_options={"coerce_int96_timestamp_unit": "us"},
                     ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 return pa.dataset.dataset(
-                    uri,
+                    spec_uri,
+                    filesystem=spec_fs,
                     format=file_type,
                 )
             case "ndjson" | "json":
                 import pandas
 
+                ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
-                    uri,
+                    ab_uri,
+                    storage_options=ab_opts,
                     orient="records",
                     lines=file_type == "ndjson",
                 )
@@ -213,19 +227,18 @@ class ExecutionContext(ABC):
             case "avro":
                 import polars as pl
 
-                pd = pl.read_avro(uri).to_arrow()
+                with spec_fs.open(spec_uri, "rb") as f:
+                    pd = pl.read_avro(f).to_arrow()  # type: ignore
                 return pd
             case "delta":
                 from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
 
-                dt = DeltaTable(
-                    uri,
-                )
+                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
+                dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if only_fixed_supported(dt):
                     return get_pyarrow_table(dt)
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions,
-                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
+                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -247,7 +260,7 @@ class ExecutionContext(ABC):
     def init_search(
         self,
         source_view: str,
-        search_configs: list[SearchConfig],
+        search_configs: "list[SearchConfig]",
     ):
         pass
 
@@ -276,7 +289,7 @@ class ExecutionContext(ABC):
         self,
         source_view: str,
         search_text: str,
-        search_config: SearchConfig,
+        search_config: "SearchConfig",
         alias: Optional[str],
     ) -> Term:
         import pypika.terms
@@ -300,32 +313,37 @@ class ExecutionContext(ABC):
 
     def get_modified_date(
         self,
-        uri: str,
+        uri: SourceUri,
         file_type: FileTypes,
-    ) -> datetime:
+    ) -> datetime | None:
+        fs, fs_uri = uri.get_fs_spec()
+        if not fs.exists(fs_uri):
+            return None
         if file_type == "delta":
-            dt = DeltaTable(
-                uri,
-            )
-            return datetime.fromtimestamp(
-                dt.history(1)[-1]["timestamp"] / 1000.0,
-                tz=timezone.utc,
-            )
-        import os
+            try:
+                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
+                dt = DeltaTable(ab_uri, storage_options=ab_opts)
+                return datetime.fromtimestamp(
+                    dt.history(1)[-1]["timestamp"] / 1000.0,
+                    tz=timezone.utc,
+                )
+            except (TableNotFoundError, FileNotFoundError):
+                return None
 
-        return datetime.fromtimestamp(os.path.getmtime(uri), tz=timezone.utc)
+        fs, fs_uri = uri.get_fs_spec()
+        return fs.modified(fs_uri)
 
     def register_datasource(
         self,
-        name: str,
-        uri: str,
+        target_name: str,
+        source_table_name: Optional[str],
+        uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
-        if os.path.exists(uri):
-            self.modified_dates[name] = self.get_modified_date(uri, file_type)
-        self.register_arrow(name, ds)
+        self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
+        self.register_arrow(target_name, ds)
 
     @abstractmethod
     def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:

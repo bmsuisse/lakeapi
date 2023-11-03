@@ -11,6 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, 
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
+from bmsdna.lakeapi.context.source_uri import SourceUri
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
@@ -28,13 +29,15 @@ logger = get_logger(__name__)
 
 async def get_partitions(
     datasource: Datasource,
+    uri: SourceUri,
     params: BaseModel,
     config: Config,
 ) -> Optional[list]:
     try:
+        df_uri, df_opts = uri.get_uri_options(flavor="object_store")
         parts = (
             await filter_partitions_based_on_params(
-                DeltaTable(datasource.uri).metadata(),
+                DeltaTable(df_uri, storage_options=df_opts).metadata(),
                 params.model_dump(exclude_unset=True) if params else {},
                 config.params or [],
             )
@@ -42,7 +45,7 @@ async def get_partitions(
             else None
         )
     except (TableNotFoundError, FileNotFoundError) as err:
-        logger.warning(f"Could not get partitions for {datasource.uri}", exc_info=err)
+        logger.warning(f"Could not get partitions for {uri}", exc_info=err)
         parts = None
     return parts
 
@@ -221,12 +224,14 @@ def create_config_endpoint(
             config.version_str,
             config.tag,
             config.name,
-            config.datasource,
-            context,
+            config=config.datasource,
+            sql_context=context,
             basic_config=basic_config,
+            accounts=configs.accounts,
         )
         parts = await get_partitions(
             realdataframe,
+            realdataframe.uri,
             params,
             config,
         )

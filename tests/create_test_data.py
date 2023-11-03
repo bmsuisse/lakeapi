@@ -109,6 +109,8 @@ if __name__ == "__main__":
     )
 
     os.makedirs("tests/data/duckdb", exist_ok=True)
+    if os.path.exists("tests/data/duckdb/fruits.db"):
+        os.remove("tests/data/duckdb/fruits.db")
     con = duckdb.connect("tests/data/duckdb/fruits.db")
     con.execute("DROP TABLE IF EXISTS fruits;")
     con.execute("CREATE TABLE fruits as SELECT * FROM df_fruits;")
@@ -186,6 +188,8 @@ if __name__ == "__main__":
     print(df_faker)
 
     os.makedirs("tests/data/duckdb", exist_ok=True)
+    if os.path.exists("tests/data/duckdb/faker.db"):
+        os.remove("tests/data/duckdb/faker.db")
     con = duckdb.connect("tests/data/duckdb/faker.db")
     con.execute("DROP TABLE IF EXISTS fake;")
     con.execute("CREATE TABLE fake as SELECT * FROM df_faker;")
@@ -212,3 +216,11 @@ if __name__ == "__main__":
     fakeit = Faker()
     df_ns["ts"] = pl.Series("ts", [fakeit.date_time() for _ in range(0, df_ns.shape[0])], pl.Datetime(time_unit="ns"))
     df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")
+
+    import test_server
+
+    if os.getenv("NO_AZURITE_DOCKER", "0") == "0":
+        print("start docker azurite")
+        test_server.start_azurite()
+    else:
+        test_server.upload_to_azurite()
