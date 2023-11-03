@@ -496,11 +496,11 @@ tables:
       file_type: parquet
       account: "test_account"
 
-  - name: blob_test_delta
+  - name: "*"
     tag: blobb
     api_method: get
     datasource:
-      uri: "abfs://testlake/td/delta/fake"
+      uri: "abfs://testlake/td/delta/*"
       file_type: delta
       account: "test_account"
 # --------------------------------

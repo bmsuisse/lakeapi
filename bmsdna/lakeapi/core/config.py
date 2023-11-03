@@ -292,21 +292,29 @@ class Config:
             uri = config.get("datasource", {}).get("uri", tag + "/*")
             assert uri.endswith("/*")
             folder = uri.rstrip("/*")
-            root_folder = os.path.join(basic_config.data_path, folder)
-            if not os.path.exists(root_folder):
-                logger.warning("Path not existing: " + root_folder)
+            from bmsdna.lakeapi.context.source_uri import SourceUri
+
+            suri = SourceUri(
+                folder, config.get("datasource", {}).get("account", None), accounts, basic_config.data_path
+            )
+            fs, fs_path = suri.get_fs_spec()
+            if not fs.exists(fs_path):
+                logger.warning("Path not existing: " + fs_path)
                 return []
             else:
                 ls = []
-                for it in os.scandir(root_folder):
+                for it in fs.ls(fs_path, detail=True):
+                    fullname: str = it["name"]
+                    type: Literal["file", "directory"] = it["type"]
+                    filename = fullname.replace("\\", "/").split("/")[-1]
                     config_sub = copy.deepcopy(config)  # important! deepcopy required for subobjects like datasource
-                    config_sub["name"] = it.name
-                    config_sub["datasource"]["uri"] = config["datasource"]["uri"].replace("/*", "/" + it.name)
+                    config_sub["name"] = filename
+                    config_sub["datasource"]["uri"] = config["datasource"]["uri"].replace("/*", "/" + filename)
                     tbl_name = (config_sub.get("version", 1), config_sub["tag"], config_sub["name"])
                     file_type = config_sub["datasource"].get("file_type", "delta")
                     res_name = config_sub
                     if tbl_name not in table_names and (
-                        (it.is_dir() and file_type == "delta") or (it.is_file() and file_type != "delta")
+                        (type == "directory" and file_type == "delta") or (it == "file" and file_type != "delta")
                     ):
                         ls.append(cls._from_dict(config_sub, basic_config, accounts))
             return ls

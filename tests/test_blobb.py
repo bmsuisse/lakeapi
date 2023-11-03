@@ -17,7 +17,7 @@ def test_parquet():
 
 def test_delta():
     response = client.get(
-        f"/api/v1/blobb/blob_test_delta?format=json&limit=50",
+        f"/api/v1/blobb/fake?format=json&limit=50",
         auth=auth,
     )
     assert response.status_code == 200
