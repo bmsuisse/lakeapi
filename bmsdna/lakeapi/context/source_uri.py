@@ -23,7 +23,7 @@ class SourceUri:
     def __init__(self, uri: str, account: str | None, accounts: dict, data_path: str | None):
         self.uri = uri
         self.account = account
-        self.accounts = {k: expandvars.expandvars(v) for k, v in accounts.items()} if accounts else {}
+        self.accounts = accounts or {}
         self.data_path = data_path
         self.real_uri = (
             uri if "://" in uri or account is not None or data_path is None else os.path.join(data_path, uri)
