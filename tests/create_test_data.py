@@ -220,6 +220,7 @@ if __name__ == "__main__":
     import test_server
 
     if os.getenv("NO_AZURITE_DOCKER", "0") == "0":
+        print("start docker azurite")
         test_server.start_azurite()
     else:
         test_server.upload_to_azurite()

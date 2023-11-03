@@ -63,7 +63,7 @@ class Datasource:
                 try:
                     from deltalake import DeltaTable
 
-                    df_uri, df_opts = self.uri.get_uri_options()
+                    df_uri, df_opts = self.uri.get_uri_options(flavor="object_store")
                     return DeltaTable(df_uri, storage_options=df_opts)
                 except TableNotFoundError:
                     return None
@@ -108,20 +108,19 @@ class Datasource:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
 
-    @property
-    def table(self):
-        if self.config.table_name:
-            tn = self.config.table_name
-            if "." in tn:
-                parts = tn.split(".")
-                if len(parts) == 3:
-                    return pypika.Table(
-                        parts[2],
-                        schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
-                    )
-                assert len(parts) == 2
-                return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
-        return pypika.Table(self.tablename)
+    def get_table_name(self, force_unique_name: bool) -> pypika.Table:
+        tname = self.tablename if not force_unique_name else self.unique_table_name
+
+        if "." in tname:
+            parts = tname.split(".")
+            if len(parts) == 3:
+                return pypika.Table(
+                    parts[2],
+                    schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
+                )
+            assert len(parts) == 2
+            return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
+        return pypika.Table(tname)
 
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
@@ -144,13 +143,13 @@ class Datasource:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            query = pypika.Query.from_(self.table)
+            unique_table_name = endpoint == "meta" and self.sql_context.supports_view_creation
+            query = pypika.Query.from_(self.get_table_name(unique_table_name))
             self.query = self._prep_df(query, endpoint=endpoint)
-            mod_date: datetime | None = None
 
             if self.df is None:
                 self.sql_context.register_datasource(
-                    self.tablename,
+                    self.unique_table_name if unique_table_name else self.tablename,
                     self.tablename,
                     self.uri,
                     self.config.file_type,

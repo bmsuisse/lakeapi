@@ -1,3 +1,4 @@
+from pathlib import Path
 import docker
 from docker.models.containers import Container
 from time import sleep
@@ -85,11 +86,14 @@ def upload_to_azurite():
                 cc.upload_blob("td/faker.parquet", f)
         except ResourceExistsError:
             pass  # already uploaded
-        for root, _, fls in os.walk("tests/delta/fake"):
+        fakeroot = Path("tests/data/delta/fake")
+        for root, _, fls in os.walk(fakeroot):
             for fl in fls:
                 try:
+                    rel = str(Path(root).relative_to(fakeroot))
                     with open(os.path.join(root, fl), "rb") as f:
-                        cc.upload_blob(f"td/delta/fake/{fl}", f)
+                        target_path = f"td/delta/fake/{rel}/{fl}" if rel != "." else f"td/delta/fake/{fl}"
+                        cc.upload_blob(target_path, f)
                 except ResourceExistsError:
                     pass  # already uploaded
 
@@ -109,7 +113,7 @@ def start_azurite() -> Container:
 
     if azurite_server is None:
         azurite_server = client.containers.run(
-            "mcr.microsoft.com/azure-storage/azurite",
+            "mcr.microsoft.com/azure-storage/azurite:latest",
             detach=True,
             name="test4azurite",
             ports={"10000/tcp": "10000", "10001/tcp": "10001", "10002/tcp": "10002"},

@@ -122,6 +122,10 @@ class PolarsExecutionContext(ExecutionContext):
         self.len_func = "length"
         self.sql_context = sql_context or pl.SQLContext()
 
+    @property
+    def supports_view_creation(self) -> bool:
+        return True
+
     def register_arrow(
         self,
         name: str,
@@ -158,12 +162,12 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         fs, fs_uri = uri.get_fs_spec()
-        ab_uri, uri_opts = uri.get_uri_options()
+        ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
                 try:
-                    df = pl.scan_delta(  # type: ignore
+                    df = pl.scan_delta(
                         ab_uri,
                         storage_options=uri_opts,
                         pyarrow_options={
@@ -191,6 +195,9 @@ class PolarsExecutionContext(ExecutionContext):
                 query = "SELECT * FROM " + (source_table_name or target_name)
 
                 df = pl.read_database_uri(query=query, uri="sqlite://" + ab_uri, engine="adbc")
+            # case "odbc": to be tested, attention on security!
+            #             #    query = "SELECT * FROM " + (source_table_name or target_name)
+            #    df = pl.read_database(query=query, connection=uri.uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(target_name, df)

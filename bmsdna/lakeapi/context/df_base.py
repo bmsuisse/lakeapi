@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import abstractmethod, ABC, abstractproperty
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
@@ -172,7 +172,13 @@ class ExecutionContext(ABC):
         self.modified_dates: dict[str, datetime | None] = {}
         self.chunk_size = chunk_size
         self.len_func = "LEN"
+
         self.array_contains_func = "array_contains"
+
+    @property
+    @abstractmethod
+    def supports_view_creation(self) -> bool:
+        ...
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -209,7 +215,7 @@ class ExecutionContext(ABC):
             case "ndjson" | "json":
                 import pandas
 
-                ab_uri, ab_opts = uri.get_uri_options()
+                ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
                     ab_uri,
                     storage_options=ab_opts,
@@ -227,7 +233,7 @@ class ExecutionContext(ABC):
             case "delta":
                 from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
 
-                ab_uri, ab_opts = uri.get_uri_options()
+                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if only_fixed_supported(dt):
                     return get_pyarrow_table(dt)
@@ -315,7 +321,7 @@ class ExecutionContext(ABC):
             return None
         if file_type == "delta":
             try:
-                ab_uri, ab_opts = uri.get_uri_options()
+                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 return datetime.fromtimestamp(
                     dt.history(1)[-1]["timestamp"] / 1000.0,

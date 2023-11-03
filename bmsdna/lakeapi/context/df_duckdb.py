@@ -161,6 +161,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
 
+    @property
+    def supports_view_creation(self) -> bool:
+        return True
+
     def register_arrow(
         self,
         name: str,
@@ -283,7 +287,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
-        remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure")
+        remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure", flavor="fsspec")
         if uri.account and remote_opts and not self._account_mapped:
             AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
             if AZURE_EXT_LOC:
@@ -332,7 +336,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             )
             return
         if file_type == "delta" and uri.exists():
-            ab_uri, uri_opts = uri.get_uri_options()
+            ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
             dt = DeltaTable(ab_uri, storage_options=uri_opts)
 
             if only_fixed_supported(dt):

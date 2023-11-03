@@ -117,6 +117,10 @@ class ODBCExecutionContext(ExecutionContext):
     def close(self):
         pass
 
+    @property
+    def supports_view_creation(self) -> bool:
+        return False
+
     def execute_sql(
         self,
         sql: Union[

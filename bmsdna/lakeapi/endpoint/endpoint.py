@@ -34,7 +34,7 @@ async def get_partitions(
     config: Config,
 ) -> Optional[list]:
     try:
-        df_uri, df_opts = uri.get_uri_options()
+        df_uri, df_opts = uri.get_uri_options(flavor="object_store")
         parts = (
             await filter_partitions_based_on_params(
                 DeltaTable(df_uri, storage_options=df_opts).metadata(),

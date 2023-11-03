@@ -30,7 +30,8 @@ def init_duck_con(
             accounts=configs.accounts,
             basic_config=basic_config,
         )
-        if df.file_exists():
+
+        if cfg.engine != "odbc" and df.file_exists():
             try:
                 con.register_datasource(
                     df.unique_table_name,
