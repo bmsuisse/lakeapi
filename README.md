@@ -253,7 +253,7 @@ You need to use `deltalake` to use partitions, and you only need str partition c
 - Config in delta table as json, by using the lakeapi.config Table property. Example in the tests. This allows to have the config for the lakeapi along with your data
 - Good test coverage
 
-## ODBC Support
+## ODBC Support / Sqlite Support
 
 If you want to use ODBC , install the required extra (named `odbc`).
 
@@ -261,6 +261,8 @@ ODBC Tables cannot be queried through the sql endpoint for now because of Securi
 We might allow this later if needed via explicit flag.
 
 ODBC is tested against MS SQL Server using ODBC Driver 17 for MS SQL Server
+
+To use Sqlite, you will need to install `adbc_driver_sqlite` yourself (`pip install adbc_driver_sqlite`).
 
 ## Azure Support
 
