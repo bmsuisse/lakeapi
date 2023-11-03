@@ -1,9 +1,6 @@
 import polars as pl
 from deltalake import DeltaTable
-import pyarrow
 import pyarrow.parquet as pq
-import pyarrow
-import pyarrow.fs as pa_fs
 import os
 
 
