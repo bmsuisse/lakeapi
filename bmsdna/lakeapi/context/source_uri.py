@@ -12,7 +12,12 @@ def _convert_options(options: dict | None, flavor: Literal["fsspec", "object_sto
     if flavor == "fsspec" and "connection_string" not in options and options.get("use_emulator", "0") in ["1", "true"]:
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
         return {"connection_string": constr}
-
+    elif (
+        flavor == "fsspec" and "anon" not in options and "account_name" in options
+    ):  # anon is true by default in fsspec which makes no sense mostly
+        return {"anon": "False"} | options
+    elif flavor == "object_store" and "anon" in options:
+        return {k: v for k, v in options.items() if k != "anon"}  # object_store does not support anon
     return options
 
 
