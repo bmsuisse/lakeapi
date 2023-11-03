@@ -29,7 +29,8 @@ def _convert_options(
 ):
     if options is None:
         return None
-    if flavor == "fsspec" and "connection_string" not in options and options.get("use_emulator", "0") in ["1", "true"]:
+    use_emulator: bool = options.get("use_emulator", "0").lower() in ["1", "true"]
+    if flavor == "fsspec" and "connection_string" not in options and use_emulator:
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
         return {"connection_string": constr}
     elif (
@@ -41,7 +42,7 @@ def _convert_options(
     anon_value = "false"
     if flavor == "object_store" and "anon" in options:
         anon_value = new_opts.pop("anon")
-    if flavor == "object_store" and anon_value.lower() in ["false", "0"]:
+    if flavor == "object_store" and not use_emulator and anon_value.lower() in ["false", "0"]:
         new_opts["token"] = (token_retrieval_func or _get_default_token)()
     return new_opts
 
