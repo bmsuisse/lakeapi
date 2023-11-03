@@ -305,7 +305,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             elif "account_name" in remote_opts:
                 an = remote_opts["account_name"]
                 self.con.execute(f"SET azure_account_name = '{an}';")
-                self.con.execute(f"SET azure_credential_chain = default;")
+                self.con.execute(f"SET azure_credential_chain = default;")  # requires preview extension
             self._account_mapped = uri.account
 
         if file_type == "json":

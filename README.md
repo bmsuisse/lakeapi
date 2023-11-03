@@ -277,6 +277,9 @@ Supported settings are only those which are supported by BOTH projects. In pract
 - account_name
 - account_key
 - use_emulator (we add that one for fsspec)
+- anon (fsspec/adlfs for anonymous). Adlfs default this to true, we default to false. Set to true if you really want to.
+
+If you want to use [Azure Default Credential](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python), just specify account_name without any further option.
 
 ## Further projects
 
