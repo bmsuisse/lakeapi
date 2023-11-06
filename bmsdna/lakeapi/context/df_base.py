@@ -9,7 +9,7 @@ import pyarrow.dataset
 import pypika.queries
 import polars as pl
 
-from pypika.terms import Term
+from pypika.terms import Term, Criterion
 import os
 from .source_uri import SourceUri
 
@@ -174,6 +174,17 @@ class ExecutionContext(ABC):
         self.len_func = "LEN"
 
         self.array_contains_func = "array_contains"
+
+    def term_like(
+        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+    ) -> Criterion:
+
+        if wildcard_loc == "start":
+            return a.like("%" + value) if not negate else a.not_like("%" + value)
+        elif wildcard_loc == "end":
+            return a.like(value + "%") if not negate else a.not_like(value + "%")
+        else:
+            return a.like("%" + value + "%") if not negate else a.not_like("%" + value + "%")
 
     @property
     @abstractmethod

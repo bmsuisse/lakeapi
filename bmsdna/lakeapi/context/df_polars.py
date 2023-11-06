@@ -3,12 +3,13 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupporte
 
 import os
 import pyarrow as pa
-from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
+from typing import List, Literal, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import pypika.queries
-from pypika.terms import Term
+from pypika.terms import Term, Criterion
 import pypika
+import pypika.terms
 from uuid import uuid4
 
 from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
@@ -144,6 +145,20 @@ class PolarsExecutionContext(ExecutionContext):
 
     def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
+
+    def term_like(
+        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+    ) -> Criterion:
+        if wildcard_loc == "start":
+            expr = pypika.queries.Function("ENDS_WITH", a, Term.wrap_constant(value))
+
+        elif wildcard_loc == "end":
+            expr = pypika.queries.Function("STARTS_WITH", a, Term.wrap_constant(value))
+        else:
+            expr = pypika.queries.Function("REGEXP_LIKE", a, Term.wrap_constant(".*" + value + ".*"))
+        if negate:
+            return ~expr
+        return expr
 
     def distance_m_function(
         self,
