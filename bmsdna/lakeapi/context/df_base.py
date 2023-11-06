@@ -282,15 +282,17 @@ class ExecutionContext(ABC):
         lat2: Term,
         lon2: Term,
     ) -> Term:
-       import pypika.terms
-        #/*6371000 * acos( cos( radians(lat1) ) *
-       #cos( radians(lat2) ) * cos( radians(lng2) - radians(lng1) ) +
-       #sin( radians(lat1) ) * sin( radians(lat2) ) ) 
-       acos = lambda t: pypika.terms.Function("acos", t)
-       cos = lambda t: pypika.terms.Function("cos", t)
-       radians = lambda t: pypika.terms.Function("radians", t)
-       sin = lambda t: pypika.terms.Function("sin", t)
-       return Term.wrap_constant(6371000)  * acos( cos( radians(lat1) ) *cos( radians(lat2) ) * cos( radians(lon2) - radians(lon1) ) +sin( radians(lat1) ) * sin( radians(lat2) ) ) 
+        import pypika.terms
+
+        # haversine which works for duckdb and polars and probably most sql systems
+        acos = lambda t: pypika.terms.Function("acos", t)
+        cos = lambda t: pypika.terms.Function("cos", t)
+        radians = lambda t: pypika.terms.Function("radians", t)
+        sin = lambda t: pypika.terms.Function("sin", t)
+        return Term.wrap_constant(6371000) * acos(
+            cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1))
+            + sin(radians(lat1)) * sin(radians(lat2))
+        )
 
     def search_score_function(
         self,
