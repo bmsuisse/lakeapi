@@ -10,7 +10,7 @@ from urllib.parse import quote
 sys.path.append(".")
 client = TestClient(get_app())
 auth = get_auth()
-engines = ["duckdb"]
+engines = ["duckdb", "polars"]
 
 
 def test_data_csv4excel():

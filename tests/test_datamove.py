@@ -13,7 +13,7 @@ from hashlib import md5
 sys.path.append(".")
 client = TestClient(get_app())
 auth = get_auth()
-engines = ["duckdb"]
+engines = ["duckdb", "polars"]
 
 
 def test_data_overwrite():
