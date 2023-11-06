@@ -160,15 +160,6 @@ class PolarsExecutionContext(ExecutionContext):
             return ~expr
         return expr
 
-    def distance_m_function(
-        self,
-        lat1: Term,
-        lon1: Term,
-        lat2: Term,
-        lon2: Term,
-    ):
-        raise NotImplementedError("Not implemented")
-
     def register_datasource(
         self,
         target_name: str,
