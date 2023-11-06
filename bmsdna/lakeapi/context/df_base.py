@@ -19,6 +19,13 @@ if TYPE_CHECKING:
 
 FLAVORS = Literal["ansi", "mssql"]
 
+def is_complex_type(
+    schema: pa.Schema,
+    col_name: str,
+):
+    f = schema.field(col_name)
+    return pa.types.is_nested(f.type)
+
 
 def get_sql(
     sql_or_pypika: str | pypika.queries.QueryBuilder,
@@ -285,6 +292,16 @@ class ExecutionContext(ABC):
         assure_string=False,
     ) -> Term:
         ...
+
+    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+        return query.select(
+                *[
+                    pypika.Field(c)
+                    if not is_complex_type(base_schema, c)
+                    else self.json_function(pypika.Field(c)).as_(c)
+                    for c in columns
+                ]
+            )
 
     def distance_m_function(
         self,

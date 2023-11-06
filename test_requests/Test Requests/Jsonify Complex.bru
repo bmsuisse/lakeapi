@@ -1,0 +1,23 @@
+meta {
+  name: Jsonify Complex
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/v1/complexer/complex_fruits?limit=10&format=json&jsonify_complex=True&$engine=polars
+  body: none
+  auth: basic
+}
+
+query {
+  limit: 10
+  format: json
+  jsonify_complex: True
+  $engine: polars
+}
+
+auth:basic {
+  username: test
+  password: B~C:BB*_9-1u
+}

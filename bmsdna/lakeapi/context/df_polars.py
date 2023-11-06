@@ -1,5 +1,11 @@
 from deltalake import DeltaTable
-from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import (
+    ExecutionContext,
+    FileTypeNotSupportedError,
+    ResultData,
+    get_sql,
+    is_complex_type,
+)
 
 import os
 import pyarrow as pa
@@ -11,7 +17,7 @@ from pypika.terms import Term, Criterion
 import pypika
 import pypika.terms
 from uuid import uuid4
-
+import json
 from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
@@ -159,6 +165,27 @@ class PolarsExecutionContext(ExecutionContext):
         if negate:
             return ~expr
         return expr
+
+    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+        import polars as pl
+
+        old_query = query.select(*columns)
+        complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
+        if len(complex_cols) == 0:
+            return old_query
+
+        df = self.sql_context.execute(str(old_query))
+
+        def to_json(x):
+            if isinstance(x, pl.Series):
+                return json.dumps(x.to_list())
+            return json.dumps(x)
+
+        map_cols = [pl.col(c).map_elements(to_json, return_dtype=pl.Utf8).alias(c) for c in complex_cols]
+        df = df.with_columns(map_cols)
+        nt_id = "tmp_" + str(uuid4())
+        self.sql_context.register(nt_id, df)
+        return pypika.Query.from_(nt_id).select(*[pypika.Field(c) for c in columns])
 
     def register_datasource(
         self,
