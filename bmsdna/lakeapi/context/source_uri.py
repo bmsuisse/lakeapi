@@ -8,14 +8,36 @@ from datetime import datetime, timezone, timedelta
 
 _token_state = dict()
 
+default_azure_args = [
+    "authority",
+    "exclude_workload_identity_credential",
+    "exclude_developer_cli_credential",
+    "exclude_cli_credential",
+    "exclude_environment_credential",
+    "exclude_managed_identity_credential",
+    "exclude_powershell_credential",
+    "exclude_visual_studio_code_credential",
+    "exclude_shared_token_cache_credential",
+    "exclude_interactive_browser_credential",
+    "interactive_browser_tenant_id",
+    "managed_identity_client_id",
+    "workload_identity_client_id",
+    "workload_identity_tenant_id",
+    "interactive_browser_client_id",
+    "shared_cache_username",
+    "shared_cache_tenant_id",
+    "visual_studio_code_tenant_id",
+    "process_timeout",
+]
 
-def _get_default_token() -> str:
+
+def _get_default_token(**kwargs) -> str:
     global _token_state
     token_expiry: datetime | None = _token_state.get("token_expiry", None)
     if not token_expiry or (token_expiry - datetime.now(tz=timezone.utc)) < timedelta(minutes=2):
         from azure.identity import DefaultAzureCredential
 
-        tk = DefaultAzureCredential().get_token("https://storage.azure.com/.default")
+        tk = DefaultAzureCredential(**kwargs).get_token("https://storage.azure.com/.default")
         _token_state["token_dt"] = tk
         _token_state["token_expiry"] = datetime.fromtimestamp(tk.expires_on, tz=timezone.utc)
         _token_state["token"] = tk.token
@@ -34,7 +56,7 @@ def _convert_options(
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
         return {"connection_string": constr}
     elif (
-        flavor == "fsspec" and "anon" not in options and "account_name" in options
+        flavor == "fsspec" and "account_key" not in options and "anon" not in options and "account_name" in options
     ):  # anon is true by default in fsspec which makes no sense mostly
         return {"anon": False} | options
 
@@ -42,8 +64,9 @@ def _convert_options(
     anon_value = False
     if flavor == "object_store" and "anon" in options:
         anon_value = new_opts.pop("anon")
-    if flavor == "object_store" and not use_emulator and not anon_value:
-        new_opts["token"] = (token_retrieval_func or _get_default_token)()
+    if flavor == "object_store" and "account_key" not in options and not use_emulator and not anon_value:
+        token_kwargs = {k: new_opts.pop(k) for k in default_azure_args if k in new_opts}
+        new_opts["token"] = (token_retrieval_func or _get_default_token)(**token_kwargs)
     return new_opts
 
 
