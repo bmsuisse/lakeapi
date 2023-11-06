@@ -136,6 +136,9 @@ class PolarsExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return True
 
+    def create_view(self, name: str, sql: str):
+        self.sql_context.register(name, self.sql_context.execute(sql))
+
     def register_arrow(
         self,
         name: str,

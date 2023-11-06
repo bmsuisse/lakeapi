@@ -1,3 +1,4 @@
+from uuid import uuid4
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 import pypika.queries
@@ -55,7 +56,8 @@ def handle_nearby_request(
     context.init_spatial()
     score_sum = None
     query._orderbys = []  # reset order
-
+    orders = []
+    wheres = []
     for nearby_val, nearby_cfg in nearbyes:
         fn = context.distance_m_function(
             pypika.Field(nearby_cfg.lat_col),
@@ -64,6 +66,20 @@ def handle_nearby_request(
             cast(Term, Term.wrap_constant(nearby_val.lon)),
         )
         query = query.select(fn.as_(nearby_cfg.name))
-        query = query.where(pypika.Field(nearby_cfg.name) <= nearby_val.distance_m)
-        query = query.orderby(pypika.Field(nearby_cfg.name), order=pypika.Order.asc)
+        orders.append(pypika.Field(nearby_cfg.name))
+        wheres.append(pypika.Field(nearby_cfg.name) <= nearby_val.distance_m)
+
+    if len(orders) > 0:
+        if context.supports_view_creation:
+            viewname = source_view + "_" + str(uuid4()).replace("-", "")
+            context.create_view(viewname, str(query))
+            query: pypika.queries.QueryBuilder = pypika.queries.Query.from_(viewname)
+            for w in wheres:
+                query = query.where(w)
+            query = query.select("*").orderby(*orders, order=pypika.Order.asc)
+        else:
+            for w in wheres:
+                query = query.where(w)
+            query = query.orderby(*orders, order=pypika.Order.asc)
+
     return query

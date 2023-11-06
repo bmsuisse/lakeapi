@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 FLAVORS = Literal["ansi", "mssql"]
 
+
 def is_complex_type(
     schema: pa.Schema,
     col_name: str,
@@ -185,7 +186,6 @@ class ExecutionContext(ABC):
     def term_like(
         self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
     ) -> Criterion:
-
         if wildcard_loc == "start":
             return a.like("%" + value) if not negate else a.not_like("%" + value)
         elif wildcard_loc == "end":
@@ -197,6 +197,9 @@ class ExecutionContext(ABC):
     @abstractmethod
     def supports_view_creation(self) -> bool:
         ...
+
+    def create_view(self, name: str, sql: str):
+        self.execute_sql(f"CREATE VIEW {name} as sql")
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -295,13 +298,11 @@ class ExecutionContext(ABC):
 
     def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
         return query.select(
-                *[
-                    pypika.Field(c)
-                    if not is_complex_type(base_schema, c)
-                    else self.json_function(pypika.Field(c)).as_(c)
-                    for c in columns
-                ]
-            )
+            *[
+                pypika.Field(c) if not is_complex_type(base_schema, c) else self.json_function(pypika.Field(c)).as_(c)
+                for c in columns
+            ]
+        )
 
     def distance_m_function(
         self,
