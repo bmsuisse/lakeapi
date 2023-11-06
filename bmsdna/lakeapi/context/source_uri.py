@@ -36,13 +36,13 @@ def _convert_options(
     elif (
         flavor == "fsspec" and "anon" not in options and "account_name" in options
     ):  # anon is true by default in fsspec which makes no sense mostly
-        return {"anon": "False"} | options
+        return {"anon": False} | options
 
     new_opts = options.copy()
-    anon_value = "false"
+    anon_value = False
     if flavor == "object_store" and "anon" in options:
         anon_value = new_opts.pop("anon")
-    if flavor == "object_store" and not use_emulator and anon_value.lower() in ["false", "0"]:
+    if flavor == "object_store" and not use_emulator and not anon_value:
         new_opts["token"] = (token_retrieval_func or _get_default_token)()
     return new_opts
 

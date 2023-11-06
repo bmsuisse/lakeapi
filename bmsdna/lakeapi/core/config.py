@@ -350,7 +350,7 @@ class YamlData(TypedDict):
     tables: list[Config]
     users: list[UserConfig]
     app: AppConfig
-    accounts: dict[str, dict[str, str]]
+    accounts: dict[str, dict[str, str | bool | int | float]]
 
 
 @dataclass(frozen=True)
