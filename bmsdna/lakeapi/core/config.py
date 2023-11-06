@@ -19,6 +19,7 @@ from typing import (
 from typing_extensions import TypedDict, NotRequired, Required
 import copy
 import yaml
+from bmsdna.lakeapi.context.source_uri import SourceUri
 
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
@@ -197,26 +198,32 @@ class Config:
         uri = _expand_env_vars(
             datasource.get("uri", tag + "/" + name),
         )
+        uri_obj = SourceUri(
+            uri,
+            datasource.get("account"),
+            accounts=accounts,
+            data_path=basic_config.data_path if not file_type in ["odbc"] else None,
+        )
         if config.get("config_from_delta"):
-            assert file_type == "delta"
-            real_path = os.path.join(basic_config.data_path, uri)
-            if not os.path.exists(os.path.join(real_path, "_delta_log")):
-                logger.warning(f"Not a real delta path: {real_path}")
-            else:
-                import deltalake
-                import json
+            import deltalake
+            import deltalake.exceptions
+            import json
 
-                try:
-                    dt = deltalake.DeltaTable(real_path)
-                    cfg = json.loads(dt.metadata().configuration.get("lakeapi.config", "{}"))
-                    config = config | cfg  # simple merge. in that case we expect config to be in delta mainly
-                    datasource = config.get(
-                        "datasource", {"uri": uri, "file_type": file_type}
-                    )  # get data source again, could have select, columns etc
-                except json.JSONDecodeError as err:
-                    logger.warning(f"Not correct json: {real_path}\n{err}")
-                except Exception as err:
-                    logger.warning(f"Error reading delta: {real_path}\n{err}")
+            real_path = str(uri_obj)
+            try:
+                ab_uri, ab_opts = uri_obj.get_uri_options(flavor="object_store")
+                dt = deltalake.DeltaTable(ab_uri, storage_options=ab_opts)
+                cfg = json.loads(dt.metadata().configuration.get("lakeapi.config", "{}"))
+                config = config | cfg  # simple merge. in that case we expect config to be in delta mainly
+                datasource = config.get(
+                    "datasource", {"uri": uri, "file_type": file_type}
+                )  # get data source again, could have select, columns etc
+            except json.JSONDecodeError as err:
+                logger.warning(f"Not correct json: {real_path}\n{err}")
+            except deltalake.exceptions.TableNotFoundError as err:
+                logger.warning(f"Not a real delta path: {real_path}")
+            except Exception as err:
+                logger.warning(f"Error reading delta: {real_path}\n{err}")
 
         version = config.get("version", 1)
         api_method = cast(Literal["post", "get"], config.get("api_method", "get"))
@@ -257,15 +264,8 @@ class Config:
             table_name=datasource.get("table_name", None),
             filters=None,
         )
-        from bmsdna.lakeapi.context.source_uri import SourceUri
 
-        suri = SourceUri(
-            datasource_obj.uri,
-            datasource_obj.account,
-            accounts=accounts,
-            data_path=basic_config.data_path if not file_type in ["odbc"] else None,
-        )
-        new_params = _with_implicit_parameters(_params, file_type, suri)
+        new_params = _with_implicit_parameters(_params, file_type, uri_obj)
 
         return cls(
             name=name,
@@ -350,7 +350,7 @@ class YamlData(TypedDict):
     tables: list[Config]
     users: list[UserConfig]
     app: AppConfig
-    accounts: dict[str, dict[str, str]]
+    accounts: dict[str, dict[str, str | bool | int | float]]
 
 
 @dataclass(frozen=True)

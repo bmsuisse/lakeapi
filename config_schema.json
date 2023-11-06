@@ -202,8 +202,7 @@
                             "enum": [
                                 "duckdb",
                                 "polars",
-                                "odbc",
-                                "sqlite"
+                                "odbc"
                             ],
                             "type": "string"
                         },
@@ -675,7 +674,20 @@
         "accounts": {
             "additionalProperties": {
                 "additionalProperties": {
-                    "type": "string"
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ]
                 },
                 "type": "object"
             },
