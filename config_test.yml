@@ -503,6 +503,7 @@ tables:
       uri: "abfs://testlake/td/delta/*"
       file_type: delta
       account: "test_account"
+    config_from_delta: true
 # --------------------------------
 # User / Password
 # --------------------------------
