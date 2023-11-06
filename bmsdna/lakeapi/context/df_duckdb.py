@@ -27,6 +27,8 @@ logger = get_logger(__name__)
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
+DUCK_CONFIG = {"allow_unsigned_extensions": True}  # required for azure extension preview for now
+
 
 def _get_temp_table_name():
     return "temp_" + str(uuid4()).replace("-", "")
@@ -184,10 +186,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         ],
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
-            self.res_con = duckdb.connect(
-                self.persistance_file_name,
-                read_only=True,
-            )
+            self.res_con = duckdb.connect(self.persistance_file_name, read_only=True, config=DUCK_CONFIG)
             return DuckDBResultData(
                 sql,
                 self.res_con,
@@ -251,13 +250,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
             persistance_file_name_temp = persistance_file_name + "_temp"
             if os.path.exists(persistance_file_name_temp):
                 os.remove(persistance_file_name_temp)
-            search_con = duckdb.connect(persistance_file_name_temp, read_only=False)
+            search_con = duckdb.connect(persistance_file_name_temp, read_only=False, config=DUCK_CONFIG)
             search_con.commit()  # create empty duck file
             search_con.close()
             self.con.execute(f"ATTACH '{persistance_file_name_temp}' AS search_con")
             self.con.execute(real_query)
             self.con.execute("DETACH search_con")
-            search_con = duckdb.connect(persistance_file_name_temp, read_only=False)
+            search_con = duckdb.connect(persistance_file_name_temp, read_only=False, config=DUCK_CONFIG)
             scc = ", ".join([f"'{sc}'" for sc in search_columns])
             search_con.execute(f"PRAGMA create_fts_index('{persistence_name}', '{pk_name}', {scc})")
             search_con.close()
@@ -376,7 +375,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
 class DuckDbExecutionContext(DuckDbExecutionContextBase):
     def __init__(self, chunk_size: int):
-        super().__init__(duckdb.connect(), chunk_size=chunk_size)
+        super().__init__(duckdb.connect(config=DUCK_CONFIG), chunk_size=chunk_size)
 
     def __enter__(self):
         super().__enter__()
