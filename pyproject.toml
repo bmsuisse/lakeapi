@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmsdna-lakeapi"
-version = "0.16.3"
+version = "0.16.4"
 description = ""
 authors = ["DWH Team <you@example.com>"]
 license = "MIT"
@@ -77,9 +77,7 @@ odbc = ["arrow-odbc"]
 
 
 [tool.poetry.scripts]
-validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli", extras = [
-    "schema",
-] }
+validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli" }
 add_lakeapi_user = { callable = "bmsdna.lakeapi.tools.useradd:useradd_cli", extras = [
     "useradd",
 ] }
