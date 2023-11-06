@@ -73,10 +73,10 @@ def handle_nearby_request(
         if context.supports_view_creation:
             viewname = source_view + "_" + str(uuid4()).replace("-", "")
             context.create_view(viewname, str(query))
-            query: pypika.queries.QueryBuilder = pypika.queries.Query.from_(viewname)
+            query2: pypika.queries.QueryBuilder = pypika.queries.Query.from_(viewname)
             for w in wheres:
-                query = query.where(w)
-            query = query.select("*").orderby(*orders, order=pypika.Order.asc)
+                query2 = query2.where(w)
+            return query2.select("*").orderby(*orders, order=pypika.Order.asc)
         else:
             for w in wheres:
                 query = query.where(w)
