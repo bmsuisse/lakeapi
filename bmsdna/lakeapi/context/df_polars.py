@@ -252,8 +252,6 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         df = self.sql_context.execute(get_sql(sql))
-        if isinstance(df, pl.LazyFrame):
-            df = df.collect()
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:
