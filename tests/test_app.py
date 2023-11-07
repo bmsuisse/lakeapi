@@ -455,18 +455,16 @@ def test_all_metadata():
     assert response.status_code == 200
     jsd = response.json()
     for item in jsd:
-        name = item["name"]
-        tag = item["tag"]
-        route = item["route"]
-        meta_detail_route = route + "/metadata_detail"
-        if name == "fake_polars":
-            continue  # disable for now, see https://github.com/pola-rs/polars/issues/9668
-        response = client.get(meta_detail_route, auth=auth)
-        # TODO: reenable once fixed
-        if name not in ["not_existing", "not_existing2"]:
-            assert name + "_" + str(response.status_code) == name + "_200"
-        else:
-            assert name + "_" + str(response.status_code) == name + "_404"
+        for e in engines:
+            name = item["name"]
+            tag = item["tag"]
+            route = item["route"]
+            meta_detail_route = route + f"/metadata_detail?%24engine={e}"
+            response = client.get(meta_detail_route, auth=auth)
+            if name not in ["not_existing", "not_existing2"]:
+                assert name + "_" + str(response.status_code) == name + "_200"
+            else:
+                assert name + "_" + str(response.status_code) == name + "_404"
 
     response = client.get(f"/api/v1/test/fake_arrow/metadata_detail", auth=auth)
     assert response.status_code == 200

@@ -17,7 +17,7 @@ from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
-from bmsdna.lakeapi.core.types import MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
+from bmsdna.lakeapi.core.types import Engines, MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
 
 from typing import Optional
 
@@ -54,6 +54,13 @@ def create_detailed_meta_endpoint(
     def get_detailed_metadata(
         req: Request,
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+        engine: Engines
+        | None = Query(
+            title="$engine",
+            alias="$engine",
+            default=None,
+            include_in_schema=False,
+        ),
     ) -> MetadataDetailResult:
         import json
 
@@ -61,7 +68,7 @@ def create_detailed_meta_endpoint(
         from bmsdna.lakeapi.context import get_context_by_engine
 
         with get_context_by_engine(
-            config.engine or basic_config.default_engine, basic_config.default_chunk_size
+            engine or config.engine or basic_config.default_engine, basic_config.default_chunk_size
         ) as context:
             assert config.datasource is not None
             realdataframe = Datasource(
