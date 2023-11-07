@@ -53,24 +53,11 @@ class PolarsResultData(ResultData):
             self.registred_df = True
         return pypika.Query.from_(self.random_name)
 
-    def _to_arrow_type(self, t: "polars.PolarsDataType"):
-        import polars as pl
-        from polars.datatypes.convert import DataTypeMappings, py_type_to_arrow_type
-
-        if isinstance(t, pl.Struct):
-            return pa.struct({f.name: self._to_arrow_type(f.dtype) for f in t.fields})
-        if isinstance(t, pl.List):
-            return pa.list_(self._to_arrow_type(t.inner) if t.inner else pa.string)
-
-        if t in DataTypeMappings.PY_TYPE_TO_ARROW_TYPE:
-            return py_type_to_arrow_type(t)
-        raise ValueError("not supported")
-
     def arrow_schema(self) -> pa.Schema:
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            return pa.Schema([pa.field(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
+            return self.df.fetch(0).to_arrow().schema
         else:
             return self.df.limit(0).to_arrow().schema
 
