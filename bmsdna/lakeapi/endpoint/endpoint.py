@@ -97,14 +97,6 @@ def exclude_cols(
     return columns
 
 
-def is_complex_type(
-    schema: pa.Schema,
-    col_name: str,
-):
-    f = schema.field(col_name)
-    return pa.types.is_nested(f.type)
-
-
 def split_csv(csv_str: str) -> list[str]:
     import csv
 
@@ -262,14 +254,7 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
-            new_query = new_query.select(
-                *[
-                    pypika.Field(c)
-                    if not is_complex_type(base_schema, c)
-                    else context.json_function(pypika.Field(c)).as_(c)
-                    for c in columns
-                ]
-            )
+            new_query = context.jsonify_complex(new_query, base_schema, columns)
         else:
             new_query = new_query.select(*columns)
 

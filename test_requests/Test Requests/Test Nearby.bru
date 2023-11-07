@@ -1,0 +1,26 @@
+meta {
+  name: Test Nearby
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/v1/test/fake_delta?limit=50&format=ndjson&$engine=polars
+  body: json
+  auth: basic
+}
+
+query {
+  limit: 50
+  format: ndjson
+  $engine: polars
+}
+
+auth:basic {
+  username: test
+  password: B~C:BB*_9-1u
+}
+
+body:json {
+  {"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 10000}}
+}

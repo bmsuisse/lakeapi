@@ -9,7 +9,7 @@ import pyarrow.dataset
 import pypika.queries
 import polars as pl
 
-from pypika.terms import Term
+from pypika.terms import Term, Criterion
 import os
 from .source_uri import SourceUri
 
@@ -18,6 +18,14 @@ if TYPE_CHECKING:
     from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "mssql"]
+
+
+def is_complex_type(
+    schema: pa.Schema,
+    col_name: str,
+):
+    f = schema.field(col_name)
+    return pa.types.is_nested(f.type)
 
 
 def get_sql(
@@ -175,10 +183,23 @@ class ExecutionContext(ABC):
 
         self.array_contains_func = "array_contains"
 
+    def term_like(
+        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+    ) -> Criterion:
+        if wildcard_loc == "start":
+            return a.like("%" + value) if not negate else a.not_like("%" + value)
+        elif wildcard_loc == "end":
+            return a.like(value + "%") if not negate else a.not_like(value + "%")
+        else:
+            return a.like("%" + value + "%") if not negate else a.not_like("%" + value + "%")
+
     @property
     @abstractmethod
     def supports_view_creation(self) -> bool:
         ...
+
+    def create_view(self, name: str, sql: str):
+        self.execute_sql(f"CREATE VIEW {name} as sql")
 
     @abstractmethod
     def __enter__(self) -> "ExecutionContext":
@@ -275,7 +296,14 @@ class ExecutionContext(ABC):
     ) -> Term:
         ...
 
-    @abstractmethod
+    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+        return query.select(
+            *[
+                pypika.Field(c) if not is_complex_type(base_schema, c) else self.json_function(pypika.Field(c)).as_(c)
+                for c in columns
+            ]
+        )
+
     def distance_m_function(
         self,
         lat1: Term,
@@ -283,7 +311,17 @@ class ExecutionContext(ABC):
         lat2: Term,
         lon2: Term,
     ) -> Term:
-        ...
+        import pypika.terms
+
+        # haversine which works for duckdb and polars and probably most sql systems
+        acos = lambda t: pypika.terms.Function("acos", t)
+        cos = lambda t: pypika.terms.Function("cos", t)
+        radians = lambda t: pypika.terms.Function("radians", t)
+        sin = lambda t: pypika.terms.Function("sin", t)
+        return Term.wrap_constant(6371000) * acos(
+            cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1))
+            + sin(radians(lat1)) * sin(radians(lat2))
+        )
 
     def search_score_function(
         self,

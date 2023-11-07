@@ -335,11 +335,11 @@ async def filter_df_based_on_params(
                 case "=":
                     exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
                 case "not contains":
-                    exprs.append(fn.Field(colname).not_like("%" + value + "%"))
+                    exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
                 case "contains":
-                    exprs.append(fn.Field(colname).like("%" + value + "%"))
+                    exprs.append(context.term_like(fn.Field(colname), value, "both"))
                 case "startswith":
-                    exprs.append(fn.Field(colname).like(value + "%"))
+                    exprs.append(context.term_like(fn.Field(colname), value, "end"))
                 case "has":
                     exprs.append(
                         fn.Function(

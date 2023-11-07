@@ -1,16 +1,23 @@
 from deltalake import DeltaTable
-from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import (
+    ExecutionContext,
+    FileTypeNotSupportedError,
+    ResultData,
+    get_sql,
+    is_complex_type,
+)
 
 import os
 import pyarrow as pa
-from typing import List, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
+from typing import List, Literal, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import pypika.queries
-from pypika.terms import Term
+from pypika.terms import Term, Criterion
 import pypika
+import pypika.terms
 from uuid import uuid4
-
+import json
 from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
@@ -129,6 +136,9 @@ class PolarsExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return True
 
+    def create_view(self, name: str, sql: str):
+        self.sql_context.register(name, self.sql_context.execute(sql))
+
     def register_arrow(
         self,
         name: str,
@@ -145,14 +155,40 @@ class PolarsExecutionContext(ExecutionContext):
     def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
 
-    def distance_m_function(
-        self,
-        lat1: Term,
-        lon1: Term,
-        lat2: Term,
-        lon2: Term,
-    ):
-        raise NotImplementedError("Not implemented")
+    def term_like(
+        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+    ) -> Criterion:
+        if wildcard_loc == "start":
+            expr = pypika.queries.Function("ENDS_WITH", a, Term.wrap_constant(value))
+
+        elif wildcard_loc == "end":
+            expr = pypika.queries.Function("STARTS_WITH", a, Term.wrap_constant(value))
+        else:
+            expr = pypika.queries.Function("REGEXP_LIKE", a, Term.wrap_constant(".*" + value + ".*"))
+        if negate:
+            return ~expr
+        return expr
+
+    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+        import polars as pl
+
+        old_query = query.select(*columns)
+        complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
+        if len(complex_cols) == 0:
+            return old_query
+
+        df = self.sql_context.execute(str(old_query))
+
+        def to_json(x):
+            if isinstance(x, pl.Series):
+                return json.dumps(x.to_list())
+            return json.dumps(x)
+
+        map_cols = [pl.col(c).map_elements(to_json, return_dtype=pl.Utf8).alias(c) for c in complex_cols]
+        df = df.with_columns(map_cols)
+        nt_id = "tmp_" + str(uuid4())
+        self.sql_context.register(nt_id, df)
+        return pypika.Query.from_(nt_id).select(*[pypika.Field(c) for c in columns])
 
     def register_datasource(
         self,

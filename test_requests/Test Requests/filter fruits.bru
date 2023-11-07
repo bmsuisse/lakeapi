@@ -1,0 +1,26 @@
+meta {
+  name: filter fruits
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:8080/api/v1/complexer/complex_fruits?limit=5&format=json&$engine=polars
+  body: json
+  auth: basic
+}
+
+query {
+  limit: 5
+  format: json
+  $engine: polars
+}
+
+auth:basic {
+  username: test
+  password: B~C:BB*_9-1u
+}
+
+body:json {
+  {"fruits_contains": "anan"}
+}
