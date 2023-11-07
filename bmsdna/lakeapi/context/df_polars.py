@@ -96,7 +96,7 @@ class PolarsResultData(ResultData):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            return pa.Schema([pa.field(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
+            return pa.schema([(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
         else:
             return self.df.limit(0).to_arrow().schema
 
