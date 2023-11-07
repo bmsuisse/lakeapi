@@ -22,15 +22,36 @@ from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
 
-if TYPE_CHECKING:
-    import polars  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
+try:
+    import polars as pl  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
+
+    PL_TO_ARROW = {
+        pl.Int8: pa.int8(),
+        pl.Int16: pa.int16(),
+        pl.Int32: pa.int32(),
+        pl.Int64: pa.int64(),
+        pl.UInt8: pa.uint8(),
+        pl.UInt16: pa.uint16(),
+        pl.UInt32: pa.uint32(),
+        pl.UInt64: pa.uint64(),
+        pl.Float32: pa.float32(),
+        pl.Float64: pa.float64(),
+        pl.Date: pa.date32(),
+        pl.Boolean: pa.bool_(),
+        pl.Utf8: pa.large_string(),
+        pl.Binary: pa.binary(),
+        pl.Categorical: pa.large_string(),
+    }
+except:
+    PL_TO_ARROW = {}
+    pass
 
 
 class PolarsResultData(ResultData):
     def __init__(
         self,
-        df: "Union[polars.DataFrame, polars.LazyFrame]",
-        sql_context: "polars.SQLContext",
+        df: "Union[pl.DataFrame, pl.LazyFrame]",
+        sql_context: "pl.SQLContext",
         chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size)
@@ -53,11 +74,29 @@ class PolarsResultData(ResultData):
             self.registred_df = True
         return pypika.Query.from_(self.random_name)
 
+    def _to_arrow_type(self, t: "pl.PolarsDataType"):
+        import polars as pl
+        from polars.datatypes.convert import DataTypeMappings, py_type_to_arrow_type, dtype_to_py_type
+
+        if isinstance(t, pl.Struct):
+            return pa.struct({f.name: self._to_arrow_type(f.dtype) for f in t.fields})
+        if isinstance(t, pl.List):
+            return pa.list_(self._to_arrow_type(t.inner) if t.inner else pa.string)
+        if isinstance(t, pl.Datetime):
+            return pa.timestamp(t.time_unit)
+        if isinstance(t, pl.Duration):
+            return pa.duration(t.time_unit)
+        if isinstance(t, pl.Time):
+            return pa.time64()
+        if t in PL_TO_ARROW:
+            return PL_TO_ARROW[t]
+        return py_type_to_arrow_type(dtype_to_py_type(t))
+
     def arrow_schema(self) -> pa.Schema:
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            return self.df.fetch(0).to_arrow().schema
+            return pa.schema([(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
         else:
             return self.df.limit(0).to_arrow().schema
 
@@ -111,7 +150,7 @@ class PolarsExecutionContext(ExecutionContext):
     def __init__(
         self,
         chunk_size: int,
-        sql_context: "Optional[polars.SQLContext]" = None,
+        sql_context: "Optional[pl.SQLContext]" = None,
     ):
         super().__init__(chunk_size=chunk_size)
         import polars as pl
@@ -252,8 +291,6 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         df = self.sql_context.execute(get_sql(sql))
-        if isinstance(df, pl.LazyFrame):
-            df = df.collect()
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:
