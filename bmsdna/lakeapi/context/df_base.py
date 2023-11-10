@@ -296,10 +296,12 @@ class ExecutionContext(ABC):
     ) -> Term:
         ...
 
-    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+    def jsonify_complex(
+        self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]
+    ) -> pypika.queries.QueryBuilder:
         return query.select(
             *[
-                pypika.Field(c) if not is_complex_type(base_schema, c) else self.json_function(pypika.Field(c)).as_(c)
+                pypika.Field(c) if not c in complex_cols else self.json_function(pypika.Field(c)).as_(c)
                 for c in columns
             ]
         )

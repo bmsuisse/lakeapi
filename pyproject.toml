@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmsdna-lakeapi"
-version = "0.16.9"
+version = "0.16.10"
 description = ""
 authors = ["DWH Team <you@example.com>"]
 license = "MIT"

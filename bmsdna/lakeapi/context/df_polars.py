@@ -195,11 +195,10 @@ class PolarsExecutionContext(ExecutionContext):
             return ~expr
         return expr
 
-    def jsonify_complex(self, query: pypika.queries.QueryBuilder, base_schema: pa.Schema, columns: list[str]):
+    def jsonify_complex(self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]):
         import polars as pl
 
         old_query = query.select(*columns)
-        complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
         if len(complex_cols) == 0:
             return old_query
 
