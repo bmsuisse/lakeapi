@@ -118,13 +118,18 @@ def create_detailed_meta_endpoint(
                 else []
             )
             if include_str_lengths:
-                str_lengths_query = context.jsonify_complex(
-                    df.query_builder(), complex_str_cols, str_cols + complex_str_cols
-                ).select(
-                    *[
-                        fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
-                        for sc in str_cols + complex_str_cols
-                    ]
+                str_lengths_query = (
+                    pypika.Query.from_("strcols")
+                    .with_(
+                        context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
+                        "strcols",
+                    )
+                    .select(
+                        *[
+                            fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                            for sc in str_cols + complex_str_cols
+                        ]
+                    )
                 )
                 str_lengths_df = (
                     (context.execute_sql(str_lengths_query).to_arrow_table().to_pylist())
