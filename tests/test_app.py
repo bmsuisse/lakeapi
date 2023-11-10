@@ -472,6 +472,22 @@ def test_all_metadata():
     assert len(jsd["parameters"]) == 2
 
 
+def test_metadata_stringify():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True&%24engine={e}", auth=auth
+        )
+        assert response.status_code == 200
+
+
+def test_metadata_no_str_length():
+    for e in engines:
+        response = client.get(
+            f"/api/v1/complexer/complex_fruits/metadata_detail?include_str_lengths=False&%24engine={e}", auth=auth
+        )
+        assert response.status_code == 200
+
+
 def test_metadata_no_hidden():
     response = client.get(f"/api/v1/test/fruits_partition/metadata_detail", auth=auth)
     assert response.status_code == 200

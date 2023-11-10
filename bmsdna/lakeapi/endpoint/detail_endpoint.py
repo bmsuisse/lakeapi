@@ -54,6 +54,7 @@ def create_detailed_meta_endpoint(
     def get_detailed_metadata(
         req: Request,
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+        include_str_lengths: bool = True,
         engine: Engines
         | None = Query(
             title="$engine",
@@ -116,34 +117,28 @@ def create_detailed_meta_endpoint(
                 if jsonify_complex
                 else []
             )
-            str_lengths_df = (
-                (
-                    context.execute_sql(
-                        df.query_builder().select(
-                            *(
-                                [
-                                    fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
-                                    for sc in str_cols
-                                ]
-                                + [
-                                    fn.Function(
-                                        "MAX",
-                                        fn.Function(
-                                            context.len_func, context.json_function(fn.Field(sc), assure_string=True)
-                                        ),
-                                    ).as_(sc)
-                                    for sc in complex_str_cols
-                                ]
-                            )
-                        )
+            if include_str_lengths:
+                str_lengths_query = (
+                    pypika.Query.from_("strcols")
+                    .with_(
+                        context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
+                        "strcols",
                     )
-                    .to_arrow_table()
-                    .to_pylist()
+                    .select(
+                        *[
+                            fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                            for sc in str_cols + complex_str_cols
+                        ]
+                    )
                 )
-                if len(str_cols) > 0 or len(complex_str_cols) > 0
-                else [{}]
-            )
-            str_lengths = str_lengths_df[0]
+                str_lengths_df = (
+                    (context.execute_sql(str_lengths_query).to_arrow_table().to_pylist())
+                    if len(str_cols) > 0 or len(complex_str_cols) > 0
+                    else [{}]
+                )
+                str_lengths = str_lengths_df[0]
+            else:
+                str_lengths = {}
 
             def _recursive_get_type(t: pa.DataType) -> MetadataSchemaFieldType:
                 is_complex = pa.types.is_nested(t)
