@@ -129,11 +129,11 @@ def is_complex_type(
 
 
 def create_config_endpoint(
-    schema: Optional[pa.Schema],
+    schema: pa.Schema | None,
     apimethod: Literal["get", "post"],
     config: Config,
     router: APIRouter,
-    response_model: Type,
+    response_model: Type[BaseModel] | None,
     basic_config: BasicConfig,
     configs: Configs,
 ):
