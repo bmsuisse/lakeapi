@@ -356,6 +356,8 @@ class ExecutionContext(ABC):
         uri: SourceUri,
         file_type: FileTypes,
     ) -> datetime | None:
+        if file_type == "odbc":
+            return None
         fs, fs_uri = uri.get_fs_spec()
         if not fs.exists(fs_uri):
             return None

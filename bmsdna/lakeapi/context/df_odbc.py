@@ -161,6 +161,13 @@ class ODBCExecutionContext(ExecutionContext):
     def list_tables(self) -> ResultData:
         return self.execute_sql("SELECT table_schema, table_name as name, table_type from information_schema.tables")
 
+    def get_modified_date(
+        self,
+        uri: SourceUri,
+        file_type: FileTypes,
+    ) -> datetime | None:
+        return None
+
     def __enter__(self):
         return self
 
