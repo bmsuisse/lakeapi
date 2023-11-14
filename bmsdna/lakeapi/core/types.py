@@ -145,6 +145,7 @@ class MetadataDetailResult(BaseModel):
     parameters: Optional[List[Any]] = None
     search: Optional[List[Any]] = None
     nearby: Optional[List[Any]] = None
+    modified_date: datetime | None = None
 
 
 MetadataSchemaFieldType.model_rebuild()

@@ -478,6 +478,7 @@ def test_metadata_stringify():
             f"/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True&%24engine={e}", auth=auth
         )
         assert response.status_code == 200
+        assert response.json()["modified_date"] is not None
 
 
 def test_metadata_no_str_length():
@@ -486,6 +487,7 @@ def test_metadata_no_str_length():
             f"/api/v1/complexer/complex_fruits/metadata_detail?include_str_lengths=False&%24engine={e}", auth=auth
         )
         assert response.status_code == 200
+        assert response.json()["modified_date"] is not None
 
 
 def test_metadata_no_hidden():
