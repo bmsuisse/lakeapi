@@ -162,6 +162,8 @@ def create_detailed_meta_endpoint(
                 )
 
             schema = df.arrow_schema()
+            mdt = realdataframe.sql_context.get_modified_date(realdataframe.uri, realdataframe.config.file_type)
+            assert mdt is not None
             return MetadataDetailResult(
                 partition_values=partition_values,
                 partition_columns=partition_columns,
@@ -177,4 +179,5 @@ def create_detailed_meta_endpoint(
                 delta_schema=json.loads(delta_tbl.schema().to_json()) if delta_tbl else None,
                 parameters=config.params,  # type: ignore
                 search=config.search,
+                modified_date=mdt,
             )
