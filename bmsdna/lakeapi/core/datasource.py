@@ -265,7 +265,6 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
-@alru_cache(maxsize=128)
 async def _create_inner_expr(
     columns: Optional[List[str]],
     prmdef,
@@ -379,7 +378,7 @@ async def filter_df_based_on_params(
     exprs: list[Optional[pypika.Criterion]] = []
 
     tasks = [
-        _process_param(columns, context, key, value, param_def)
+        _process_param(tuple(columns) if columns else None, context, key, value, tuple(param_def))
         for key, value in params.items()
         if key and value and key not in ("limit", "offset")
     ]
