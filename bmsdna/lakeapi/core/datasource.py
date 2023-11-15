@@ -252,7 +252,6 @@ async def filter_partitions_based_on_params(
 ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
 
 
-@alru_cache(maxsize=128)
 async def concat_expr(
     exprs: ExpType,
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
@@ -265,8 +264,9 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
+@alru_cache(maxsize=128)
 async def _create_inner_expr(
-    columns: Optional[List[str]],
+    columns: Optional[tuple[str]],
     prmdef,
     e,
 ):
@@ -285,7 +285,6 @@ async def _create_inner_expr(
 
 @alru_cache(maxsize=128)
 async def _process_param(columns, context, key, value, param_def):
-    expr: Optional[pypika.Criterion] = None
     prmdef_and_op = await get_param_def(key, param_def)
     if prmdef_and_op is None:
         raise ValueError(f"thats not parameter: {key}")
