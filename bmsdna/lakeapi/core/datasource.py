@@ -17,7 +17,8 @@ from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes
-from async_lru import alru_cache
+from aiocache import cached
+from aiocache.serializers import PickleSerializer
 
 logger = get_logger(__name__)
 
@@ -264,7 +265,7 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
-@alru_cache(maxsize=128)
+@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
 async def _create_inner_expr(
     columns: Optional[tuple[str]],
     prmdef,
@@ -283,7 +284,7 @@ async def _create_inner_expr(
     return inner_expr
 
 
-@alru_cache(maxsize=128)
+@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
 async def _process_param(columns, context, key, value, param_def):
     expr: Optional[pypika.Criterion] = None
     prmdef_and_op = await get_param_def(key, param_def)
