@@ -285,7 +285,8 @@ async def _create_inner_expr(
 
 
 @alru_cache(maxsize=128)
-async def _process_param(columns, context, key, value, param_def, exprs):
+async def _process_param(columns, context, key, value, param_def):
+    expr: Optional[pypika.Criterion] = None
     prmdef_and_op = await get_param_def(key, param_def)
     if prmdef_and_op is None:
         raise ValueError(f"thats not parameter: {key}")
@@ -306,7 +307,7 @@ async def _process_param(columns, context, key, value, param_def, exprs):
                 else:
                     outer_expr = outer_expr | (inner_expr)
         if outer_expr is not None:
-            exprs.append(outer_expr)
+            expr = outer_expr
 
     elif columns and not colname in columns:
         pass
@@ -314,41 +315,42 @@ async def _process_param(columns, context, key, value, param_def, exprs):
     else:
         match op:
             case "<":
-                exprs.append(fn.Field(colname) < value)
+                expr = fn.Field(colname) < value
             case ">":
-                exprs.append(fn.Field(colname) > value)
+                expr = fn.Field(colname) > value
             case ">=":
-                exprs.append(fn.Field(colname) >= value)
+                expr = fn.Field(colname) >= value
             case "<=":
-                exprs.append(fn.Field(colname) <= value)
+                expr = fn.Field(colname) <= value
             case "<>":
-                exprs.append(fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull())
+                expr = fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull()
             case "==":
-                exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+                expr = fn.Field(colname) == value if value is not None else fn.Field(colname).isnull()
             case "=":
-                exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+                expr = fn.Field(colname) == value if value is not None else fn.Field(colname).isnull()
             case "not contains":
-                exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
+                expr = context.term_like(fn.Field(colname), value, "both", negate=True)
             case "contains":
-                exprs.append(context.term_like(fn.Field(colname), value, "both"))
+                expr = context.term_like(fn.Field(colname), value, "both")
             case "startswith":
-                exprs.append(context.term_like(fn.Field(colname), value, "end"))
+                expr = context.term_like(fn.Field(colname), value, "end")
             case "has":
-                exprs.append(
-                    fn.Function(context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value))
+                expr = fn.Function(
+                    context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value)
                 )
+
             case "in":
                 lsv = cast(list[str], value)
                 if len(lsv) > 0:
-                    exprs.append(fn.Field(colname).isin(lsv))
+                    expr = fn.Field(colname).isin(lsv)
             case "not in":
                 lsv = cast(list[str], value)
                 if len(lsv) > 0:
-                    exprs.append(~fn.Field(colname).isin(lsv))
+                    expr = ~fn.Field(colname).isin(lsv)
             case "between":
                 lsv = cast(list[str], value)
                 if len(lsv) == 2:
-                    exprs.append(fn.Field(colname).between(lsv[0], lsv[1]))
+                    expr = fn.Field(colname).between(lsv[0], lsv[1])
                 else:
                     from fastapi import HTTPException
 
@@ -356,7 +358,7 @@ async def _process_param(columns, context, key, value, param_def, exprs):
             case "not between":
                 lsv = cast(list[str], value)
                 if len(lsv) == 2:
-                    exprs.append(~fn.Field(colname).between(lsv[0], lsv[1]))
+                    expr = ~fn.Field(colname).between(lsv[0], lsv[1])
                 else:
                     from fastapi import HTTPException
 
@@ -364,7 +366,7 @@ async def _process_param(columns, context, key, value, param_def, exprs):
 
             case operator:
                 logger.error(f"wrong parameter for filter {operator}")
-    return exprs
+    return expr
 
 
 async def filter_df_based_on_params(
@@ -374,12 +376,16 @@ async def filter_df_based_on_params(
     columns: Optional[list[str]],
 ) -> Optional[pypika.Criterion]:
     expr: Optional[pypika.Criterion] = None
-    exprs: list[pypika.Criterion] = []
+    exprs: list[Optional[pypika.Criterion]] = []
 
-    for key, value in params.items():
-        if not key or not value or key in ("limit", "offset"):
-            continue  # can that happen? I don't know
-        exprs = await _process_param(columns, context, key, value, param_def, exprs)
+    tasks = [
+        _process_param(columns, context, key, value, param_def)
+        for key, value in params.items()
+        if key and value and key not in ("limit", "offset")
+    ]
+    results = await asyncio.gather(*tasks)
+
+    exprs.extend(filter(None, results))  # get rid of none values
 
     expr = await concat_expr(exprs)
     return expr
