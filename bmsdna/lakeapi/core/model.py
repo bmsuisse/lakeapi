@@ -13,6 +13,7 @@ from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
 from async_lru import alru_cache
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Op
     return None
 
 
+@lru_cache(maxsize=128)
 def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.DataType) -> tuple[Union[type, Any], Any]:
     if pa.types.is_timestamp(field_type):
         return (Union[datetime.datetime, None], None)
@@ -124,6 +126,7 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
     raise ValueError("Not supported")
 
 
+@lru_cache(maxsize=128)
 def _get_datatype(
     schema: Optional[pa.Schema],
     name: str,
@@ -141,6 +144,7 @@ def _get_datatype(
         return str | None
 
 
+@lru_cache(maxsize=128)
 def _fix_space_names(
     query_params: dict[str, tuple[str, Any]],
 ):
@@ -156,6 +160,7 @@ def _fix_space_names(
     return res_dict
 
 
+@lru_cache(maxsize=128)
 def create_parameter_model(
     schema: Optional[pa.Schema],
     name: str,
@@ -224,6 +229,7 @@ class TypeBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+@lru_cache(maxsize=128)
 def create_response_model(
     name: str,
     schema: pa.Schema,

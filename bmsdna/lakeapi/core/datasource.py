@@ -285,6 +285,88 @@ async def _create_inner_expr(
 
 
 @alru_cache(maxsize=128)
+async def _process_param(columns, context, key, value, param_def, exprs):
+    prmdef_and_op = await get_param_def(key, param_def)
+    if prmdef_and_op is None:
+        raise ValueError(f"thats not parameter: {key}")
+    prmdef, op = prmdef_and_op
+    colname = prmdef.colname or prmdef.name
+
+    if prmdef.combi:
+        outer_expr: Optional[pypika.Criterion] = None
+        tasks = []
+        for e in value:
+            task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
+            tasks.append(task)
+        results = await asyncio.gather(*tasks)
+        for inner_expr in results:
+            if inner_expr is not None:
+                if outer_expr is None:
+                    outer_expr = inner_expr
+                else:
+                    outer_expr = outer_expr | (inner_expr)
+        if outer_expr is not None:
+            exprs.append(outer_expr)
+
+    elif columns and not colname in columns:
+        pass
+
+    else:
+        match op:
+            case "<":
+                exprs.append(fn.Field(colname) < value)
+            case ">":
+                exprs.append(fn.Field(colname) > value)
+            case ">=":
+                exprs.append(fn.Field(colname) >= value)
+            case "<=":
+                exprs.append(fn.Field(colname) <= value)
+            case "<>":
+                exprs.append(fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull())
+            case "==":
+                exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+            case "=":
+                exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+            case "not contains":
+                exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
+            case "contains":
+                exprs.append(context.term_like(fn.Field(colname), value, "both"))
+            case "startswith":
+                exprs.append(context.term_like(fn.Field(colname), value, "end"))
+            case "has":
+                exprs.append(
+                    fn.Function(context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value))
+                )
+            case "in":
+                lsv = cast(list[str], value)
+                if len(lsv) > 0:
+                    exprs.append(fn.Field(colname).isin(lsv))
+            case "not in":
+                lsv = cast(list[str], value)
+                if len(lsv) > 0:
+                    exprs.append(~fn.Field(colname).isin(lsv))
+            case "between":
+                lsv = cast(list[str], value)
+                if len(lsv) == 2:
+                    exprs.append(fn.Field(colname).between(lsv[0], lsv[1]))
+                else:
+                    from fastapi import HTTPException
+
+                    raise HTTPException(400, "Must have an array with 2 elements for between")
+            case "not between":
+                lsv = cast(list[str], value)
+                if len(lsv) == 2:
+                    exprs.append(~fn.Field(colname).between(lsv[0], lsv[1]))
+                else:
+                    from fastapi import HTTPException
+
+                    raise HTTPException(400, "Must have an array with 2 elements for between")
+
+            case operator:
+                logger.error(f"wrong parameter for filter {operator}")
+    return exprs
+
+
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
@@ -297,86 +379,7 @@ async def filter_df_based_on_params(
     for key, value in params.items():
         if not key or not value or key in ("limit", "offset"):
             continue  # can that happen? I don't know
-        prmdef_and_op = await get_param_def(key, param_def)
-        if prmdef_and_op is None:
-            raise ValueError(f"thats not parameter: {key}")
-        prmdef, op = prmdef_and_op
-        colname = prmdef.colname or prmdef.name
-
-        if prmdef.combi:
-            outer_expr: Optional[pypika.Criterion] = None
-            tasks = []
-            for e in value:
-                task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
-                tasks.append(task)
-            results = await asyncio.gather(*tasks)
-            for inner_expr in results:
-                if inner_expr is not None:
-                    if outer_expr is None:
-                        outer_expr = inner_expr
-                    else:
-                        outer_expr = outer_expr | (inner_expr)
-            if outer_expr is not None:
-                exprs.append(outer_expr)
-
-        elif columns and not colname in columns:
-            pass
-
-        else:
-            match op:
-                case "<":
-                    exprs.append(fn.Field(colname) < value)
-                case ">":
-                    exprs.append(fn.Field(colname) > value)
-                case ">=":
-                    exprs.append(fn.Field(colname) >= value)
-                case "<=":
-                    exprs.append(fn.Field(colname) <= value)
-                case "<>":
-                    exprs.append(fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull())
-                case "==":
-                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
-                case "=":
-                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
-                case "not contains":
-                    exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
-                case "contains":
-                    exprs.append(context.term_like(fn.Field(colname), value, "both"))
-                case "startswith":
-                    exprs.append(context.term_like(fn.Field(colname), value, "end"))
-                case "has":
-                    exprs.append(
-                        fn.Function(
-                            context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value)
-                        )
-                    )
-                case "in":
-                    lsv = cast(list[str], value)
-                    if len(lsv) > 0:
-                        exprs.append(fn.Field(colname).isin(lsv))
-                case "not in":
-                    lsv = cast(list[str], value)
-                    if len(lsv) > 0:
-                        exprs.append(~fn.Field(colname).isin(lsv))
-                case "between":
-                    lsv = cast(list[str], value)
-                    if len(lsv) == 2:
-                        exprs.append(fn.Field(colname).between(lsv[0], lsv[1]))
-                    else:
-                        from fastapi import HTTPException
-
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
-                case "not between":
-                    lsv = cast(list[str], value)
-                    if len(lsv) == 2:
-                        exprs.append(~fn.Field(colname).between(lsv[0], lsv[1]))
-                    else:
-                        from fastapi import HTTPException
-
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
-
-                case operator:
-                    logger.error(f"wrong parameter for filter {operator}")
+        exprs = await _process_param(columns, context, key, value, param_def, exprs)
 
     expr = await concat_expr(exprs)
     return expr
