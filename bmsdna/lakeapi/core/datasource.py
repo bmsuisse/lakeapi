@@ -253,6 +253,7 @@ async def filter_partitions_based_on_params(
 ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
 
 
+@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
 async def concat_expr(
     exprs: ExpType,
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
