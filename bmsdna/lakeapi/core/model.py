@@ -12,6 +12,7 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
+from async_lru import alru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,7 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
+@alru_cache(maxsize=128)
 async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold().replace(" ", "_")
     for param in paramdef:

@@ -17,6 +17,7 @@ from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes
+from async_lru import alru_cache
 
 logger = get_logger(__name__)
 
@@ -251,6 +252,7 @@ async def filter_partitions_based_on_params(
 ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
 
 
+@alru_cache(maxsize=128)
 async def concat_expr(
     exprs: ExpType,
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
@@ -263,6 +265,7 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
+@alru_cache(maxsize=128)
 async def _create_inner_expr(
     columns: Optional[List[str]],
     prmdef,
@@ -281,6 +284,7 @@ async def _create_inner_expr(
     return inner_expr
 
 
+@alru_cache(maxsize=128)
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
