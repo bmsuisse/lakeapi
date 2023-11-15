@@ -31,7 +31,6 @@ expandvars = "^0.9.0"
 pandas = "^2.1.0"
 fsspec = "^2023.10.0"
 adlfs = "^2023.10.0"
-async-lru = "^2.0.4"
 aiocache = "^0.12.2"
 
 
