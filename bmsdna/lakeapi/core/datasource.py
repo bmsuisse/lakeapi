@@ -285,6 +285,7 @@ async def _create_inner_expr(
 
 @alru_cache(maxsize=128)
 async def _process_param(columns, context, key, value, param_def):
+    expr: Optional[pypika.Criterion] = None
     prmdef_and_op = await get_param_def(key, param_def)
     if prmdef_and_op is None:
         raise ValueError(f"thats not parameter: {key}")
