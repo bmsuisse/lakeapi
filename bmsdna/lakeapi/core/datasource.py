@@ -267,7 +267,7 @@ async def concat_expr(
 
 @cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
 async def _create_inner_expr(
-    columns: Optional[tuple[str]],
+    columns: Optional[list[str]],
     prmdef,
     e,
 ):
@@ -369,6 +369,7 @@ async def _process_param(columns, context, key, value, param_def):
     return expr
 
 
+@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
@@ -379,7 +380,7 @@ async def filter_df_based_on_params(
     exprs: list[Optional[pypika.Criterion]] = []
 
     tasks = [
-        _process_param(tuple(columns) if columns else None, context, key, value, tuple(param_def))
+        _process_param(columns, context, key, value, param_def)
         for key, value in params.items()
         if key and value and key not in ("limit", "offset")
     ]
