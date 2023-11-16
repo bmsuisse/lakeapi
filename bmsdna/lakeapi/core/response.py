@@ -21,7 +21,6 @@ from urllib.parse import quote
 from pypika.queries import QueryBuilder
 from mimetypes import guess_type
 from starlette.concurrency import iterate_in_threadpool
-from async_lru import alru_cache
 
 import anyio
 
@@ -46,7 +45,6 @@ class OutputFormats(Enum):
     ARROW_STREAM = 14
 
 
-@alru_cache(maxsize=128)
 async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
     if realaccept == "application/avro" or realaccept == "avro":

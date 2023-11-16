@@ -12,7 +12,6 @@ from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
-from async_lru import alru_cache
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
