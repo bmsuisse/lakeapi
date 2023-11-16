@@ -370,7 +370,7 @@ async def _process_param(columns, context, key, value, param_def):
     return expr
 
 
-# @cached(ttl=2 ^ 10, serializer=PickleSerializer())
+@cached(ttl=2 ^ 10, serializer=PickleSerializer())
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
