@@ -223,7 +223,7 @@ class TypeBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-@lru_cache(maxsize=128)
+@lru_cache()
 def create_response_model(
     name: str,
     schema: pa.Schema,
