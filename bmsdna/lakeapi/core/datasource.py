@@ -17,7 +17,7 @@ from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes
-from aiocache import cached
+from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
 
 logger = get_logger(__name__)
@@ -253,7 +253,7 @@ async def filter_partitions_based_on_params(
 ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
 
 
-@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
+@cached(ttl=2 ^ 10, cache=Cache.MEMORY, serializer=PickleSerializer())
 async def concat_expr(
     exprs: ExpType,
 ) -> Union[pypika.Criterion, pa.compute.Expression]:
@@ -266,7 +266,7 @@ async def concat_expr(
     return cast(pypika.Criterion, expr)
 
 
-@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
+@cached(ttl=2 ^ 10, cache=Cache.MEMORY, serializer=PickleSerializer())
 async def _create_inner_expr(
     columns: Optional[list[str]],
     prmdef,
@@ -285,7 +285,7 @@ async def _create_inner_expr(
     return inner_expr
 
 
-@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
+@cached(ttl=2 ^ 10, serializer=PickleSerializer())
 async def _process_param(columns, context, key, value, param_def):
     expr: Optional[pypika.Criterion] = None
     prmdef_and_op = await get_param_def(key, param_def)
@@ -370,7 +370,7 @@ async def _process_param(columns, context, key, value, param_def):
     return expr
 
 
-@cached(ttl=2 ^ 10, key="key", serializer=PickleSerializer())
+@cached(ttl=2 ^ 10, serializer=PickleSerializer())
 async def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
