@@ -12,7 +12,7 @@ python = "^3.10"
 pyyaml = "^6.0"
 pypika = "^0.48.9"
 duckdb = "^0.9.2"
-polars = "0.19.16"
+polars = "0.19.18"
 
 
 # polars stuff
