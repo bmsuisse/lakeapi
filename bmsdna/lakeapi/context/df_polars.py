@@ -40,7 +40,7 @@ try:
         pl.Boolean: pa.bool_(),
         pl.Utf8: pa.large_string(),
         pl.Binary: pa.binary(),
-        pl.Categorical: pa.large_string(),
+        pl.Categorical: pa.large_string()
     }
 except:
     PL_TO_ARROW = {}
@@ -88,6 +88,8 @@ class PolarsResultData(ResultData):
             return pa.duration(t.time_unit)
         if isinstance(t, pl.Time):
             return pa.time64()
+        if isinstance(t, pl.Decimal):
+            return pa.decimal128(t.precision, t.scale)
         if t in PL_TO_ARROW:
             return PL_TO_ARROW[t]
         return py_type_to_arrow_type(dtype_to_py_type(t))
