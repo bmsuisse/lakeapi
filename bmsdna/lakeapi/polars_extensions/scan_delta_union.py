@@ -21,6 +21,14 @@ def scan_delta_union(delta_table: DeltaTable) -> pl.LazyFrame:
             elif "partition." + pn in ac:
                 part_vl = ac["partition." + pn]
                 part_cols.append(pl.lit(part_vl).alias(ln))
+            elif "partition_values" in ac and ln in ac["partition_values"]:
+                # as of delta 0.14
+                part_vl = ac["partition_values"][ln]
+                part_cols.append(pl.lit(part_vl).alias(ln))
+            elif "partition." + ln in ac:
+                # as of delta 0.14
+                part_vl = ac["partition." + ln]
+                part_cols.append(pl.lit(part_vl).alias(ln))
             else:
                 selects.append(pl.col(pn).alias(ln))
         ds = base_ds.select(*selects).with_columns(*part_cols)
