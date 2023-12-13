@@ -12,6 +12,7 @@ import json
 import pyarrow.dataset as ds
 import duckdb
 import sqlite3
+from datetime import date
 
 try:
     from .utils import create_rows_faker
@@ -79,6 +80,23 @@ if __name__ == "__main__":
         "delta/fruits",
     )
     store_df_as_delta(df_fruits, "startest/fruits")
+    store_df_as_delta(
+        {
+            "date_field": [
+                date(2022, 12, 2),
+                date(2022, 12, 5),
+                date(2022, 12, 7),
+                date(2022, 11, 2),
+                date(2022, 2, 2),
+                date(2021, 12, 2),
+                date(2023, 10, 2),
+            ],
+            "fruits": ["banana", "banana", "apple", "apple", "banana", "apple", "ananas"],
+            "B": [5, 4, 3, 2, 1, 5, 9],
+            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "lamborghini", "fiat"],
+        },
+        "delta/dates",
+    )
 
     store_df_as_delta(
         {

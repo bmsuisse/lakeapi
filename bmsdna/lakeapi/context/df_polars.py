@@ -154,7 +154,7 @@ class PolarsExecutionContext(ExecutionContext):
         chunk_size: int,
         sql_context: "Optional[pl.SQLContext]" = None,
     ):
-        super().__init__(chunk_size=chunk_size)
+        super().__init__(chunk_size=chunk_size, engine_name="polars")
         import polars as pl
 
         self.len_func = "length"
