@@ -157,7 +157,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         con: duckdb.DuckDBPyConnection,
         chunk_size: int,
     ):
-        super().__init__(chunk_size=chunk_size)
+        super().__init__(chunk_size=chunk_size, engine_name="duckdb")
         self.con = con
         self.res_con = None
         self.persistance_file_name = None

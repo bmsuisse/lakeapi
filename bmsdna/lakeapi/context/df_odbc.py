@@ -106,7 +106,7 @@ class ODBCResultData(ResultData):
 
 class ODBCExecutionContext(ExecutionContext):
     def __init__(self, chunk_size: int):
-        super().__init__(chunk_size=chunk_size)
+        super().__init__(chunk_size=chunk_size, engine_name="odbc")
         self.res_con = None
         self.datasources = dict()
         self.persistance_file_name = None

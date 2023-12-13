@@ -172,14 +172,12 @@ class FileTypeNotSupportedError(Exception):
 
 
 class ExecutionContext(ABC):
-    def __init__(
-        self,
-        chunk_size: int,
-    ) -> None:
+    def __init__(self, chunk_size: int, engine_name: str) -> None:
         super().__init__()
         self.modified_dates: dict[str, datetime | None] = {}
         self.chunk_size = chunk_size
         self.len_func = "LEN"
+        self.engine_name = engine_name
 
         self.array_contains_func = "array_contains"
 

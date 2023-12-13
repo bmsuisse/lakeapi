@@ -1,7 +1,7 @@
 import asyncio
 import hashlib
 import os
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
@@ -16,7 +16,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes
+from bmsdna.lakeapi.core.types import DeltaOperatorTypes, Engines
 
 logger = get_logger(__name__)
 
@@ -280,6 +280,15 @@ async def _create_inner_expr(
                 inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
     return inner_expr
 
+def _sql_value(value: str | datetime | date | None, engine: str):
+    if engine != "polars":
+        return value # all other engines convert automatically
+    import pypika.functions as fnx
+    if isinstance(value, datetime):
+        return fnx.Cast(value, "datetime")
+    if isinstance(value, date):
+        return fnx.Cast(value, "date")
+    return value
 
 async def filter_df_based_on_params(
     context: ExecutionContext,
@@ -321,19 +330,19 @@ async def filter_df_based_on_params(
         else:
             match op:
                 case "<":
-                    exprs.append(fn.Field(colname) < value)
+                    exprs.append(fn.Field(colname) < _sql_value(value, engine=context.engine_name))
                 case ">":
-                    exprs.append(fn.Field(colname) > value)
+                    exprs.append(fn.Field(colname) > _sql_value(value, engine=context.engine_name))
                 case ">=":
-                    exprs.append(fn.Field(colname) >= value)
+                    exprs.append(fn.Field(colname) >= _sql_value(value, engine=context.engine_name))
                 case "<=":
-                    exprs.append(fn.Field(colname) <= value)
+                    exprs.append(fn.Field(colname) <= _sql_value(value, engine=context.engine_name))
                 case "<>":
-                    exprs.append(fn.Field(colname) != value if value is not None else fn.Field(colname).isnotnull())
+                    exprs.append(fn.Field(colname) != _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnotnull())
                 case "==":
-                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+                    exprs.append(fn.Field(colname) == _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
                 case "=":
-                    exprs.append(fn.Field(colname) == value if value is not None else fn.Field(colname).isnull())
+                    exprs.append(fn.Field(colname) ==  _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
                 case "not contains":
                     exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
                 case "contains":
