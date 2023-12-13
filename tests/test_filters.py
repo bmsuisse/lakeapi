@@ -133,7 +133,7 @@ def test_gt_date_get():
         assert len(jsd) > 0
 
         for item in jsd:
-            assert datetime.fromisoformat(item["date_field_gt"]) > datetime(2023, 1, 1)
+            assert datetime.fromisoformat(item["date_field"]) > datetime(2023, 1, 1)
 
 
 def test_gte():
