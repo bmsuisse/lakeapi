@@ -120,13 +120,12 @@ def test_gt():
             assert item["B"] > 2
 
 
-
 def test_gt_date_get():
     from datetime import datetime
 
     for e in engines:
         response = client.get(
-            f"/api/v1/test/fruits_date?limit=5&format=json&%24engine={e}&date_field_gt=2023-01-01",
+            f"/api/v1/test/fruits_date?limit=5&format=json&%24engine={e}&date_field_gt=2023-01-01T00:00",
             auth=auth,
         )
         assert response.status_code == 200
@@ -135,7 +134,6 @@ def test_gt_date_get():
 
         for item in jsd:
             assert datetime.fromisoformat(item["date_field_gt"]) > datetime(2023, 1, 1)
-            
 
 
 def test_gte():
