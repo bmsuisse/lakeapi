@@ -123,7 +123,7 @@ def test_gt():
 def test_gt_date_get():
     from datetime import datetime
 
-    for e in engines:
+    for e in ["duckdb"]:  # TODO: Enable polalrs once they support datetime decently
         response = client.get(
             f"/api/v1/test/fruits_date?limit=5&format=json&%24engine={e}&date_field_gt=2023-01-01T00:00",
             auth=auth,
@@ -137,7 +137,7 @@ def test_gt_date_get():
 
 
 def test_gte():
-    for e in ["duckdb"]:  # TODO: Enable polalrs once they support datetime decently
+    for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
             auth=auth,
