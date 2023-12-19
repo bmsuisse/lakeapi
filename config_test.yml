@@ -48,6 +48,19 @@ tables:
       uri: delta/fruits
       file_type: delta
 
+  - name: fruits_date
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: delta/dates
+      file_type: delta
+    params:
+      - name: date_field
+        operators: ["=", ">", "<", ">=", "<="]
+
   - name: fruits_sortby_asc
     tag: test
     version: 1
