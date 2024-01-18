@@ -40,7 +40,7 @@ try:
         pl.Boolean: pa.bool_(),
         pl.Utf8: pa.large_string(),
         pl.Binary: pa.binary(),
-        pl.Categorical: pa.large_string()
+        pl.Categorical: pa.large_string(),
     }
 except:
     PL_TO_ARROW = {}
@@ -182,20 +182,6 @@ class PolarsExecutionContext(ExecutionContext):
 
     def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
-
-    def term_like(
-        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
-    ) -> Criterion:
-        if wildcard_loc == "start":
-            expr = pypika.queries.Function("ENDS_WITH", a, Term.wrap_constant(value))
-
-        elif wildcard_loc == "end":
-            expr = pypika.queries.Function("STARTS_WITH", a, Term.wrap_constant(value))
-        else:
-            expr = pypika.queries.Function("REGEXP_LIKE", a, Term.wrap_constant(".*" + value + ".*"))
-        if negate:
-            return ~expr
-        return expr
 
     def jsonify_complex(self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]):
         import polars as pl
