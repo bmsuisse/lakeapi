@@ -25,13 +25,8 @@ def is_correct(
     )
 
 
-def add_user_middlware(
-    app: FastAPI,
-    basic_config: BasicConfig,
-    users: Sequence[UserConfig],
-):
-    @app.middleware("http")
-    async def get_username(request: Request, call_next):
+def get_basic_auth_middleware_func(users: Sequence[UserConfig]):
+    async def basic_auth_middleware_func(request: Request, call_next):
         import json
 
         credentials = await HTTPBasic(auto_error=False)(request)
@@ -65,3 +60,15 @@ def add_user_middlware(
             )
         request.scope["user"] = {"username": credentials.username}
         return await call_next(request)
+
+    return basic_auth_middleware_func
+
+
+def add_user_middlware(
+    app: FastAPI,
+    basic_config: BasicConfig,
+    users: Sequence[UserConfig],
+):
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    app.add_middleware(BaseHTTPMiddleware, dispatch=get_basic_auth_middleware_func(users))
