@@ -1,6 +1,6 @@
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import (
     Any,
@@ -49,6 +49,7 @@ class BasicConfig:
     min_search_length: int
     default_engine: Engines
     default_chunk_size: int
+    schema_cache_ttl: int | None
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
 
 
@@ -61,6 +62,7 @@ def get_default_config():
         default_engine="duckdb",
         default_chunk_size=10000,
         prepare_sql_db_hook=None,
+        schema_cache_ttl=5 * 60,  # 5 minutes
     )
 
 
@@ -120,6 +122,16 @@ class DatasourceConfig:
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
     table_name: Optional[str] = None
+
+    _unique_hash = None
+
+    def get_unique_hash(self):
+        if self._unique_hash is None:
+            import json
+            import hashlib
+
+            self._unique_hash = hashlib.sha1(json.dumps(asdict(self), sort_keys=True).encode("utf-8")).hexdigest()
+        return self._unique_hash
 
 
 @dataclass

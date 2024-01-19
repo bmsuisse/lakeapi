@@ -13,16 +13,14 @@ logger = get_logger(__name__)
 all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
 
-def init_routes(
-    configs: Configs,
-    basic_config: BasicConfig,
-):
+def init_routes(configs: Configs, basic_config: BasicConfig):
     from bmsdna.lakeapi.endpoint.endpoint import (
         get_response_model,
         create_config_endpoint,
     )
     from bmsdna.lakeapi.endpoint.detail_endpoint import create_detailed_meta_endpoint
     from bmsdna.lakeapi.endpoint.sql_endpoint import create_sql_endpoint
+    from bmsdna.lakeapi.core.schema_cache import get_schema_cached
 
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
@@ -50,10 +48,7 @@ def init_routes(
                     basic_config=basic_config,
                     accounts=configs.accounts,
                 )
-                if not realdataframe.file_exists():
-                    schema = None
-                else:
-                    schema = realdataframe.get_schema()
+                schema = get_schema_cached(basic_config, realdataframe, config.datasource.get_unique_hash())
                 if schema is None:
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
