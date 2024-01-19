@@ -120,29 +120,6 @@ class DatasourceConfig:
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
     table_name: Optional[str] = None
-    hash_key: Optional[str] = None
-
-    def __post_init__(self):
-        self.hash_key = self.get_hash_key()
-
-    def get_hash_key(self):
-        hash_key = None
-        uri = os.path.join("tests", basic_config.data_path, self.uri)
-
-        try:
-            if self.file_type == "delta":
-                from deltalake import DeltaTable
-
-                dt = DeltaTable(os.path.join(uri))
-                hash_key = get_md5_hash(str(dt.metadata()))
-
-            else:
-                hash_key = get_md5_hash(str(Path(uri).stat()))
-
-        except Exception:
-            pass
-
-        return hash_key if hash_key else get_md5_hash(uri)
 
 
 @dataclass
