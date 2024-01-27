@@ -128,6 +128,10 @@ def is_complex_type(
     return pa.types.is_nested(f.type)
 
 
+def skip_error_result(result: Response, args, kwargs, key=None) -> bool:
+    return result.status_code == 200
+
+
 def create_config_endpoint(
     schema: pa.Schema | None,
     apimethod: Literal["get", "post"],

@@ -57,9 +57,11 @@ def get_sql_for_delta(dt: DeltaTable):
     phys_names = [cm[1] for cm in colmaps]
     for ac in dt.get_add_actions(flatten=True).to_pylist():
         fullpath = os.path.join(dt.table_uri, ac["path"])
-        sc = pq.read_schema(fullpath)
-
-        cols = sc.names
+        try:
+            sc = pq.read_schema(fullpath)
+            cols = sc.names
+        except:
+            cols = phys_names  # assume all columns here
         cols_sqls = []
         for c in phys_names:
             if "partition_values" in ac and c in ac["partition_values"]:

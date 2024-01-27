@@ -280,15 +280,18 @@ async def _create_inner_expr(
                 inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
     return inner_expr
 
+
 def _sql_value(value: str | datetime | date | None, engine: str):
     if engine != "polars":
-        return value # all other engines convert automatically
+        return value  # all other engines convert automatically
     import pypika.functions as fnx
+
     if isinstance(value, datetime):
         return fnx.Cast(value, "datetime")
     if isinstance(value, date):
         return fnx.Cast(value, "date")
     return value
+
 
 async def filter_df_based_on_params(
     context: ExecutionContext,
@@ -338,11 +341,23 @@ async def filter_df_based_on_params(
                 case "<=":
                     exprs.append(fn.Field(colname) <= _sql_value(value, engine=context.engine_name))
                 case "<>":
-                    exprs.append(fn.Field(colname) != _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnotnull())
+                    exprs.append(
+                        fn.Field(colname) != _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnotnull()
+                    )
                 case "==":
-                    exprs.append(fn.Field(colname) == _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
+                    exprs.append(
+                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnull()
+                    )
                 case "=":
-                    exprs.append(fn.Field(colname) ==  _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
+                    exprs.append(
+                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnull()
+                    )
                 case "not contains":
                     exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
                 case "contains":
