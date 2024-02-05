@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 def _make_model(v, name):
     if type(v) is dict:
         return (
-            create_model(
+            create_model(  # type: ignore
                 name,
-                **{k: _make_model(v, k) for k, v in v.items()},
+                **{k: _make_model(v, k) for k, v in v.items()},  # type: ignore
             ),
             ...,
         )  # type: ignore
@@ -170,7 +170,7 @@ def create_parameter_model(
         operators = param.operators or ["="]
         if param.combi:
             if apimethod == "post":  # Only supported in POST Requets for now
-                query_params[param.name] = (
+                query_params[param.name] = (  # type: ignore
                     Union[List[dict[str, Any]], None],  # type: ignore
                     Query(default=param.real_default if not param.required else ...),
                 )
@@ -183,28 +183,28 @@ def create_parameter_model(
 
                 if operator in ["in", "not in", "between", "not between"]:
                     if apimethod == "post":  # Only supported in POST Requets for now
-                        query_params[param.name + postfix] = (
+                        query_params[param.name + postfix] = (  # type: ignore
                             Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
                             Query(default=param.real_default if not param.required else ...),
                         )
                 elif operator in ["has"] and schema is not None:
-                    query_params[param.name + postfix] = (
+                    query_params[param.name + postfix] = (  # type: ignore
                         _get_datatype(schema, param.name, inner=True),
                         param.real_default if not param.required else ...,
                     )
                 else:
-                    query_params[param.name + postfix] = (
+                    query_params[param.name + postfix] = (  # type: ignore
                         realtype,
                         param.real_default if not param.required else ...,
                     )
     for sc in search or []:
-        query_params[sc.name] = (
+        query_params[sc.name] = (  # type: ignore
             Optional[str],
             None,
         )
     if apimethod == "post":
         for nb in nearby or []:
-            query_params[nb.name] = (
+            query_params[nb.name] = (  # type: ignore
                 Optional[GeoModel],
                 None,
             )
