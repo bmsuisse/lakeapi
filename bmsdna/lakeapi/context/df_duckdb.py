@@ -275,7 +275,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     )"""
         )
 
-    _account_mapped: str = ""
+    _accounts_mapped: list[str] = []
 
     def register_datasource(
         self,
@@ -287,7 +287,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure", flavor="fsspec")
-        if uri.account and remote_opts and not self._account_mapped:
+        if uri.account and remote_opts and uri.account not in self._accounts_mapped:
             AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
             if AZURE_EXT_LOC:
                 self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
@@ -321,7 +321,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ACCOUNT_NAME '{an}'
 );"""
                 )
-            self._account_mapped = uri.account
+            self._accounts_mapped.append(uri.account)
 
         if file_type == "json":
             self.con.execute(
