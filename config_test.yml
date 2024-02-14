@@ -505,7 +505,7 @@ tables:
     tag: blobb
     api_method: get
     datasource:
-      uri: "abfs://testlake/td/faker.parquet"
+      uri: "az://testlake/td/faker.parquet"
       file_type: parquet
       account: "test_account"
 
@@ -513,7 +513,7 @@ tables:
     tag: blobb
     api_method: get
     datasource:
-      uri: "abfs://testlake/td/delta/*"
+      uri: "az://testlake/td/delta/*"
       file_type: delta
       account: "test_account"
     config_from_delta: true

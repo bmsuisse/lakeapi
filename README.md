@@ -281,6 +281,8 @@ Supported settings are only those which are supported by BOTH projects. In pract
 
 If you want to use [Azure Default Credential](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python), just specify account_name without any further option.
 
+Use az:// as prefix for your azure urls
+
 ## Further projects
 
 - [lakeapi2sql](https://github.com/bmsuisse/lakeapi2sql) Allows you to read from lake api and write to MS SQL Server
