@@ -1,7 +1,10 @@
 import duckdb
 
-with duckdb.connect(config={"allow_unsigned_extensions": True}) as con:
-    AZURE_EXT_LOC = "azure.duckdb_extension.gz"
-    with con.cursor() as cur:
-        cur.execute(f"PRAGMA platform;CALL pragma_platform();")
-        print(cur.fetchall())
+with duckdb.connect() as con:
+    con.execute(
+        """FORCE INSTALL azure;
+LOAD azure;CREATE SECRET secret2 (
+    TYPE AZURE,
+    ACCOUNT_NAME 'account_name'
+);"""
+    )
