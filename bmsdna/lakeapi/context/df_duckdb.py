@@ -289,6 +289,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
         remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure", flavor="fsspec")
         if uri.account and remote_opts and uri.account not in self._accounts_mapped:
             AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
+            assert " " not in uri.account
+            assert "'" not in uri.account
+            assert "-" not in uri.account
+            assert "/" not in uri.account
             if AZURE_EXT_LOC:
                 self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
             else:
@@ -297,7 +301,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             if "connection_string" in remote_opts:
                 cr = remote_opts["connection_string"]
                 self.con.execute(
-                    f"""CREATE SECRET `sec_{uri.account}` (
+                    f"""CREATE SECRET sec_{uri.account} (
     TYPE AZURE,
     CONNECTION_STRING '{cr}'
 );"""
@@ -307,7 +311,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 ak = remote_opts["account_key"]
                 conn_str = f"AccountName={an};AccountKey={ak};BlobEndpoint=https://{an}.blob.core.windows.net;"
                 self.con.execute(
-                    f"""CREATE SECRET `sec_{uri.account}` (
+                    f"""CREATE SECRET sec_{uri.account} (
     TYPE AZURE,
     CONNECTION_STRING '{conn_str}'
 );"""
@@ -315,7 +319,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             elif "account_name" in remote_opts:
                 an = remote_opts["account_name"]
                 self.con.execute(
-                    f"""CREATE SECRET `sec_{uri.account}` (
+                    f"""CREATE SECRET sec_{uri.account} (
     TYPE AZURE,
     PROVIDER CREDENTIAL_CHAIN,
     ACCOUNT_NAME '{an}'
