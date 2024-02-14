@@ -92,7 +92,12 @@ class SourceUri:
         )
 
     def is_azure(self):
-        return self.uri.startswith("abfs://") or self.uri.startswith("abfss://")
+        return (
+            self.uri.startswith("azure://")  # duckdb
+            or self.uri.startswith("az://")  # duckdb
+            or self.uri.startswith("abfs://")  # fsspec
+            or self.uri.startswith("abfss://")  # fsspec
+        )
 
     def get_fs_spec(self) -> tuple[fsspec.AbstractFileSystem, str]:
         if self.account is None:
