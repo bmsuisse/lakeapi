@@ -1,27 +1,38 @@
+from typing import Callable
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 from bmsdna.lakeapi.core.types import Engines
+
+
+def _duckdb(chunk_size: int):
+    from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
+
+    return DuckDbExecutionContext(chunk_size=chunk_size)
+
+
+def _polars(chunk_size: int):
+    from bmsdna.lakeapi.context.df_polars import PolarsExecutionContext
+
+    return PolarsExecutionContext(chunk_size=chunk_size)
+
+
+def _odbc(chunk_size: int):
+    from bmsdna.lakeapi.context.df_odbc import ODBCExecutionContext
+
+    return ODBCExecutionContext(chunk_size=chunk_size)
+
+
+engine_registry = {"duckdb": _duckdb, "polars": _polars, "odbc": _odbc}
+
+
+def register_engine(engine: Engines, factory: Callable[[int], ExecutionContext]):
+    engine_registry[engine] = factory
 
 
 def get_context_by_engine(
     engine: Engines,
     chunk_size: int,
 ) -> ExecutionContext:
-    match engine.lower():
-        case "duckdb":
-            from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContext
-
-            return DuckDbExecutionContext(chunk_size=chunk_size)
-        case "polars":
-            from bmsdna.lakeapi.context.df_polars import PolarsExecutionContext
-
-            return PolarsExecutionContext(chunk_size=chunk_size)
-        case "odbc":
-            from bmsdna.lakeapi.context.df_odbc import ODBCExecutionContext
-
-            return ODBCExecutionContext(chunk_size=chunk_size)
-
-        case _:
-            raise Exception(f"Unknown engine {engine}")
+    return engine_registry[engine](chunk_size)
 
 
 class ExecutionContextManager:
