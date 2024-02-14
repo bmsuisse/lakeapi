@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
-DUCK_CONFIG = {"allow_unsigned_extensions": True}  # required for azure extension preview for now
+DUCK_CONFIG = {}
 
 
 def _get_temp_table_name():
@@ -296,15 +296,31 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 self.con.load_extension("azure")
             if "connection_string" in remote_opts:
                 cr = remote_opts["connection_string"]
-                self.con.execute(f"SET azure_storage_connection_string = '{cr}';")
+                self.con.execute(
+                    f"""CREATE SECRET `sec_{uri.account}` (
+    TYPE AZURE,
+    CONNECTION_STRING '{cr}'
+);"""
+                )
             elif "account_name" in remote_opts and "account_key" in remote_opts:
                 an = remote_opts["account_name"]
                 ak = remote_opts["account_key"]
                 conn_str = f"AccountName={an};AccountKey={ak};BlobEndpoint=https://{an}.blob.core.windows.net;"
+                self.con.execute(
+                    f"""CREATE SECRET `sec_{uri.account}` (
+    TYPE AZURE,
+    CONNECTION_STRING '{conn_str}'
+);"""
+                )
             elif "account_name" in remote_opts:
                 an = remote_opts["account_name"]
-                self.con.execute(f"SET azure_account_name = '{an}';")
-                self.con.execute(f"SET azure_credential_chain = default;")  # requires preview extension
+                self.con.execute(
+                    f"""CREATE SECRET `sec_{uri.account}` (
+    TYPE AZURE,
+    PROVIDER CREDENTIAL_CHAIN,
+    ACCOUNT_NAME '{an}'
+);"""
+                )
             self._account_mapped = uri.account
 
         if file_type == "json":
