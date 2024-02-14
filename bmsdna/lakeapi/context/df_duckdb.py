@@ -28,6 +28,7 @@ logger = get_logger(__name__)
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
 DUCK_CONFIG = {}
+DUCK_INIT_SCRIPTS: list[str] = []
 
 
 def _get_temp_table_name():
@@ -159,6 +160,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ):
         super().__init__(chunk_size=chunk_size, engine_name="duckdb")
         self.con = con
+        for ins in DUCK_INIT_SCRIPTS:
+            self.con.execute(ins)
         self.res_con = None
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
@@ -187,6 +190,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
             self.res_con = duckdb.connect(self.persistance_file_name, read_only=True, config=DUCK_CONFIG)
+
             return DuckDBResultData(
                 sql,
                 self.res_con,
@@ -251,6 +255,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             if os.path.exists(persistance_file_name_temp):
                 os.remove(persistance_file_name_temp)
             search_con = duckdb.connect(persistance_file_name_temp, read_only=False, config=DUCK_CONFIG)
+
             search_con.commit()  # create empty duck file
             search_con.close()
             self.con.execute(f"ATTACH '{persistance_file_name_temp}' AS search_con")
@@ -275,7 +280,6 @@ class DuckDbExecutionContextBase(ExecutionContext):
     )"""
         )
 
-
     def register_datasource(
         self,
         target_name: str,
@@ -299,11 +303,14 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 assert "'" not in uri.account
                 assert "-" not in uri.account
                 assert "/" not in uri.account
-                if AZURE_EXT_LOC:
-                    self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
-                else:
-                    self.con.install_extension("azure")
-                    self.con.load_extension("azure")
+                try:
+                    if AZURE_EXT_LOC:
+                        self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
+                    else:
+                        self.con.install_extension("azure")
+                except Exception as e:
+                    logger.error(f"Error installing azure extension: {e}")
+                self.con.load_extension("azure")
                 if "connection_string" in remote_opts:
                     cr = remote_opts["connection_string"]
                     self.con.execute(
