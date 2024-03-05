@@ -790,6 +790,21 @@ pandas = ["pandas"]
 pyspark = ["delta-spark", "numpy (==1.22.2)", "pyspark"]
 
 [[package]]
+name = "deltalake2db"
+version = "0.1.0"
+description = ""
+optional = false
+python-versions = ">=3.10,<4.0"
+files = [
+    {file = "deltalake2db-0.1.0-py3-none-any.whl", hash = "sha256:4f6a6e38a7b36b0f8b7d5bf76fd0a20459e838fb5ad4f32fbd60a669b0c7e2f4"},
+    {file = "deltalake2db-0.1.0.tar.gz", hash = "sha256:33ef01abb8e6c6de84d5a8bf2b830b95614c439766698cc97e7352ea4eeb4950"},
+]
+
+[package.dependencies]
+deltalake = ">=0.15.3,<0.16.0"
+sqlglot = ">=22.2.1"
+
+[[package]]
 name = "docker"
 version = "7.0.0"
 description = "A Python library for the Docker Engine API."
@@ -2255,6 +2270,21 @@ files = [
 ]
 
 [[package]]
+name = "sqlglot"
+version = "22.2.1"
+description = "An easily customizable SQL parser and transpiler"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "sqlglot-22.2.1-py3-none-any.whl", hash = "sha256:91609c5d01e59164a5aa5ade41348cc381403349e5d4ac074dbc762ded624d20"},
+    {file = "sqlglot-22.2.1.tar.gz", hash = "sha256:ec9901dc05436aaf9bafaa083224c84503bbadacc3e7cc386748c1bd404679fd"},
+]
+
+[package.extras]
+dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff", "types-python-dateutil", "typing-extensions"]
+rs = ["sqlglotrs (==0.1.2)"]
+
+[[package]]
 name = "starlette"
 version = "0.36.3"
 description = "The little ASGI library that shines."
@@ -2534,4 +2564,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c2693b9ef44d9ff760c19cfd7234a06d7246a82235304f7536bb6dd9c1b16a15"
+content-hash = "d394e5aeadeaddf65b84dd045f68890af099ab65e0ce97f4ef797f3150c40e75"

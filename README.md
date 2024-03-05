@@ -57,6 +57,10 @@ So everything will be fully documented automatically, which is really cool. 🔥
 
 At the moment, DuckDB seems to have an advantage and performs the best. Also features like full text search are only available with `DuckDB`.
 
+## A note on Deltalake Support
+
+Deltalake is supported WITH Column Mapping, thanks to [deltalake2db](https://github.com/bmsuisse/deltalake2db) in Polars and DuckDB. Deletion Vectors are not supported yet.
+
 ## Default Security
 
 By Default, Basic Authentication is enabled. To add a user, simply run `add_lakeapi_user YOURUSERNAME --yaml-file config.yml`. This will add the user to your config yaml (argon2 encrypted).
