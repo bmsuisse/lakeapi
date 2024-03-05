@@ -80,24 +80,19 @@ class ResultData(ABC):
         self.chunk_size = chunk_size
 
     @abstractmethod
-    def columns(self) -> List[str]:
-        ...
+    def columns(self) -> List[str]: ...
 
     @abstractmethod
-    def arrow_schema(self) -> pa.Schema:
-        ...
+    def arrow_schema(self) -> pa.Schema: ...
 
     @abstractmethod
-    def to_arrow_table(self) -> pa.Table:
-        ...
+    def to_arrow_table(self) -> pa.Table: ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader:
-        ...
+    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader: ...
 
     @abstractmethod
-    def query_builder(self) -> pypika.queries.QueryBuilder:
-        ...
+    def query_builder(self) -> pypika.queries.QueryBuilder: ...
 
     def write_json(self, file_name: str):
         import decimal
@@ -136,8 +131,7 @@ class ResultData(ABC):
                 t.write_ndjson(f)
 
     @abstractmethod
-    def to_pandas(self) -> "pd.DataFrame":
-        ...
+    def to_pandas(self) -> "pd.DataFrame": ...
 
     def write_parquet(self, file_name: str):
         import pyarrow.parquet as paparquet
@@ -193,19 +187,16 @@ class ExecutionContext(ABC):
 
     @property
     @abstractmethod
-    def supports_view_creation(self) -> bool:
-        ...
+    def supports_view_creation(self) -> bool: ...
 
     def create_view(self, name: str, sql: str):
         self.execute_sql(f"CREATE VIEW {name} as sql")
 
     @abstractmethod
-    def __enter__(self) -> "ExecutionContext":
-        ...
+    def __enter__(self) -> "ExecutionContext": ...
 
     @abstractmethod
-    def __exit__(self, *args, **kwargs):
-        ...
+    def __exit__(self, *args, **kwargs): ...
 
     def get_pyarrow_dataset(
         self,
@@ -250,12 +241,10 @@ class ExecutionContext(ABC):
                     pd = pl.read_avro(f).to_arrow()  # type: ignore
                 return pd
             case "delta":
-                from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_table
-
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
-                if only_fixed_supported(dt):
-                    return get_pyarrow_table(dt)
+                if dt.protocol().min_reader_version > 1:
+                    raise ValueError("Delta table protocol version not supported, use DuckDB or Polars")
                 return dt.to_pyarrow_dataset(
                     partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
                 )
@@ -269,12 +258,10 @@ class ExecutionContext(ABC):
         self,
         name: str,
         ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
-    ):
-        ...
+    ): ...
 
     @abstractmethod
-    def close(self):
-        ...
+    def close(self): ...
 
     def init_search(
         self,
@@ -291,8 +278,7 @@ class ExecutionContext(ABC):
         self,
         term: Term,
         assure_string=False,
-    ) -> Term:
-        ...
+    ) -> Term: ...
 
     def jsonify_complex(
         self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]
@@ -386,9 +372,7 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData:
-        ...
+    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData: ...
 
     @abstractmethod
-    def list_tables(self) -> ResultData:
-        ...
+    def list_tables(self) -> ResultData: ...

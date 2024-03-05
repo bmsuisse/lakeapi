@@ -18,7 +18,6 @@ import pypika
 import pypika.terms
 from uuid import uuid4
 import json
-from bmsdna.lakeapi.delta.colmapping import only_fixed_supported
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
 
@@ -221,10 +220,10 @@ class PolarsExecutionContext(ExecutionContext):
             case "delta":
                 try:
                     dt = DeltaTable(ab_uri, storage_options=uri_opts)
-                    if only_fixed_supported(dt):
-                        from bmsdna.lakeapi.polars_extensions.scan_delta_union import scan_delta_union
+                    if dt.protocol().min_reader_version > 1:
+                        from deltalake2db import polars_scan_delta
 
-                        df = scan_delta_union(dt)
+                        df = polars_scan_delta(dt)
                     else:
                         df = pl.scan_delta(
                             ab_uri,

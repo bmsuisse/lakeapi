@@ -5,7 +5,7 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from bmsdna.lakeapi.delta import only_fixed_supported, get_pyarrow_dataset, get_sql_for_delta
+from deltalake2db import get_sql_for_delta
 import duckdb
 import pyarrow.dataset
 import pypika.queries
@@ -370,7 +370,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
             dt = DeltaTable(ab_uri, storage_options=uri_opts)
 
-            if only_fixed_supported(dt):
+            if dt.protocol().min_reader_version > 1:
+
                 sql = get_sql_for_delta(dt)
                 self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
                 return
