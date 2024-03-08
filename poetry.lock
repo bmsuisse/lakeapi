@@ -794,13 +794,13 @@ pyspark = ["delta-spark", "numpy (==1.22.2)", "pyspark"]
 
 [[package]]
 name = "deltalake2db"
-version = "0.1.3"
+version = "0.1.4"
 description = ""
 optional = false
 python-versions = ">=3.10,<4.0"
 files = [
-    {file = "deltalake2db-0.1.3-py3-none-any.whl", hash = "sha256:489d2317fd5abde2879ce9142e39becd9f810c692f864c72d83a51ad92abaed5"},
-    {file = "deltalake2db-0.1.3.tar.gz", hash = "sha256:c4240b53d2d3709ddcc6730d58ab6105426077d2590bba9ce48f7970625a97ca"},
+    {file = "deltalake2db-0.1.4-py3-none-any.whl", hash = "sha256:0acc8ca2b887ab442a518920c8ea34f7d58cec1cd1ee70a4444f97b91697b3eb"},
+    {file = "deltalake2db-0.1.4.tar.gz", hash = "sha256:7bac6a4eacc72b1013f957ba9854a84993aff028a7a95fd6d043df74368c0a58"},
 ]
 
 [package.dependencies]
@@ -2576,4 +2576,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "20b2c7744a12cdfa09b9a53e3d441740f2830f775b344c24c6815e15d37f28c1"
+content-hash = "50a946f28df2a6c8dbe158a391effcaf6ea81149451fd6dc542be3457ad43f3d"
