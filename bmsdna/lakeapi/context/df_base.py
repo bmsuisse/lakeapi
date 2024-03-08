@@ -110,9 +110,12 @@ class ResultData(ABC):
 
     def to_json(self):
         arrow_table = self.to_arrow_table()
-        t = pl.from_arrow(arrow_table)
-        assert isinstance(t, pl.DataFrame)
-        return t.write_json(row_oriented=True)
+        import pydantic
+
+        return pydantic.TypeAdapter(list[dict]).dump_json(arrow_table.to_pylist())
+        # t = pl.from_arrow(arrow_table)
+        # assert isinstance(t, pl.DataFrame)
+        # return t.write_json(row_oriented=True)
 
     def to_ndjson(self):
         arrow_table = self.to_arrow_table()

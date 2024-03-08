@@ -372,7 +372,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
 
             if dt.protocol().min_reader_version > 1:
 
-                sql = get_sql_for_delta(dt)
+                sql = get_sql_for_delta(dt, duck_con=self.con)
                 self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
                 return
 
