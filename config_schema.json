@@ -351,18 +351,6 @@
                     ],
                     "default": null,
                     "title": "Table Name"
-                },
-                "hash_key": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Hash Key"
                 }
             },
             "required": [

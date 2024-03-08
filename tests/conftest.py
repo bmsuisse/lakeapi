@@ -3,6 +3,9 @@ import docker
 import pytest
 import os
 from docker.models.containers import Container
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @pytest.fixture(scope="session", autouse=True)
