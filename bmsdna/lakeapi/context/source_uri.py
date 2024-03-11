@@ -152,7 +152,7 @@ class SourceUri:
             return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
         os.makedirs(local_path, exist_ok=True)
         fs, fs_path = self.get_fs_spec()
-        fs.get(fs_path, local_path, recursive=True)
+        fs.get(fs_path + "/", local_path, recursive=True)
         local_versions[self.uri] = vnr
         return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
 
