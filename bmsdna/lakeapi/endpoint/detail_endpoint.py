@@ -55,8 +55,7 @@ def create_detailed_meta_endpoint(
         req: Request,
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         include_str_lengths: bool = True,
-        engine: Engines
-        | None = Query(
+        engine: Engines | None = Query(
             title="$engine",
             alias="$engine",
             default=None,
@@ -89,7 +88,7 @@ def create_detailed_meta_endpoint(
             delta_tbl = None
             df = realdataframe.get_df(None)
             if config.datasource.file_type == "delta":
-                delta_tbl = realdataframe.get_delta_table()
+                delta_tbl = realdataframe.get_delta_table(schema_only=True)
                 assert delta_tbl is not None
                 partition_columns = delta_tbl.metadata().partition_columns
                 partition_columns = [
@@ -146,23 +145,27 @@ def create_detailed_meta_endpoint(
                 return MetadataSchemaFieldType(
                     type_str=str(pa.string()) if is_complex and jsonify_complex else str(t),
                     orig_type_str=str(t),
-                    fields=[
-                        MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
-                        for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
-                    ]
-                    if pa.types.is_struct(t) and not jsonify_complex
-                    else None,
-                    inner=_recursive_get_type(t.value_type)
-                    if pa.types.is_list(t)
-                    or pa.types.is_large_list(t)
-                    or pa.types.is_fixed_size_list(t)
-                    and t.value_type is not None
-                    and not jsonify_complex
-                    else None,
+                    fields=(
+                        [
+                            MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
+                            for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
+                        ]
+                        if pa.types.is_struct(t) and not jsonify_complex
+                        else None
+                    ),
+                    inner=(
+                        _recursive_get_type(t.value_type)
+                        if pa.types.is_list(t)
+                        or pa.types.is_large_list(t)
+                        or pa.types.is_fixed_size_list(t)
+                        and t.value_type is not None
+                        and not jsonify_complex
+                        else None
+                    ),
                 )
 
             schema = df.arrow_schema()
-            mdt = realdataframe.sql_context.get_modified_date(realdataframe.uri, realdataframe.config.file_type)
+            mdt = realdataframe.sql_context.get_modified_date(realdataframe.source_uri, realdataframe.config.file_type)
             return MetadataDetailResult(
                 partition_values=partition_values,
                 partition_columns=partition_columns,

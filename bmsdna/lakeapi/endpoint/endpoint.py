@@ -189,8 +189,7 @@ def create_config_endpoint(
             default=False,
             include_in_schema=False,
         ),
-        engine: Engines
-        | None = Query(
+        engine: Engines | None = Query(
             title="$engine",
             alias="$engine",
             default=None,
@@ -202,8 +201,7 @@ def create_config_endpoint(
             include_in_schema=has_complex,
             default=False,
         ),
-        chunk_size: int
-        | None = Query(
+        chunk_size: int | None = Query(
             title="$chunk_size",
             include_in_schema=False,
             default=None,
@@ -229,13 +227,7 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         )
-        parts = await get_partitions(
-            realdataframe,
-            realdataframe.uri,
-            params,
-            config,
-        )
-        df = realdataframe.get_df(parts or None)
+        df = realdataframe.get_df()
 
         expr = await get_params_filter_expr(
             context,

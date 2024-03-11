@@ -36,7 +36,7 @@ def init_duck_con(
                 con.register_datasource(
                     df.unique_table_name,
                     df.tablename,
-                    df.uri,
+                    df.execution_uri,
                     df.config.file_type,
                     None,
                 )
