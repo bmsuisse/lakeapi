@@ -29,6 +29,7 @@ ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 
 DUCK_CONFIG = {}
 DUCK_INIT_SCRIPTS: list[str] = []
+AZURE_LOADED_SCRIPTS: list[str] = []
 
 
 def _get_temp_table_name():
@@ -311,6 +312,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 except Exception as e:
                     logger.error(f"Error installing azure extension: {e}")
                 self.con.load_extension("azure")
+                for ins in AZURE_LOADED_SCRIPTS:
+                    self.con.execute(ins)
                 if "connection_string" in remote_opts:
                     cr = remote_opts["connection_string"]
                     self.con.execute(
