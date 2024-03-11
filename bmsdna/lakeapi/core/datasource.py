@@ -43,12 +43,19 @@ class Datasource:
         self.df = df
         self.sql_context = sql_context
         self.basic_config = basic_config
-        self.uri = SourceUri(
+        base_source_uri = SourceUri(
             config.uri,
             config.account,
             accounts,
             basic_config.data_path if not config.file_type in ["odbc"] else None,
         )
+        if config.copy_local:
+            assert config.file_type == "delta", "only delta is supported for copy_local"
+            self.uri = base_source_uri.copy_to_local(
+                os.path.join(basic_config.local_data_cache_path, hashlib.md5(config.uri.encode("utf-8")).hexdigest())
+            )
+        else:
+            self.uri = base_source_uri
 
     def file_exists(self):
         if self.config.file_type in ["odbc", "sqlite"]:
@@ -226,9 +233,11 @@ async def get_partition_filter(
     return (
         col_for_partitioning,
         op,
-        [str(vp) for vp in value_for_partitioning]
-        if isinstance(value_for_partitioning, (Tuple, List))
-        else str(value_for_partitioning),
+        (
+            [str(vp) for vp in value_for_partitioning]
+            if isinstance(value_for_partitioning, (Tuple, List))
+            else str(value_for_partitioning)
+        ),
     )
 
 
@@ -280,15 +289,18 @@ async def _create_inner_expr(
                 inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
     return inner_expr
 
+
 def _sql_value(value: str | datetime | date | None, engine: str):
     if engine != "polars":
-        return value # all other engines convert automatically
+        return value  # all other engines convert automatically
     import pypika.functions as fnx
+
     if isinstance(value, datetime):
         return fnx.Cast(value, "datetime")
     if isinstance(value, date):
         return fnx.Cast(value, "date")
     return value
+
 
 async def filter_df_based_on_params(
     context: ExecutionContext,
@@ -338,11 +350,23 @@ async def filter_df_based_on_params(
                 case "<=":
                     exprs.append(fn.Field(colname) <= _sql_value(value, engine=context.engine_name))
                 case "<>":
-                    exprs.append(fn.Field(colname) != _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnotnull())
+                    exprs.append(
+                        fn.Field(colname) != _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnotnull()
+                    )
                 case "==":
-                    exprs.append(fn.Field(colname) == _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
+                    exprs.append(
+                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnull()
+                    )
                 case "=":
-                    exprs.append(fn.Field(colname) ==  _sql_value(value, engine=context.engine_name) if value is not None else fn.Field(colname).isnull())
+                    exprs.append(
+                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        if value is not None
+                        else fn.Field(colname).isnull()
+                    )
                 case "not contains":
                     exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
                 case "contains":
