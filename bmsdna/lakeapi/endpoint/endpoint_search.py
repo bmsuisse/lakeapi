@@ -29,7 +29,7 @@ def handle_search_request(
     basic_config: BasicConfig,
     *,
     source_view: str,
-    query: pypika.queries.QueryBuilder
+    query: ex.Query
 ):
     if config.search is None:
         return query

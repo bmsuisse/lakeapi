@@ -50,7 +50,7 @@ class BatchReaderWrap:
 class ODBCResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[ex.Query, str],
         connection_string: str,
         chunk_size: int,
     ) -> None:
@@ -64,7 +64,7 @@ class ODBCResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> ex.Query:
         return pypika.Query.from_(self.original_sql)
 
     def arrow_schema(self) -> pa.Schema:
@@ -124,7 +124,7 @@ class ODBCExecutionContext(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> ODBCResultData:
@@ -134,7 +134,7 @@ class ODBCExecutionContext(ExecutionContext):
             sql, chunk_size=self.chunk_size, connection_string=self.datasources[list(self.datasources.keys())[0]]
         )
 
-    def json_function(self, term: Term, assure_string=False):
+    def json_function(self, term: ex.Expression, assure_string=False):
         raise NotImplementedError(
             "Cannot convert to JSON in remote sql"
         )  # we could but sql does not support structured types anyway, so...

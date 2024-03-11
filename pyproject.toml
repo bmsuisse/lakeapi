@@ -10,7 +10,6 @@ packages = [{ include = "bmsdna" }]
 [tool.poetry.dependencies]
 python = "^3.10"
 pyyaml = "^6.0"
-pypika = "^0.48.9"
 duckdb = "^0.10.0"
 polars = ">=0.20.8"
 
@@ -32,6 +31,7 @@ pandas = "^2.1.0"
 fsspec = "^2023.10.0"
 adlfs = "^2023.10.0"
 deltalake2db = ">=0.1.4"
+sqlglot = "^22.3.1"
 
 
 [tool.poetry.group.dev.dependencies]

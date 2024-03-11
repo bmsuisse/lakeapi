@@ -8,8 +8,9 @@ from deltalake.exceptions import TableNotFoundError
 import pyarrow.dataset
 import pypika.queries
 import polars as pl
+import sqlglot.expressions as ex
 
-from pypika.terms import Term, Criterion
+
 import os
 from .source_uri import SourceUri
 
@@ -29,7 +30,7 @@ def is_complex_type(
 
 
 def get_sql(
-    sql_or_pypika: str | pypika.queries.QueryBuilder,
+    sql_or_pypika: str | ex.Query,
     limit: int | None = None,
     flavor: FLAVORS = "ansi",
 ) -> str:
@@ -92,7 +93,7 @@ class ResultData(ABC):
     def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader: ...
 
     @abstractmethod
-    def query_builder(self) -> pypika.queries.QueryBuilder: ...
+    def query_builder(self) -> ex.Query: ...
 
     def write_json(self, file_name: str):
         import decimal
@@ -179,7 +180,7 @@ class ExecutionContext(ABC):
         self.array_contains_func = "array_contains"
 
     def term_like(
-        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+        self, a: ex.Expression, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
     ) -> Criterion:
         if wildcard_loc == "start":
             return a.like("%" + value) if not negate else a.not_like("%" + value)
@@ -279,13 +280,11 @@ class ExecutionContext(ABC):
     @abstractmethod
     def json_function(
         self,
-        term: Term,
+        term: ex.Expression,
         assure_string=False,
     ) -> Term: ...
 
-    def jsonify_complex(
-        self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]
-    ) -> pypika.queries.QueryBuilder:
+    def jsonify_complex(self, query: ex.Query, complex_cols: list[str], columns: list[str]) -> ex.Query:
         return query.select(
             *[
                 pypika.Field(c) if not c in complex_cols else self.json_function(pypika.Field(c)).as_(c)
@@ -295,18 +294,18 @@ class ExecutionContext(ABC):
 
     def distance_m_function(
         self,
-        lat1: Term,
-        lon1: Term,
-        lat2: Term,
-        lon2: Term,
+        lat1: ex.Expression,
+        lon1: ex.Expression,
+        lat2: ex.Expression,
+        lon2: ex.Expression,
     ) -> Term:
         import pypika.terms
 
         # haversine which works for duckdb and polars and probably most sql systems
-        acos = lambda t: pypika.terms.Function("acos", t)
-        cos = lambda t: pypika.terms.Function("cos", t)
-        radians = lambda t: pypika.terms.Function("radians", t)
-        sin = lambda t: pypika.terms.Function("sin", t)
+        acos = lambda t: ex.func("acos", t)
+        cos = lambda t: ex.func("cos", t)
+        radians = lambda t: ex.func("radians", t)
+        sin = lambda t: ex.func("sin", t)
         return Term.wrap_constant(6371000) * acos(
             cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1))
             + sin(radians(lat1)) * sin(radians(lat2))
@@ -375,7 +374,7 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData: ...
+    def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
 
     @abstractmethod
     def list_tables(self) -> ResultData: ...

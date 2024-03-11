@@ -8,16 +8,12 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from deltalake2db import get_sql_for_delta
 import duckdb
 import pyarrow.dataset
-import pypika.queries
-import pypika.terms
-import pypika.functions
-import pypika.enums
-import pypika
+import sqlglot.expressions as ex
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
-from pypika.terms import Term
+
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
 from .source_uri import SourceUri
@@ -39,7 +35,7 @@ def _get_temp_table_name():
 class DuckDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[ex.Query, str],
         con: duckdb.DuckDBPyConnection,
         chunk_size: int,
     ) -> None:
@@ -52,7 +48,7 @@ class DuckDBResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> ex.Query:
         return pypika.Query.from_(self.original_sql)
 
     def arrow_schema(self) -> pa.Schema:
@@ -124,33 +120,18 @@ class DuckDBResultData(ResultData):
         self.con.execute(full_query)
 
 
-class Match25Term(Term):
-    def __init__(
-        self,
-        source_view: str,
-        field: Term,
-        search_text: str,
-        fields: Optional[str],
-        alias: Optional[str] = None,
-    ):
-        super().__init__()
-        self.source_view = source_view
-        self.field = field
-        self.search_text = search_text
-        self.fields = fields
-        self.alias = alias
-
-    def get_sql(self, **kwargs):
-        search_text_const = Term.wrap_constant(self.search_text)
-        assert isinstance(search_text_const, Term)
-        search_txt = search_text_const.get_sql()
-        fields_const = Term.wrap_constant(self.fields or "")
-        assert isinstance(fields_const, Term)
-        field_or_not = ", fields := " + fields_const.get_sql() if self.fields is not None else ""
-        sql = f"fts_main_{self.source_view}.match_bm25({self.field.get_sql()}, {search_txt}{field_or_not})"
-        if self.alias is not None:
-            sql += " AS " + self.alias
-        return sql
+def match_25(table: str, field: str, search_text: str, fields: Optional[str] = None, alias: Optional[str] = None):
+    f_args = [ex.convert(field), ex.convert(search_text)]
+    if fields is not None:
+        f_args.append(
+            ex.PropertyEQ(
+                this=ex.Column(this=ex.Identifier(this="fields", quoted=False)), expression=ex.convert(fields)
+            )
+        ),
+    fn = ex.Dot(this=ex.to_identifier(table), expression=ex.func("match_bm25", *f_args, dialect="duckdb"))
+    if alias:
+        return fn.as_(alias)
+    return fn
 
 
 class DuckDbExecutionContextBase(ExecutionContext):
@@ -185,7 +166,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> DuckDBResultData:
@@ -211,18 +192,19 @@ class DuckDbExecutionContextBase(ExecutionContext):
         alias: Optional[str],
     ):
         fields = ",".join(search_config.columns)
-        return Match25Term(
+        return match_25(
             source_view,
-            pypika.queries.Field("__search_id"),
+            "__search_id",
             search_text,
-            fields,
+            fields=fields,
+            alias=alias,
         )
 
-    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
-        return pypika.terms.Function("haversine", lat1, lon1, lat2, lon2)
+    def distance_m_function(self, lat1: ex.Expression, lon1: ex.Expression, lat2: ex.Expression, lon2: ex.Expression):
+        return ex.func("haversine", lat1, lon1, lat2, lon2)
 
-    def json_function(self, term: Term, assure_string=False):
-        fn = pypika.terms.Function("to_json", term)
+    def json_function(self, term: ex.Expression, assure_string=False):
+        fn = ex.func("to_json", term)
         if assure_string:
             return pypika.functions.Cast(fn, pypika.enums.SqlTypes.VARCHAR)
         return fn

@@ -62,7 +62,7 @@ class PolarsResultData(ResultData):
     def columns(self):
         return self.df.columns
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> ex.Query:
         import polars as pl
 
         if not self.registred_df:
@@ -179,10 +179,10 @@ class PolarsExecutionContext(ExecutionContext):
     def close(self):
         pass
 
-    def json_function(self, term: Term, assure_string=False):
+    def json_function(self, term: ex.Expression, assure_string=False):
         raise NotImplementedError()
 
-    def jsonify_complex(self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]):
+    def jsonify_complex(self, query: ex.Query, complex_cols: list[str], columns: list[str]):
         import polars as pl
 
         old_query = query.select(*columns)
@@ -270,7 +270,7 @@ class PolarsExecutionContext(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> PolarsResultData:
