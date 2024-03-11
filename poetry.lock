@@ -1423,13 +1423,13 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "23.2"
+version = "24.0"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "packaging-23.2-py3-none-any.whl", hash = "sha256:8c491190033a9af7e1d931d0b5dacc2ef47509b34dd0de67ed209b5203fc88c7"},
-    {file = "packaging-23.2.tar.gz", hash = "sha256:048fb0e9405036518eaaf48a55953c750c11e1a1b68e0dd1a9d62ed0c092cfc5"},
+    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
+    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
 ]
 
 [[package]]
@@ -1548,25 +1548,26 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "polars"
-version = "0.20.14"
+version = "0.20.15"
 description = "Blazingly fast DataFrame library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "polars-0.20.14-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:ed6184584fd43db73098ab6dcac636c540016e7620a2647b0ab93703fc5dfa2d"},
-    {file = "polars-0.20.14-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:7c23fee3b9838530dd5c39c189d8ba142601b46a66a70f5fbcda4a7adca26709"},
-    {file = "polars-0.20.14-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1d4ba27827c037f03bca1b81cac3e191f4b89522d2de532ab38d3ba5d2f02d9c"},
-    {file = "polars-0.20.14-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:04096fe285aea2adbb783969993494e4997426f7ac5586c76623fd41a86b531f"},
-    {file = "polars-0.20.14-cp38-abi3-win_amd64.whl", hash = "sha256:a46b6c78b58358ff15fbdf623abe8816cb806a01932e6a564375ceaaa8094479"},
-    {file = "polars-0.20.14.tar.gz", hash = "sha256:ce32c2cd2382bc42a0955005235020200d87c044ea0639bc1d5ba3a8faa69b80"},
+    {file = "polars-0.20.15-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:d528acc0b0900cb8363f065cbf65325571eeb4b245e4b68679beae75287451c9"},
+    {file = "polars-0.20.15-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:3adc68bd1400c651da826e66ad735c07dafd5f1811f369f394f8d8fb71f1178b"},
+    {file = "polars-0.20.15-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be613e4640a607040e3361622a254f88ac99bd92b212d6f580a3f4b74b6617ed"},
+    {file = "polars-0.20.15-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:a1936ec8de4262ce68dd5c4f43b74c996184a36012bdd0ff9454c33132bd4d28"},
+    {file = "polars-0.20.15-cp38-abi3-win_amd64.whl", hash = "sha256:00b5687d1fdcb09f7c2babdf88f63b3238284bf9f6cddd2ea60aea07b711172e"},
+    {file = "polars-0.20.15.tar.gz", hash = "sha256:88ad0c3e1f92185b86041d68783f9862ec21adc92a33001818697644dd0794ee"},
 ]
 
 [package.extras]
-adbc = ["adbc-driver-sqlite"]
-all = ["polars[adbc,cloudpickle,connectorx,deltalake,fsspec,gevent,numpy,pandas,plot,pyarrow,pydantic,pyiceberg,sqlalchemy,timezone,xlsx2csv,xlsxwriter]"]
+adbc = ["adbc-driver-manager", "adbc-driver-sqlite"]
+all = ["polars[adbc,cloudpickle,connectorx,deltalake,fastexcel,fsspec,gevent,numpy,pandas,plot,pyarrow,pydantic,pyiceberg,sqlalchemy,timezone,xlsx2csv,xlsxwriter]"]
 cloudpickle = ["cloudpickle"]
 connectorx = ["connectorx (>=0.3.2)"]
 deltalake = ["deltalake (>=0.14.0)"]
+fastexcel = ["fastexcel (>=0.9)"]
 fsspec = ["fsspec"]
 gevent = ["gevent"]
 matplotlib = ["matplotlib"]
@@ -2283,17 +2284,17 @@ files = [
 
 [[package]]
 name = "sqlglot"
-version = "22.2.1"
+version = "22.3.1"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-22.2.1-py3-none-any.whl", hash = "sha256:91609c5d01e59164a5aa5ade41348cc381403349e5d4ac074dbc762ded624d20"},
-    {file = "sqlglot-22.2.1.tar.gz", hash = "sha256:ec9901dc05436aaf9bafaa083224c84503bbadacc3e7cc386748c1bd404679fd"},
+    {file = "sqlglot-22.3.1-py3-none-any.whl", hash = "sha256:6f9db7146213fda05bb161e7827cb7684bb3496038290b570617f5f739886941"},
+    {file = "sqlglot-22.3.1.tar.gz", hash = "sha256:ee2985b40601c7b553f17c2c13685f9f831bdfe3edba78fb7b385fc55c5a8a30"},
 ]
 
 [package.extras]
-dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff", "types-python-dateutil", "typing-extensions"]
+dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff", "types-python-dateutil", "typing-extensions"]
 rs = ["sqlglotrs (==0.1.2)"]
 
 [[package]]

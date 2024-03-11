@@ -51,12 +51,14 @@ class BasicConfig:
     default_chunk_size: int
     schema_cache_ttl: int | None
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
+    local_data_cache_path: str
 
 
 def get_default_config():
     return BasicConfig(
         enable_sql_endpoint=os.getenv("ENABLE_SQL_ENDPOINT", "0") == "1",
         temp_folder_path=os.getenv("TEMP", "/tmp"),
+        local_data_cache_path=os.environ.get("LOCAL_DATA_CACHE_PATH", os.getenv("TEMP", "/tmp")),
         data_path=os.environ.get("DATA_PATH", "data"),
         min_search_length=3,
         default_engine="duckdb",
@@ -115,6 +117,7 @@ def _expand_env_vars(uri: str):
 @dataclass
 class DatasourceConfig:
     uri: str
+    copy_local: Optional[bool] = False
     account: Optional[str] = None
     file_type: FileTypes = "delta"
     select: Optional[List[Column]] = None
@@ -180,9 +183,9 @@ class Config:
         datasource: dict[str, Any] = config.get("datasource", {})
         file_type: FileTypes = datasource.get(
             "file_type",
-            "delta"
-            if config.get("engine", None) not in ["odbc", "sqlite"]
-            else config.get("engine", None),  # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
+            (
+                "delta" if config.get("engine", None) not in ["odbc", "sqlite"] else config.get("engine", None)
+            ),  # for odbc and sqlite, the only meaningful file_type is odbc/sqlite
         )
         uri = _expand_env_vars(
             datasource.get("uri", tag + "/" + name),
@@ -250,6 +253,7 @@ class Config:
             select=select,
             exclude=exclude,
             sortby=sortby,
+            copy_local=datasource.get("copy_local", False),
             table_name=datasource.get("table_name", None),
             filters=None,
         )

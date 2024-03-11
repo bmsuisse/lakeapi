@@ -70,6 +70,9 @@ def _convert_options(
     return new_opts
 
 
+local_versions = dict()
+
+
 class SourceUri:
     uri: str
     account: str | None
@@ -135,6 +138,23 @@ class SourceUri:
             return os.path.exists(self.real_uri)
         fs, fs_path = self.get_fs_spec()
         return fs.exists(fs_path)
+
+    def copy_to_local(self, local_path: str):
+        if self.account is None:
+            raise ValueError("Cannot copy local files")
+
+        from deltalake import DeltaTable
+
+        df_uri, df_opts = self.get_uri_options(flavor="object_store")
+        dt = DeltaTable(df_uri, storage_options=df_opts)
+        vnr = dt.version()
+        if local_versions.get(self.uri) == vnr:
+            return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
+        os.makedirs(local_path, exist_ok=True)
+        fs, fs_path = self.get_fs_spec()
+        fs.get(fs_path + "/", local_path, recursive=True)
+        local_versions[self.uri] = vnr
+        return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
 
     def __str__(self):
         return self.real_uri

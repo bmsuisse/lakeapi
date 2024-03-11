@@ -516,6 +516,7 @@ tables:
       uri: "az://testlake/td/delta/*"
       file_type: delta
       account: "test_account"
+      copy_local: true
     config_from_delta: true
 # --------------------------------
 # User / Password
