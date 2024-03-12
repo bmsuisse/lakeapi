@@ -51,7 +51,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 schema = get_schema_cached(basic_config, realdataframe, config.datasource.get_unique_hash())
                 if schema is None:
                     logger.warning(
-                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe.uri}"
+                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe}"
                     )
                 metadata.append(
                     {

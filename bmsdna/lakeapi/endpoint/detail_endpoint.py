@@ -88,7 +88,7 @@ def create_detailed_meta_endpoint(
             delta_tbl = None
             df = realdataframe.get_df(None)
             if config.datasource.file_type == "delta":
-                delta_tbl = realdataframe.get_delta_table()
+                delta_tbl = realdataframe.get_delta_table(schema_only=True)
                 assert delta_tbl is not None
                 partition_columns = delta_tbl.metadata().partition_columns
                 partition_columns = [
@@ -165,7 +165,7 @@ def create_detailed_meta_endpoint(
                 )
 
             schema = df.arrow_schema()
-            mdt = realdataframe.sql_context.get_modified_date(realdataframe.uri, realdataframe.config.file_type)
+            mdt = realdataframe.sql_context.get_modified_date(realdataframe.source_uri, realdataframe.config.file_type)
             return MetadataDetailResult(
                 partition_values=partition_values,
                 partition_columns=partition_columns,

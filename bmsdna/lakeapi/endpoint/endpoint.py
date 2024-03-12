@@ -227,13 +227,7 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         )
-        parts = await get_partitions(
-            realdataframe,
-            realdataframe.uri,
-            params,
-            config,
-        )
-        df = realdataframe.get_df(parts or None)
+        df = realdataframe.get_df()
 
         expr = await get_params_filter_expr(
             context,

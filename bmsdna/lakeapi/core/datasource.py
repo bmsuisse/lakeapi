@@ -47,28 +47,43 @@ class Datasource:
             accounts,
             basic_config.data_path if not config.file_type in ["odbc"] else None,
         )
-        if config.copy_local:
-            assert config.file_type == "delta", "only delta is supported for copy_local"
-            self.uri = base_source_uri.copy_to_local(
-                os.path.join(basic_config.local_data_cache_path, hashlib.md5(config.uri.encode("utf-8")).hexdigest())
+        self.copy_local = config.copy_local
+        self._execution_uri = None
+        self.source_uri = base_source_uri
+
+    def __str__(self) -> str:
+        return str(self.source_uri)
+
+    @property
+    def execution_uri(self):
+        if not self.copy_local:
+            return self.source_uri
+        assert self.config.file_type == "delta", "only delta is supported for copy_local"
+        if self._execution_uri is None:
+            self._execution_uri = self.source_uri.copy_to_local(
+                os.path.join(
+                    self.basic_config.local_data_cache_path,
+                    hashlib.md5(self.source_uri.uri.encode("utf-8")).hexdigest(),
+                )
             )
-        else:
-            self.uri = base_source_uri
+        return self._execution_uri
 
     def file_exists(self):
         if self.config.file_type in ["odbc", "sqlite"]:
             return True  # the uri is not really a file here
-        if not self.uri.exists():
+        if not self.source_uri.exists():
             return False
         return True
 
-    def get_delta_table(self):
+    def get_delta_table(self, schema_only: bool):
         if self.config.file_type == "delta":
-            if self.uri.exists():
+            if self.source_uri.exists():
                 try:
                     from deltalake import DeltaTable
 
-                    df_uri, df_opts = self.uri.get_uri_options(flavor="object_store")
+                    df_uri, df_opts = (self.source_uri if schema_only else self.execution_uri).get_uri_options(
+                        flavor="object_store"
+                    )
                     return DeltaTable(df_uri, storage_options=df_opts)
                 except TableNotFoundError:
                     return None
@@ -127,10 +142,10 @@ class Datasource:
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
-            dt = self.get_delta_table()
+            dt = self.get_delta_table(schema_only=True)
             schema = dt.schema().to_pyarrow() if dt else None
         if self.config.file_type == "parquet" and self.file_exists():
-            fs, fs_uri = self.uri.get_fs_spec()
+            fs, fs_uri = self.source_uri.get_fs_spec()
             schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
         if schema is not None:
             if self.config.select:
@@ -153,7 +168,7 @@ class Datasource:
                 self.sql_context.register_datasource(
                     self.unique_table_name if unique_table_name else self.tablename,
                     self.tablename,
-                    self.uri,
+                    self.source_uri if endpoint == "meta" else self.execution_uri,
                     self.config.file_type,
                     partitions=partitions,
                 )
