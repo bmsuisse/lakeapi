@@ -55,7 +55,7 @@ class PolarsResultData(ResultData):
     ):
         super().__init__(chunk_size=chunk_size)
         self.df = df
-        self.random_name = "tbl_" + str(uuid4())
+        self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
         self.sql_context = sql_context
 
@@ -71,7 +71,7 @@ class PolarsResultData(ResultData):
 
             self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
             self.registred_df = True
-        return from_(self.random_name)
+        return from_(ex.to_identifier(self.random_name))
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
