@@ -52,6 +52,7 @@ class BasicConfig:
     schema_cache_ttl: int | None
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
     local_data_cache_path: str
+    token_retrieval_func: Optional[Callable[[SourceUri], str]]
 
 
 def get_default_config():
@@ -65,6 +66,7 @@ def get_default_config():
         default_chunk_size=10000,
         prepare_sql_db_hook=None,
         schema_cache_ttl=5 * 60,  # 5 minutes
+        token_retrieval_func=None,
     )
 
 
