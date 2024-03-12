@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime, date
-from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
+from typing import Any, Callable, List, Literal, Optional, Tuple, Union, cast, get_args
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
 import pyarrow.parquet
@@ -48,6 +48,7 @@ class Datasource:
             config.account,
             accounts,
             basic_config.data_path if not config.file_type in ["odbc"] else None,
+            token_retrieval_func=basic_config.token_retrieval_func
         )
         self.copy_local = config.copy_local
         self._execution_uri = None

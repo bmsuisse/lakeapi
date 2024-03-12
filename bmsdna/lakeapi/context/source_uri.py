@@ -83,13 +83,14 @@ class SourceUri:
         account: str | None,
         accounts: dict,
         data_path: str | None,
-        token_retrieval_func: Callable[[], str] | None = None,
+        token_retrieval_func: "Callable[[SourceUri], str] | None" = None,
     ):
         self.uri = uri
         self.account = account
         self.accounts = accounts or {}
         self.data_path = data_path
         self.token_retrieval_func = token_retrieval_func
+        self.retrieve_token = (lambda: token_retrieval_func(self)) if token_retrieval_func else None
         self.real_uri = (
             uri if "://" in uri or account is not None or data_path is None else os.path.join(data_path, uri)
         )
@@ -106,7 +107,7 @@ class SourceUri:
         if self.account is None:
             return fsspec.filesystem("file"), self.real_uri
         opts = _convert_options(
-            self.accounts.get(self.account, {}), "fsspec", token_retrieval_func=self.token_retrieval_func
+            self.accounts.get(self.account, {}), "fsspec", token_retrieval_func=self.retrieve_token
         )
         assert opts is not None
         if self.is_azure():
@@ -124,13 +125,13 @@ class SourceUri:
                 _convert_options(
                     self.accounts.get(self.account) if self.account else None,
                     flavor,
-                    token_retrieval_func=self.token_retrieval_func,
+                    token_retrieval_func=self.retrieve_token,
                 ),
             )
         return self.real_uri, _convert_options(
             self.accounts.get(self.account) if self.account else None,
             flavor,
-            token_retrieval_func=self.token_retrieval_func,
+            token_retrieval_func=self.retrieve_token,
         )
 
     def exists(self) -> bool:
@@ -149,12 +150,24 @@ class SourceUri:
         dt = DeltaTable(df_uri, storage_options=df_opts)
         vnr = dt.version()
         if local_versions.get(self.uri) == vnr:
-            return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
+            return SourceUri(
+                uri=local_path,
+                data_path=None,
+                account=None,
+                accounts=self.accounts,
+                token_retrieval_func=self.token_retrieval_func,
+            )
         os.makedirs(local_path, exist_ok=True)
         fs, fs_path = self.get_fs_spec()
         fs.get(fs_path + "/", local_path, recursive=True)
         local_versions[self.uri] = vnr
-        return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
+        return SourceUri(
+            uri=local_path,
+            data_path=None,
+            account=None,
+            accounts=self.accounts,
+            token_retrieval_func=self.token_retrieval_func,
+        )
 
     def __str__(self):
         return self.real_uri
