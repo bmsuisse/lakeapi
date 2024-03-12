@@ -1,7 +1,7 @@
 from typing import Optional, cast
 import pyarrow as pa
-import pypika
-import pypika.queries as fn
+
+import sqlglot.expressions as ex
 from deltalake import DeltaTable, Metadata
 from fastapi import (
     APIRouter,
@@ -10,7 +10,7 @@ from fastapi import (
     Request,
 )
 from pydantic import BaseModel
-from pypika.queries import QueryBuilder
+from sqlglot import select, from_
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
@@ -95,9 +95,9 @@ def create_detailed_meta_endpoint(
                     c for c in partition_columns if not should_hide_colname(c)
                 ]  # also hide those from metadata detail
                 if len(partition_columns) > 0:
-                    qb: QueryBuilder = (
-                        df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
-                    )
+                    qb = cast(
+                        ex.Select, df.query_builder().select(*[ex.column(c) for c in partition_columns], append=False)
+                    ).distinct()
                     partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
             schema = df.arrow_schema()
             str_cols = [
@@ -118,16 +118,16 @@ def create_detailed_meta_endpoint(
             )
             if include_str_lengths:
                 str_lengths_query = (
-                    pypika.Query.from_("strcols")
-                    .with_(
-                        context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
-                        "strcols",
-                    )
-                    .select(
+                    select(
                         *[
-                            fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                            ex.func("MAX", ex.func(context.len_func, ex.column(sc))).as_(sc)
                             for sc in str_cols + complex_str_cols
                         ]
+                    )
+                    .from_("strcols")
+                    .with_(
+                        "strcols",
+                        as_=context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
                     )
                 )
                 str_lengths_df = (

@@ -12,10 +12,10 @@ import pyarrow as pa
 from typing import List, Literal, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
-import pypika.queries
-from pypika.terms import Term, Criterion
-import pypika
-import pypika.terms
+import sqlglot.expressions as ex
+from sqlglot import from_
+
+
 from uuid import uuid4
 import json
 from .source_uri import SourceUri
@@ -55,14 +55,14 @@ class PolarsResultData(ResultData):
     ):
         super().__init__(chunk_size=chunk_size)
         self.df = df
-        self.random_name = "tbl_" + str(uuid4())
+        self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
         self.sql_context = sql_context
 
     def columns(self):
         return self.df.columns
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
+    def query_builder(self) -> ex.Query:
         import polars as pl
 
         if not self.registred_df:
@@ -71,7 +71,7 @@ class PolarsResultData(ResultData):
 
             self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
             self.registred_df = True
-        return pypika.Query.from_(self.random_name)
+        return from_(ex.to_identifier(self.random_name))
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
@@ -160,6 +160,10 @@ class PolarsExecutionContext(ExecutionContext):
         self.sql_context = sql_context or pl.SQLContext()
 
     @property
+    def dialect(self) -> str:
+        return "postgres"
+
+    @property
     def supports_view_creation(self) -> bool:
         return True
 
@@ -179,10 +183,10 @@ class PolarsExecutionContext(ExecutionContext):
     def close(self):
         pass
 
-    def json_function(self, term: Term, assure_string=False):
+    def json_function(self, term: ex.Expression, assure_string=False):
         raise NotImplementedError()
 
-    def jsonify_complex(self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]):
+    def jsonify_complex(self, query: ex.Query, complex_cols: list[str], columns: list[str]):
         import polars as pl
 
         old_query = query.select(*columns)
@@ -200,7 +204,7 @@ class PolarsExecutionContext(ExecutionContext):
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
         self.sql_context.register(nt_id, df)
-        return pypika.Query.from_(nt_id).select(*[pypika.Field(c) for c in columns])
+        return from_(nt_id).select(*[ex.column(c) for c in columns])
 
     def register_datasource(
         self,
@@ -270,13 +274,13 @@ class PolarsExecutionContext(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> PolarsResultData:
         import polars as pl
 
-        df = self.sql_context.execute(get_sql(sql))
+        df = self.sql_context.execute(get_sql(sql, dialect="postgres"))
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:

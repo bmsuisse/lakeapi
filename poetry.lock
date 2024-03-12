@@ -1901,16 +1901,6 @@ files = [
 ]
 
 [[package]]
-name = "pypika"
-version = "0.48.9"
-description = "A SQL query builder API for Python"
-optional = false
-python-versions = "*"
-files = [
-    {file = "PyPika-0.48.9.tar.gz", hash = "sha256:838836a61747e7c8380cd1b7ff638694b7a7335345d0f559b04b2cd832ad5378"},
-]
-
-[[package]]
 name = "pyright"
 version = "1.1.353"
 description = "Command line wrapper for pyright"
@@ -2577,4 +2567,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "50a946f28df2a6c8dbe158a391effcaf6ea81149451fd6dc542be3457ad43f3d"
+content-hash = "05ccf97bcd63bf8206768e5a75204e7a408f029912eb51e52a38a3d35c54c8c4"

@@ -7,15 +7,11 @@ from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData, get_sql
 import arrow_odbc
 import pyarrow.dataset
-import pypika.queries
-from pypika.terms import Term
-import pypika.functions
-import pypika.enums
-import pypika
-import pypika.terms
+import sqlglot.expressions as ex
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
+from sqlglot import from_
 from uuid import uuid4
 from .source_uri import SourceUri
 
@@ -50,7 +46,7 @@ class BatchReaderWrap:
 class ODBCResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[ex.Query, str],
         connection_string: str,
         chunk_size: int,
     ) -> None:
@@ -59,18 +55,22 @@ class ODBCResultData(ResultData):
         self.connection_string = connection_string
         self._arrow_schema = None
         self._df = None
-        self.flavor: FLAVORS = "mssql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
+        self.flavor: FLAVORS = "tsql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
+        self.dialect = "tsql" if " for SQL Server".lower() in connection_string.lower() else "duckdb"
 
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
-        return pypika.Query.from_(self.original_sql)
+    def query_builder(self) -> ex.Query:
+        if not isinstance(self.original_sql, str):
+            return self.original_sql.copy()
+        random_name = "temp_" + str(uuid4()).replace("-", "")
+        return from_(ex.table_(random_name)).with_(random_name, as_=self.original_sql, dialect=self.dialect)
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit=0, flavor=self.flavor)
+        query = get_sql(self.original_sql, limit=0, dialect=self.dialect)
         batches = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
@@ -81,7 +81,7 @@ class ODBCResultData(ResultData):
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql, flavor=self.flavor)
+            query = get_sql(self.original_sql, dialect=self.dialect)
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
                 query, connection_string=self.connection_string, batch_size=self.chunk_size
             )
@@ -96,7 +96,7 @@ class ODBCResultData(ResultData):
         return self.df
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        query = get_sql(self.original_sql, flavor=self.flavor)
+        query = get_sql(self.original_sql, dialect=self.dialect)
         res = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
@@ -118,13 +118,23 @@ class ODBCExecutionContext(ExecutionContext):
         pass
 
     @property
+    def dialect(self):
+        if len(self.datasources) > 0:
+            return (
+                "tsql"
+                if " for SQL Server".lower() in self.datasources[[list(self.datasources.keys())[0]]]
+                else "postgres"
+            )
+        return "tsql"
+
+    @property
     def supports_view_creation(self) -> bool:
         return False
 
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> ODBCResultData:
@@ -134,7 +144,7 @@ class ODBCExecutionContext(ExecutionContext):
             sql, chunk_size=self.chunk_size, connection_string=self.datasources[list(self.datasources.keys())[0]]
         )
 
-    def json_function(self, term: Term, assure_string=False):
+    def json_function(self, term: ex.Expression, assure_string=False):
         raise NotImplementedError(
             "Cannot convert to JSON in remote sql"
         )  # we could but sql does not support structured types anyway, so...
