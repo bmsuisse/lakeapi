@@ -126,8 +126,8 @@ def create_detailed_meta_endpoint(
                     )
                     .from_("strcols")
                     .with_(
-                        context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
                         "strcols",
+                        as_=context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
                     )
                 )
                 str_lengths_df = (
