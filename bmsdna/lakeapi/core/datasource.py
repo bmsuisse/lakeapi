@@ -81,11 +81,12 @@ class Datasource:
                 for c in self.config.select
                 if c not in (self.config.exclude or [])
             ]
-            df = df.select(*select)
+            df = df.select(*select, append=False)
         else:
 
             df = df.select(
                 ex.Dot.build([ex.table_(self.tablename), ex.Star()]),
+                append=False
             )
         return df
 
