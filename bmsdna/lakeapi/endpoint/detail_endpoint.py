@@ -1,7 +1,7 @@
 from typing import Optional, cast
 import pyarrow as pa
-import pypika
-import pypika.queries as fn
+
+import sqlglot.expressions as ex
 from deltalake import DeltaTable, Metadata
 from fastapi import (
     APIRouter,
@@ -10,7 +10,7 @@ from fastapi import (
     Request,
 )
 from pydantic import BaseModel
-from pypika.queries import QueryBuilder
+from sqlglot import select, from_
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
@@ -55,8 +55,7 @@ def create_detailed_meta_endpoint(
         req: Request,
         jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
         include_str_lengths: bool = True,
-        engine: Engines
-        | None = Query(
+        engine: Engines | None = Query(
             title="$engine",
             alias="$engine",
             default=None,
@@ -96,9 +95,9 @@ def create_detailed_meta_endpoint(
                     c for c in partition_columns if not should_hide_colname(c)
                 ]  # also hide those from metadata detail
                 if len(partition_columns) > 0:
-                    qb: QueryBuilder = (
-                        df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
-                    )
+                    qb = cast(
+                        ex.Select, df.query_builder().select(*[ex.column(c) for c in partition_columns], append=False)
+                    ).distinct()
                     partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
             schema = df.arrow_schema()
             str_cols = [
@@ -119,16 +118,16 @@ def create_detailed_meta_endpoint(
             )
             if include_str_lengths:
                 str_lengths_query = (
-                    pypika.Query.from_("strcols")
+                    select(
+                        *[
+                            ex.func("MAX", ex.func(context.len_func, ex.column(sc))).as_(sc)
+                            for sc in str_cols + complex_str_cols
+                        ]
+                    )
+                    .from_("strcols")
                     .with_(
                         context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
                         "strcols",
-                    )
-                    .select(
-                        *[
-                            fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
-                            for sc in str_cols + complex_str_cols
-                        ]
                     )
                 )
                 str_lengths_df = (
@@ -146,19 +145,23 @@ def create_detailed_meta_endpoint(
                 return MetadataSchemaFieldType(
                     type_str=str(pa.string()) if is_complex and jsonify_complex else str(t),
                     orig_type_str=str(t),
-                    fields=[
-                        MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
-                        for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
-                    ]
-                    if pa.types.is_struct(t) and not jsonify_complex
-                    else None,
-                    inner=_recursive_get_type(t.value_type)
-                    if pa.types.is_list(t)
-                    or pa.types.is_large_list(t)
-                    or pa.types.is_fixed_size_list(t)
-                    and t.value_type is not None
-                    and not jsonify_complex
-                    else None,
+                    fields=(
+                        [
+                            MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
+                            for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
+                        ]
+                        if pa.types.is_struct(t) and not jsonify_complex
+                        else None
+                    ),
+                    inner=(
+                        _recursive_get_type(t.value_type)
+                        if pa.types.is_list(t)
+                        or pa.types.is_large_list(t)
+                        or pa.types.is_fixed_size_list(t)
+                        and t.value_type is not None
+                        and not jsonify_complex
+                        else None
+                    ),
                 )
 
             schema = df.arrow_schema()

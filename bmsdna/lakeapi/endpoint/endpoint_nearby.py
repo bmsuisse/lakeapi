@@ -1,12 +1,13 @@
 from uuid import uuid4
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
-import pypika.queries
-from pypika.terms import Term
+import sqlglot.expressions as ex
+
 from bmsdna.lakeapi.core.config import BasicConfig, Config
 from bmsdna.lakeapi.core.model import GeoModel
 from bmsdna.lakeapi.core.types import NearbyConfig
-import pypika
+from sqlglot import select, from_
+
 from typing import cast
 
 NearbyType = list[tuple[GeoModel, NearbyConfig]] | None  # list of config with values
@@ -55,24 +56,26 @@ def handle_nearby_request(
         return query
     context.init_spatial()
     score_sum = None
-    query._orderbys = []  # reset order
     orders = []
     wheres = []
     for nearby_val, nearby_cfg in nearbyes:
         fn = context.distance_m_function(
-            pypika.Field(nearby_cfg.lat_col),
-            pypika.Field(nearby_cfg.lon_col),
-            cast(Term, Term.wrap_constant(nearby_val.lat)),
-            cast(Term, Term.wrap_constant(nearby_val.lon)),
+            ex.column(nearby_cfg.lat_col),
+            ex.column(nearby_cfg.lon_col),
+            ex.convert(nearby_val.lat),
+            ex.convert(nearby_val.lon),
         )
         query = query.select(fn.as_(nearby_cfg.name))
-        orders.append(pypika.Field(nearby_cfg.name))
-        wheres.append(pypika.Field(nearby_cfg.name) <= nearby_val.distance_m)
+        orders.append(ex.column(nearby_cfg.name).desc())
+        wheres.append(ex.column(nearby_cfg.name) <= nearby_val.distance_m)
 
     if len(orders) > 0 or len(wheres) > 0:
-        query2: ex.Query = pypika.Query.from_("nearbys").with_(query, "nearbys")
+        sel = select("*").from_("nearbys")
+        sel.with_(query, "nearbys", copy=False)
+
         for w in wheres:
-            query2 = query2.where(w)
-        return query2.select("*").orderby(*orders, order=pypika.Order.asc)
+            sel.where(w, append=True, copy=False)
+        sel.order_by(*orders, copy=False)
+        return sel
 
     return query

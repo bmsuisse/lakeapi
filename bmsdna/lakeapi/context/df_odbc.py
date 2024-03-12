@@ -7,15 +7,11 @@ from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData, get_sql
 import arrow_odbc
 import pyarrow.dataset
-import pypika.queries
-from pypika.terms import Term
-import pypika.functions
-import pypika.enums
-import pypika
-import pypika.terms
+import sqlglot.expressions as ex
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
+from sqlglot import from_
 from uuid import uuid4
 from .source_uri import SourceUri
 
@@ -59,13 +55,14 @@ class ODBCResultData(ResultData):
         self.connection_string = connection_string
         self._arrow_schema = None
         self._df = None
-        self.flavor: FLAVORS = "mssql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
+        self.flavor: FLAVORS = "tsql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
+        self.dialect = "tsql" if " for SQL Server".lower() in connection_string.lower() else "duckdb"
 
     def columns(self):
         return self.arrow_schema().names
 
     def query_builder(self) -> ex.Query:
-        return pypika.Query.from_(self.original_sql)
+        return from_(self.original_sql, dialect=self.dialect)
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:

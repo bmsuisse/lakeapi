@@ -9,6 +9,7 @@ from deltalake2db import get_sql_for_delta
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
+from sqlglot import from_
 import os
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -49,7 +50,7 @@ class DuckDBResultData(ResultData):
         return self.arrow_schema().names
 
     def query_builder(self) -> ex.Query:
-        return pypika.Query.from_(self.original_sql)
+        return from_(self.original_sql, dialect="duckdb")
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
@@ -206,7 +207,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def json_function(self, term: ex.Expression, assure_string=False):
         fn = ex.func("to_json", term)
         if assure_string:
-            return pypika.functions.Cast(fn, pypika.enums.SqlTypes.VARCHAR)
+            return ex.cast(fn, ex.DataType.Type.VARCHAR)
         return fn
 
     def init_search(

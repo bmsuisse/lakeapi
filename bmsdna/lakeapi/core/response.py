@@ -18,10 +18,9 @@ from bmsdna.lakeapi.core.types import OutputFileType
 from datetime import timedelta
 import typing
 from urllib.parse import quote
-from pypika.queries import QueryBuilder
 from mimetypes import guess_type
 from starlette.concurrency import iterate_in_threadpool
-
+import sqlglot.expressions as ex
 import anyio
 
 from starlette._compat import md5_hexdigest
@@ -235,7 +234,7 @@ async def create_response(
     url: URL,
     accept: str,
     context: ExecutionContext,
-    sql: QueryBuilder | str,
+    sql: ex.Query | str,
     basic_config: BasicConfig,
     close_context=False,
 ):

@@ -1,10 +1,10 @@
-from typing import List, Literal, Optional, Type, Union
+from typing import List, Literal, Optional, Type, Union, cast
 
 import pyarrow as pa
-import pypika
-import pypika.functions as fn
-import pypika.queries
-import pypika.terms
+
+
+import sqlglot.expressions as ex
+
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
@@ -67,7 +67,7 @@ async def get_params_filter_expr(
     columns: List[str],
     config: Config,
     params: BaseModel,
-) -> Optional[pypika.Criterion]:
+) -> Optional[ex.Condition]:
     expr = await filter_df_based_on_params(
         context,
         remove_search_nearby(params.model_dump(exclude_unset=True) if params else {}, config),
@@ -189,8 +189,7 @@ def create_config_endpoint(
             default=False,
             include_in_schema=False,
         ),
-        engine: Engines
-        | None = Query(
+        engine: Engines | None = Query(
             title="$engine",
             alias="$engine",
             default=None,
@@ -202,8 +201,7 @@ def create_config_endpoint(
             include_in_schema=has_complex,
             default=False,
         ),
-        chunk_size: int
-        | None = Query(
+        chunk_size: int | None = Query(
             title="$chunk_size",
             include_in_schema=False,
             default=None,
@@ -255,9 +253,9 @@ def create_config_endpoint(
             columns = [c for c in columns if c not in config.datasource.exclude]
         if config.datasource.sortby:
             for s in config.datasource.sortby:
-                new_query = new_query.orderby(
-                    s.by,
-                    order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
+                new_query = cast(ex.Select, new_query).order_by(
+                    ex.column(s.by).desc() if s.direction and s.direction.lower() == "desc" else ex.column(s.by),
+                    copy=False,
                 )
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
@@ -270,11 +268,13 @@ def create_config_endpoint(
 
         if distinct:
             assert len(columns) <= 3  # reduce complexity here
-            new_query = new_query.distinct()
+            new_query = cast(ex.Select, new_query).distinct()
 
         if not (limit == -1 and config.allow_get_all_pages):
-            limit = 1000 if limit == -1 else limit
-            new_query = new_query.offset(offset or 0).limit(limit)
+            limit = (1000 if limit == -1 else limit) or 1000
+            new_query = new_query.limit(limit)
+            if offset:
+                new_query.offset(offset, copy=False)
 
         new_query = handle_search_request(
             context,

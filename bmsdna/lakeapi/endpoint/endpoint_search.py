@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
-import pypika.queries
-import pypika.terms
+import sqlglot.expressions as ex
+
 from bmsdna.lakeapi.core.config import BasicConfig, Config
 from bmsdna.lakeapi.core.types import SearchConfig
 
@@ -47,7 +47,7 @@ def handle_search_request(
         )
     assert score_sum is not None
     query = query.select(score_sum.as_("search_score"))
-    query = query.where(pypika.terms.NotNullCriterion(pypika.queries.Field("search_score")))
-    query._orderbys = []  # reset order
-    query = query.orderby(pypika.Field("search_score"), order=pypika.Order.desc)
+    assert isinstance(query, ex.Select)
+    query = query.where(~ex.column("search_score").is_(ex.convert(None)))
+    query = query.order_by(ex.column("search_score").desc(), append=False)
     return query

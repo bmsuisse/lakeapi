@@ -12,10 +12,10 @@ import pyarrow as pa
 from typing import List, Literal, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
-import pypika.queries
-from pypika.terms import Term, Criterion
-import pypika
-import pypika.terms
+import sqlglot.expressions as ex
+from sqlglot import from_
+
+
 from uuid import uuid4
 import json
 from .source_uri import SourceUri
@@ -71,7 +71,7 @@ class PolarsResultData(ResultData):
 
             self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
             self.registred_df = True
-        return pypika.Query.from_(self.random_name)
+        return from_(self.random_name)
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
@@ -200,7 +200,7 @@ class PolarsExecutionContext(ExecutionContext):
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
         self.sql_context.register(nt_id, df)
-        return pypika.Query.from_(nt_id).select(*[pypika.Field(c) for c in columns])
+        return from_(nt_id).select(*[ex.column(c) for c in columns])
 
     def register_datasource(
         self,
