@@ -50,7 +50,8 @@ class DuckDBResultData(ResultData):
         return self.arrow_schema().names
 
     def query_builder(self) -> ex.Query:
-        return from_(self.original_sql, dialect="duckdb")
+        random_name = "temp_" + str(uuid4()).replace("-", "")
+        return from_(random_name).with_(random_name, as_=self.original_sql, dialect="duckdb")
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
