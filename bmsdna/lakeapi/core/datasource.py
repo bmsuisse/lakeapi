@@ -100,7 +100,7 @@ class Datasource:
         else:
 
             df = df.select(
-                ex.Dot.build([ex.table_(self.tablename), ex.Star()]),
+                ex.Star(),
                 append=False
             )
         return df
