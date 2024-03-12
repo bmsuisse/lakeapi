@@ -258,7 +258,7 @@ def create_config_endpoint(
 
             new_query = context.jsonify_complex(new_query, complex_cols, columns)
         else:
-            new_query = new_query.select(*[ex.column(c) for c in columns])
+            new_query = new_query.select(*[ex.column(c) for c in columns], append=False)
 
         if distinct:
             assert len(columns) <= 3  # reduce complexity here

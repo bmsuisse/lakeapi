@@ -62,7 +62,10 @@ class ODBCResultData(ResultData):
         return self.arrow_schema().names
 
     def query_builder(self) -> ex.Query:
-        return from_(self.original_sql, dialect=self.dialect)
+        if not isinstance(self.original_sql, str):
+            return self.original_sql.copy()
+        random_name = "temp_" + str(uuid4()).replace("-", "")
+        return from_(ex.table_(random_name)).with_(random_name, as_=self.original_sql, dialect=self.dialect)
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
