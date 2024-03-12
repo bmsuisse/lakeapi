@@ -32,7 +32,8 @@ def is_complex_type(
 def get_sql(
     sql_or_pypika: str | ex.Query,
     limit: int | None = None,
-    flavor: FLAVORS = "ansi",
+    *,
+    dialect: str,
 ) -> str:
     if limit is not None:
         sql_or_pypika = (
@@ -40,7 +41,7 @@ def get_sql(
             if not isinstance(sql_or_pypika, str)
             else (  # why not just support limit/offset like everyone else, microsoft?
                 f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
-                if flavor == "ansi"
+                if dialect != "tsql"
                 else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
             )
         )
@@ -49,10 +50,7 @@ def get_sql(
     if len(sql_or_pypika.expressions) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "mssql":
-        return sql_or_pypika.sql(dialect="tsql")
-
-    return sql_or_pypika.sql()
+    return sql_or_pypika.sql(dialect=dialect)
 
 
 class ResultData(ABC):
@@ -166,6 +164,10 @@ class ExecutionContext(ABC):
             return a.like(value + "%") if not negate else ~a.like(value + "%")
         else:
             return a.like("%" + value + "%") if not negate else ~a.like("%" + value + "%")
+
+    @property
+    @abstractmethod
+    def dialect(self) -> str: ...
 
     @property
     @abstractmethod

@@ -67,7 +67,7 @@ class ODBCResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit=0, flavor=self.flavor)
+        query = get_sql(self.original_sql, limit=0, dialect=self.dialect)
         batches = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
@@ -78,7 +78,7 @@ class ODBCResultData(ResultData):
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql, flavor=self.flavor)
+            query = get_sql(self.original_sql, dialect=self.dialect)
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
                 query, connection_string=self.connection_string, batch_size=self.chunk_size
             )
@@ -93,7 +93,7 @@ class ODBCResultData(ResultData):
         return self.df
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        query = get_sql(self.original_sql, flavor=self.flavor)
+        query = get_sql(self.original_sql, dialect=self.dialect)
         res = arrow_odbc.read_arrow_batches_from_odbc(
             query, connection_string=self.connection_string, batch_size=self.chunk_size
         )
@@ -113,6 +113,16 @@ class ODBCExecutionContext(ExecutionContext):
 
     def close(self):
         pass
+
+    @property
+    def dialect(self):
+        if len(self.datasources) > 0:
+            return (
+                "tsql"
+                if " for SQL Server".lower() in self.datasources[[list(self.datasources.keys())[0]]]
+                else "postgres"
+            )
+        return "tsql"
 
     @property
     def supports_view_creation(self) -> bool:

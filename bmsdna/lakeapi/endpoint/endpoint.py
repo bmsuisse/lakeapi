@@ -286,7 +286,7 @@ def create_config_endpoint(
             source_view=realdataframe.tablename,
             query=new_query,
         )
-        logger.debug(f"Query: {get_sql(new_query)}")
+        logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
 
         try:
             return await create_response(

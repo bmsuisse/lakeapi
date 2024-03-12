@@ -56,14 +56,14 @@ class DuckDBResultData(ResultData):
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit=0)
+        query = get_sql(self.original_sql, limit=0, dialect="duckdb")
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql)
+            query = get_sql(self.original_sql, dialect="duckdb")
             self._df = self.con.execute(query)
         return self._df
 
@@ -79,7 +79,7 @@ class DuckDBResultData(ResultData):
     def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_parquet(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
@@ -91,7 +91,7 @@ class DuckDBResultData(ResultData):
     def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_nd_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})
@@ -102,7 +102,7 @@ class DuckDBResultData(ResultData):
     def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr}) 
@@ -113,7 +113,7 @@ class DuckDBResultData(ResultData):
     def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})  
@@ -149,6 +149,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.res_con = None
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
+
+    @property
+    def dialect(self):
+        return "duckdb"
 
     @property
     def supports_view_creation(self) -> bool:

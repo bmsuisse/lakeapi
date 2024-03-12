@@ -160,6 +160,10 @@ class PolarsExecutionContext(ExecutionContext):
         self.sql_context = sql_context or pl.SQLContext()
 
     @property
+    def dialect(self) -> str:
+        return "postgres"
+
+    @property
     def supports_view_creation(self) -> bool:
         return True
 
@@ -276,7 +280,7 @@ class PolarsExecutionContext(ExecutionContext):
     ) -> PolarsResultData:
         import polars as pl
 
-        df = self.sql_context.execute(get_sql(sql))
+        df = self.sql_context.execute(get_sql(sql, dialect="postgres"))
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:

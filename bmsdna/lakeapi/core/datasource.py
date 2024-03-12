@@ -387,11 +387,11 @@ async def filter_df_based_on_params(
                 case "in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(ex.column(colname).isin(lsv))
+                        exprs.append(ex.column(colname).isin(*lsv))
                 case "not in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(~ex.column(colname).isin(lsv))
+                        exprs.append(~ex.column(colname).isin(*lsv))
                 case "between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
