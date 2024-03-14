@@ -1,4 +1,4 @@
-from typing import Callable, Literal
+from typing import Callable, Literal, TYPE_CHECKING
 import fsspec
 import adlfs
 import os
@@ -6,7 +6,9 @@ import urllib.parse
 import expandvars
 from datetime import datetime, timezone, timedelta
 
-_token_state = dict()
+if TYPE_CHECKING:
+    from azure.identity import DefaultAzureCredential
+_credential: DefaultAzureCredential | None = None
 
 default_azure_args = [
     "authority",
@@ -32,16 +34,11 @@ default_azure_args = [
 
 
 def _get_default_token(**kwargs) -> str:
-    global _token_state
-    token_expiry: datetime | None = _token_state.get("token_expiry", None)
-    if not token_expiry or (token_expiry - datetime.now(tz=timezone.utc)) < timedelta(minutes=2):
-        from azure.identity import DefaultAzureCredential
+    from azure.identity import DefaultAzureCredential
 
-        tk = DefaultAzureCredential(**kwargs).get_token("https://storage.azure.com/.default")
-        _token_state["token_dt"] = tk
-        _token_state["token_expiry"] = datetime.fromtimestamp(tk.expires_on, tz=timezone.utc)
-        _token_state["token"] = tk.token
-    return _token_state["token"]
+    global _credential
+    _credential = _credential or DefaultAzureCredential(**kwargs)
+    return _credential.get_token("https://storage.azure.com/.default").token
 
 
 def _convert_options(
