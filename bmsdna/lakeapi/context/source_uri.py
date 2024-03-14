@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 if TYPE_CHECKING:
     from azure.identity import DefaultAzureCredential
-_credential: DefaultAzureCredential | None = None
+_credential: "DefaultAzureCredential | None" = None
 
 default_azure_args = [
     "authority",
