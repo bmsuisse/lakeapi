@@ -250,6 +250,18 @@
                     "title": "Uri",
                     "type": "string"
                 },
+                "copy_local": {
+                    "anyOf": [
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": false,
+                    "title": "Copy Local"
+                },
                 "account": {
                     "anyOf": [
                         {
