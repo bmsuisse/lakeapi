@@ -38,16 +38,16 @@ test = ["duckdb", "pandas", "pyarrow (>=8.0.0)", "pytest"]
 
 [[package]]
 name = "adbc-driver-sqlite"
-version = "0.9.0"
+version = "0.10.0"
 description = "An ADBC driver for working with SQLite."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "adbc_driver_sqlite-0.9.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:da62a80e642088fb43f4d69265e58c8dfcd9b38548814d643d63f2e59346a4f3"},
-    {file = "adbc_driver_sqlite-0.9.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:9a150c28b9e37f8f9ee16271179905cfc485f662eb936351e8b6c3149ea2152c"},
-    {file = "adbc_driver_sqlite-0.9.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:24782431d415914930366b1c717a2629bb9e9892eac2bf051c065a2d954e3a27"},
-    {file = "adbc_driver_sqlite-0.9.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:905de41658f7567f0919e5aa34d1e3261f8a802212c46f06a6b767ba7f07277e"},
-    {file = "adbc_driver_sqlite-0.9.0-py3-none-win_amd64.whl", hash = "sha256:eb6cd9dc71631bcee474a18191b6f61b060d1af5ea7974886858a29f6dc1e4b2"},
+    {file = "adbc_driver_sqlite-0.10.0-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:d3e552aff125600e6d1c0e91cd5dddf337b34ca1b86eb3be20db4a2cd7334d59"},
+    {file = "adbc_driver_sqlite-0.10.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1396d83aee72593dd975181feb258f7225ef4c1cbd68c59ce7924e215de8f1f7"},
+    {file = "adbc_driver_sqlite-0.10.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b506902bdf60a0a09ca5f178d39d5bdf3a69679c917144c755b45b32ed7fa672"},
+    {file = "adbc_driver_sqlite-0.10.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a67b518c380f8b490c6aab2d90006dfa285941128172393effb3a58c73304d34"},
+    {file = "adbc_driver_sqlite-0.10.0-py3-none-win_amd64.whl", hash = "sha256:7727da4b1352b3bce846e0b6d0486be8949a32ef473179edc9050f7ac03d6d77"},
 ]
 
 [package.dependencies]
@@ -59,13 +59,13 @@ test = ["pandas", "pyarrow (>=8.0.0)", "pytest"]
 
 [[package]]
 name = "adlfs"
-version = "2023.12.0"
+version = "2024.2.0"
 description = "Access Azure Datalake Gen1 with fsspec and dask"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "adlfs-2023.12.0-py3-none-any.whl", hash = "sha256:da6e391afd002c7bb1b75dcc286b78fdf5dbf29aca0f984462033df6311b4e7e"},
-    {file = "adlfs-2023.12.0.tar.gz", hash = "sha256:a590694ed9f5a45741e82bff8bcf88c30a790da949310817330b5e7992b8a9e9"},
+    {file = "adlfs-2024.2.0-py3-none-any.whl", hash = "sha256:6514fb147032eea843e4b773c557df90cf6a929185edc7c97f7a12b91bfc1fa1"},
+    {file = "adlfs-2024.2.0.tar.gz", hash = "sha256:860f5ddbd7f3c2553d84a101717dc5736e823305e0d51e8c0058bc85a7fa304d"},
 ]
 
 [package.dependencies]
@@ -282,15 +282,16 @@ tests = ["pytest"]
 
 [[package]]
 name = "arrow-odbc"
-version = "2.1.6"
+version = "4.1.0"
 description = "Read the data of an ODBC data source as sequence of Apache Arrow record batches."
 optional = true
 python-versions = "*"
 files = [
-    {file = "arrow_odbc-2.1.6-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:0c9e70be60ea3e41d37d6b9a77453ed49698f0fadcf8c5d3f9e258a8c42d9a42"},
-    {file = "arrow_odbc-2.1.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:259f429eb7669cf187f6e7846e168a716ee553cc752a3ccd6915cc5aee350dd3"},
-    {file = "arrow_odbc-2.1.6-py3-none-win_amd64.whl", hash = "sha256:5850f9d193737af409fcaca042b7c5b98fb28fca85dda2e6b9e2adfd4b149e21"},
-    {file = "arrow_odbc-2.1.6.tar.gz", hash = "sha256:9b88cc8c199aa7d82c33f73670398233ebe16fce410b545e23983db4b385dfc8"},
+    {file = "arrow_odbc-4.1.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:e4e09fcd5a0bc827c995cb1fd91b275dfcc801332a1340aa2c743296665b22b9"},
+    {file = "arrow_odbc-4.1.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:5b282ffb3a002c147368654f3bcd0d430b426bbffee4fd51d33109cf03390fea"},
+    {file = "arrow_odbc-4.1.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:12c86ad1c85cc85935cb82be918d26dda46d8734d195ad45d2e5345e2f899fe9"},
+    {file = "arrow_odbc-4.1.0-py3-none-win_amd64.whl", hash = "sha256:0098f2628afd2ce17342724d9f03f909468d044cd50160698966bbbffdee0e91"},
+    {file = "arrow_odbc-4.1.0.tar.gz", hash = "sha256:8b95b2a60ad4d3477194597210c02362dcd89c141d2b401805bec3c7b2a4b3be"},
 ]
 
 [package.dependencies]
@@ -298,7 +299,7 @@ cffi = "*"
 pyarrow = ">=8.0.0"
 
 [package.extras]
-test = ["pytest (<8.0.0)"]
+test = ["pyodbc", "pytest (<8.0.0)"]
 
 [[package]]
 name = "async-timeout"
@@ -770,17 +771,17 @@ test-randomorder = ["pytest-randomly"]
 
 [[package]]
 name = "deltalake"
-version = "0.16.1"
+version = "0.16.3"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "deltalake-0.16.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e116e59bbaff0ea29f6a4f12f9fa1c0fd6860d0a8487d6ab2e8656b614cdc1d3"},
-    {file = "deltalake-0.16.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:373e225f41c3d533cab298546eba2dca508f7a3a94613fd0625b19bd1bf3e23e"},
-    {file = "deltalake-0.16.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d9c4fccd5b0d45445807c30a3cfd0cdceaf663795ea56a8ec90d786eee9deacc"},
-    {file = "deltalake-0.16.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:472901bd3efd5976bf4c485175bc828845c94c0380a9ddfc8ddef96efddbc6b0"},
-    {file = "deltalake-0.16.1-cp38-abi3-win_amd64.whl", hash = "sha256:480632bbe1ed82e745be4c43e2928fbd1f44eb66f0b4d48e3cdb03e9e15984ad"},
-    {file = "deltalake-0.16.1.tar.gz", hash = "sha256:0662aacf98e486e8a2449773d7165b5b6af8b19631912a4231ad9ddfd63fadba"},
+    {file = "deltalake-0.16.3-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:0de0cfe64aff4b41f8cc7a2b4acc59a1bfa7149afd2bdca5d48cac457e72622f"},
+    {file = "deltalake-0.16.3-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c9f7b039f9cd457480442f3e3de06e383f09e68306a20ae8acaf28b0d25f8529"},
+    {file = "deltalake-0.16.3-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cc00c0d208c5c6c5a89889712f1c8e74901b43b41ef1384e7bd186f9f9407a82"},
+    {file = "deltalake-0.16.3-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5112fb67ac7a630d47907a98f16eab1957e97a55b4fb593ffdfbbb96705aa202"},
+    {file = "deltalake-0.16.3-cp38-abi3-win_amd64.whl", hash = "sha256:a5861233d052960517cbfe57ab2d77fb79d8d87b1bf4a51f2c7ad11810c5d163"},
+    {file = "deltalake-0.16.3.tar.gz", hash = "sha256:aa972900c8f956d64edb4a93b548b18ae40d31fca602186b83b4a5370d6ebd24"},
 ]
 
 [package.dependencies]
@@ -794,13 +795,13 @@ pyspark = ["delta-spark", "numpy (==1.22.2)", "pyspark"]
 
 [[package]]
 name = "deltalake2db"
-version = "0.2.0"
+version = "0.2.3"
 description = ""
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = "<4.0,>=3.10"
 files = [
-    {file = "deltalake2db-0.2.0-py3-none-any.whl", hash = "sha256:3e8cb566021a7bebb762e48b62fd676dbfe1680764888c66d302a6ec927fd7dd"},
-    {file = "deltalake2db-0.2.0.tar.gz", hash = "sha256:dba75be8ef3019a7f0cf4c0fc269324da8d90475a88a8b83027ba7219dda8746"},
+    {file = "deltalake2db-0.2.3-py3-none-any.whl", hash = "sha256:7852190b3d71086d6f76a2a96103986c3007ab2370412e1ba5b341deef13afb6"},
+    {file = "deltalake2db-0.2.3.tar.gz", hash = "sha256:ae6937e8960a0bc9808970483daf8a0124ea10cd4d40a7830a72250a6594d8b0"},
 ]
 
 [package.dependencies]
@@ -927,13 +928,13 @@ python-dateutil = ">=2.4"
 
 [[package]]
 name = "fastapi"
-version = "0.109.2"
+version = "0.110.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastapi-0.109.2-py3-none-any.whl", hash = "sha256:2c9bab24667293b501cad8dd388c05240c850b58ec5876ee3283c47d6e1e3a4d"},
-    {file = "fastapi-0.109.2.tar.gz", hash = "sha256:f3817eac96fe4f65a2ebb4baa000f394e55f5fccdaf7f75250804bc58f354f73"},
+    {file = "fastapi-0.110.0-py3-none-any.whl", hash = "sha256:87a1f6fb632a218222c5984be540055346a8f5d8a68e8f6fb647b1dc9934de4b"},
+    {file = "fastapi-0.110.0.tar.gz", hash = "sha256:266775f0dcc95af9d3ef39bad55cff525329a931d5fd51930aadd4f428bf7ff3"},
 ]
 
 [package.dependencies]
@@ -1032,13 +1033,13 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2023.12.2"
+version = "2024.3.1"
 description = "File-system specification"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fsspec-2023.12.2-py3-none-any.whl", hash = "sha256:d800d87f72189a745fa3d6b033b9dc4a34ad069f60ca60b943a63599f5501960"},
-    {file = "fsspec-2023.12.2.tar.gz", hash = "sha256:8548d39e8810b59c38014934f6b31e57f40c1b20f911f4cc2b85389c7e9bf0cb"},
+    {file = "fsspec-2024.3.1-py3-none-any.whl", hash = "sha256:918d18d41bf73f0e2b261824baeb1b124bcf771767e3a26425cd7dec3332f512"},
+    {file = "fsspec-2024.3.1.tar.gz", hash = "sha256:f39780e282d7d117ffb42bb96992f8a90795e4d0fb0f661a70ca39fe9c43ded9"},
 ]
 
 [package.extras]
@@ -1056,7 +1057,7 @@ github = ["requests"]
 gs = ["gcsfs"]
 gui = ["panel"]
 hdfs = ["pyarrow (>=1)"]
-http = ["aiohttp (!=4.0.0a0,!=4.0.0a1)", "requests"]
+http = ["aiohttp (!=4.0.0a0,!=4.0.0a1)"]
 libarchive = ["libarchive-c"]
 oci = ["ocifs"]
 s3 = ["s3fs"]
@@ -1078,13 +1079,13 @@ files = [
 
 [[package]]
 name = "httpcore"
-version = "1.0.4"
+version = "1.0.5"
 description = "A minimal low-level HTTP client."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "httpcore-1.0.4-py3-none-any.whl", hash = "sha256:ac418c1db41bade2ad53ae2f3834a3a0f5ae76b56cf5aa497d2d033384fc7d73"},
-    {file = "httpcore-1.0.4.tar.gz", hash = "sha256:cb2839ccfcba0d2d3c1131d3c3e26dfc327326fbe7a5dc0dbfe9f6c9151bb022"},
+    {file = "httpcore-1.0.5-py3-none-any.whl", hash = "sha256:421f18bac248b25d310f3cacd198d55b8e6125c107797b609ff9b7a6ba7991b5"},
+    {file = "httpcore-1.0.5.tar.gz", hash = "sha256:34a38e2f9291467ee3b44e89dd52615370e152954ba21721378a87b2960f7a61"},
 ]
 
 [package.dependencies]
@@ -1095,7 +1096,7 @@ h11 = ">=0.13,<0.15"
 asyncio = ["anyio (>=4.0,<5.0)"]
 http2 = ["h2 (>=3,<5)"]
 socks = ["socksio (==1.*)"]
-trio = ["trio (>=0.22.0,<0.25.0)"]
+trio = ["trio (>=0.22.0,<0.26.0)"]
 
 [[package]]
 name = "httpx"
@@ -1215,13 +1216,13 @@ psutil = "*"
 
 [[package]]
 name = "msal"
-version = "1.27.0"
+version = "1.28.0"
 description = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
 optional = false
-python-versions = ">=2.7"
+python-versions = ">=3.7"
 files = [
-    {file = "msal-1.27.0-py2.py3-none-any.whl", hash = "sha256:572d07149b83e7343a85a3bcef8e581167b4ac76befcbbb6eef0c0e19643cdc0"},
-    {file = "msal-1.27.0.tar.gz", hash = "sha256:3109503c038ba6b307152b0e8d34f98113f2e7a78986e28d0baf5b5303afda52"},
+    {file = "msal-1.28.0-py3-none-any.whl", hash = "sha256:3064f80221a21cd535ad8c3fafbb3a3582cd9c7e9af0bb789ae14f726a0ca99b"},
+    {file = "msal-1.28.0.tar.gz", hash = "sha256:80bbabe34567cb734efd2ec1869b2d98195c927455369d8077b3c542088c5c9d"},
 ]
 
 [package.dependencies]
@@ -1911,13 +1912,13 @@ files = [
 
 [[package]]
 name = "pyright"
-version = "1.1.354"
+version = "1.1.356"
 description = "Command line wrapper for pyright"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pyright-1.1.354-py3-none-any.whl", hash = "sha256:f28d61ae8ae035fc52ded1070e8d9e786051a26a4127bbd7a4ba0399b81b37b5"},
-    {file = "pyright-1.1.354.tar.gz", hash = "sha256:b1070dc774ff2e79eb0523fe87f4ba9a90550de7e4b030a2bc9e031864029a1f"},
+    {file = "pyright-1.1.356-py3-none-any.whl", hash = "sha256:a101b0f375f93d7082f9046cfaa7ba15b7cf8e1939ace45e984c351f6e8feb99"},
+    {file = "pyright-1.1.356.tar.gz", hash = "sha256:f05b8b29d06b96ed4a0885dad5a31d9dff691ca12b2f658249f583d5f2754021"},
 ]
 
 [package.dependencies]
@@ -2283,18 +2284,18 @@ files = [
 
 [[package]]
 name = "sqlglot"
-version = "23.0.0"
+version = "23.2.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-23.0.0-py3-none-any.whl", hash = "sha256:26b569110332120dd856dbc42748ebf57fc58fbad7c85f64e3ddc560e66293f2"},
-    {file = "sqlglot-23.0.0.tar.gz", hash = "sha256:3fffe4640f7f9f1a44a872cdb204692255b8466571f43b6d5fae47a6d58476ea"},
+    {file = "sqlglot-23.2.0-py3-none-any.whl", hash = "sha256:cb041741dfabb95cb0b0d4fbac6b76334a02f5dfb35c7f171404f26bf8895ebd"},
+    {file = "sqlglot-23.2.0.tar.gz", hash = "sha256:a4436fa33e58492495a3225f0f856121f2f3497a6b53e71a1d933334b70820c5"},
 ]
 
 [package.extras]
 dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "pyspark", "python-dateutil", "ruff (==0.3.2)", "types-python-dateutil", "typing-extensions"]
-rs = ["sqlglotrs (==0.1.2)"]
+rs = ["sqlglotrs (==0.1.3)"]
 
 [[package]]
 name = "starlette"
@@ -2337,24 +2338,21 @@ files = [
 
 [[package]]
 name = "typer"
-version = "0.9.0"
+version = "0.11.0"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "typer-0.9.0-py3-none-any.whl", hash = "sha256:5d96d986a21493606a358cae4461bd8cdf83cbf33a5aa950ae629ca3b51467ee"},
-    {file = "typer-0.9.0.tar.gz", hash = "sha256:50922fd79aea2f4751a8e0408ff10d2662bd0c8bbfa84755a699f3bada2978b2"},
+    {file = "typer-0.11.0-py3-none-any.whl", hash = "sha256:049cc47bef39f46b043eddd9165492209fdd9bc7d79afa7ba9cc5cd017caa817"},
+    {file = "typer-0.11.0.tar.gz", hash = "sha256:a6ce173c0f03d3a41b49c0a945874cc489e91f88faabf76517b2b91c670fcde7"},
 ]
 
 [package.dependencies]
-click = ">=7.1.1,<9.0.0"
+click = ">=8.0.0"
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
 all = ["colorama (>=0.4.3,<0.5.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
-dev = ["autoflake (>=1.3.1,<2.0.0)", "flake8 (>=3.8.3,<4.0.0)", "pre-commit (>=2.17.0,<3.0.0)"]
-doc = ["cairosvg (>=2.5.2,<3.0.0)", "mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1.1.2,<2.0.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "pillow (>=9.3.0,<10.0.0)"]
-test = ["black (>=22.3.0,<23.0.0)", "coverage (>=6.2,<7.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.910)", "pytest (>=4.4.0,<8.0.0)", "pytest-cov (>=2.10.0,<5.0.0)", "pytest-sugar (>=0.9.4,<0.10.0)", "pytest-xdist (>=1.32.0,<4.0.0)", "rich (>=10.11.0,<14.0.0)", "shellingham (>=1.3.0,<2.0.0)"]
 
 [[package]]
 name = "typing-extensions"
@@ -2412,13 +2410,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uvicorn"
-version = "0.26.0"
+version = "0.29.0"
 description = "The lightning-fast ASGI server."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "uvicorn-0.26.0-py3-none-any.whl", hash = "sha256:cdb58ef6b8188c6c174994b2b1ba2150a9a8ae7ea5fb2f1b856b94a815d6071d"},
-    {file = "uvicorn-0.26.0.tar.gz", hash = "sha256:48bfd350fce3c5c57af5fb4995fded8fb50da3b4feb543eb18ad7e0d54589602"},
+    {file = "uvicorn-0.29.0-py3-none-any.whl", hash = "sha256:2c2aac7ff4f4365c206fd773a39bf4ebd1047c238f8b8268ad996829323473de"},
+    {file = "uvicorn-0.29.0.tar.gz", hash = "sha256:6a69214c0b6a087462412670b3ef21224fa48cae0e452b5883e8e8bdfdd11dd0"},
 ]
 
 [package.dependencies]
@@ -2576,4 +2574,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8b7e2c1ee9e77939b5aebf1e5b3e697a081cd8a3f2f1cb684553300f839cb3ef"
+content-hash = "3b6a657951b0a1a6f82c06eead700bf077a3e321bb1225a080097c0f2aff8b5c"
