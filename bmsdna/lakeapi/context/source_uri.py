@@ -7,8 +7,8 @@ import expandvars
 from datetime import datetime, timezone, timedelta
 
 if TYPE_CHECKING:
-    from azure.identity import DefaultAzureCredential
-_credential: "DefaultAzureCredential | None" = None
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+_credential: "DefaultAzureCredential | None | ManagedIdentityCredential" = None
 
 default_azure_args = [
     "authority",
@@ -34,10 +34,18 @@ default_azure_args = [
 
 
 def _get_default_token(**kwargs) -> str:
-    from azure.identity import DefaultAzureCredential
-
     global _credential
-    _credential = _credential or DefaultAzureCredential(**kwargs)
+    if _credential is None:
+        if os.getenv("LAKE_MANAGED_IDENTITY_ID") is not None:
+            from azure.identity import ManagedIdentityCredential
+
+            mid = os.environ["LAKE_MANAGED_IDENTITY_ID"]
+            mid = None if mid == "default" else mid
+            _credential = ManagedIdentityCredential(client_id=mid)
+        else:
+            from azure.identity import DefaultAzureCredential
+
+            _credential = DefaultAzureCredential(**kwargs)
     return _credential.get_token("https://storage.azure.com/.default").token
 
 
