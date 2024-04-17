@@ -5,7 +5,7 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from deltalake2db import get_sql_for_delta
+from deltalake2db import duckdb_create_view_for_delta
 import duckdb
 import pyarrow.dataset
 import pypika.queries
@@ -370,15 +370,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
             )
             return
         if file_type == "delta" and uri.exists():
-            ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
-            dt = DeltaTable(ab_uri, storage_options=uri_opts)
-
-            if dt.protocol().min_reader_version > 1:
-
-                sql = get_sql_for_delta(dt, duck_con=self.con)
-                self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
-                return
-
+            ab_uri, uri_opts = uri.get_uri_options(flavor="deltalake2db")
+            duckdb_create_view_for_delta(self.con, ab_uri, target_name, storage_options=uri_opts)
+            return
         if file_type == "duckdb":
             self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_duckdb (READ_ONLY);")
             self.con.execute(
@@ -416,7 +410,7 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
     def __enter__(self):
         super().__enter__()
         self.con.__enter__()
-        self.con.execute(f"SET memory_limit='500MB'")
+        self.con.execute("SET memory_limit='500MB'")
         self.con.execute(f"SET threads={int(multiprocessing.cpu_count() / 2)}")
         self.con.execute("SET default_null_order='nulls_first'")  # align with polars
         return self
