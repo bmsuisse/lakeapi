@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmsdna-lakeapi"
-version = "0.19.10"
+version = "0.19.11"
 description = ""
 authors = ["DWH Team <you@example.com>"]
 license = "MIT"
@@ -31,7 +31,7 @@ expandvars = "^0.12.0"
 pandas = "^2.1.0"
 fsspec = "^2024.2.0"
 adlfs = "^2024.2.0"
-deltalake2db = ">=0.3.0"
+deltalake2db = ">=0.3.2"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -51,7 +51,7 @@ def _get_default_token(**kwargs) -> str:
 
 def _convert_options(
     options: dict | None,
-    flavor: Literal["fsspec", "object_store"],
+    flavor: Literal["fsspec", "object_store", "deltalake2db"],
     token_retrieval_func: Callable[[], str] | None = None,
 ):
     if options is None:
@@ -66,23 +66,30 @@ def _convert_options(
         and "anon" not in options
         and "sas_token" not in options
         and "account_name" in options
+        and "chain" not in options
     ):  # anon is true by default in fsspec which makes no sense mostly
         return {"anon": False} | options
 
     new_opts = options.copy()
     anon_value = False
-    if flavor == "object_store" and "anon" in options:
+    if flavor in ["deltalake2db", "object_store"] and "anon" in options:
         anon_value = new_opts.pop("anon")
+
     if (
-        flavor == "object_store"
+        flavor in ["deltalake2db", "object_store"]
         and "account_key" not in options
         and "sas_token" not in options
         and "token" not in options
+        and "chain" not in options
         and not use_emulator
         and not anon_value
     ):
         token_kwargs = {k: new_opts.pop(k) for k in default_azure_args if k in new_opts}
         new_opts["token"] = (token_retrieval_func or _get_default_token)(**token_kwargs)
+    if "chain" in options and flavor != "deltalake2db":
+        from deltalake2db.azure_helper import apply_azure_chain
+
+        return apply_azure_chain(new_opts)
     return new_opts
 
 
@@ -132,7 +139,7 @@ class SourceUri:
             raise ValueError("Not supported FS")
 
     def get_uri_options(
-        self, *, flavor: Literal["fsspec", "object_store"], azure_protocol="original"
+        self, *, flavor: Literal["fsspec", "object_store", "deltalake2db"], azure_protocol="original"
     ) -> tuple[str, dict | None]:
         if self.is_azure() and azure_protocol != "original":
             pr = urllib.parse.urlparse(self.uri)
