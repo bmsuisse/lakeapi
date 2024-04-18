@@ -77,6 +77,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 get_response_model(
                     config=config,
                     schema=schema,
+                    basic_config=basic_config,
                 )
                 if schema is not None
                 else None

@@ -7,8 +7,7 @@ from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from pydantic.fields import FieldInfo
 from bmsdna.lakeapi.context.df_base import ResultData
-from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig
-from bmsdna.lakeapi.core.partition_utils import should_hide_colname
+from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig, BasicConfig
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
@@ -225,11 +224,12 @@ class TypeBaseModel(BaseModel):
 def create_response_model(
     name: str,
     schema: pa.Schema,
+    basic_config: BasicConfig,
 ) -> type[BaseModel]:
     props = {
         k: get_schema_for(name, schema.field(k).name, schema.field(k).type)
         for k in schema.names
-        if not should_hide_colname(k)
+        if not basic_config.should_hide_col_name(k)
     }
 
     return create_model(name, **props, __base__=TypeBaseModel)  # type: ignore

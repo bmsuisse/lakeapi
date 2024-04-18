@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmsdna-lakeapi"
-version = "0.19.11"
+version = "0.19.12"
 description = ""
 authors = ["DWH Team <you@example.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ packages = [{ include = "bmsdna" }]
 python = "^3.10"
 pyyaml = "^6.0"
 pypika = "^0.48.9"
-duckdb = "^0.10.1"
+duckdb = "^0.10.2"
 polars = ">=0.20.16"
 
 

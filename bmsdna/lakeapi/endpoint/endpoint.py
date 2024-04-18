@@ -17,7 +17,6 @@ from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
-from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
@@ -80,20 +79,19 @@ async def get_params_filter_expr(
 def get_response_model(
     config: Config,
     schema: pa.Schema,
+    basic_config: BasicConfig,
 ) -> Optional[Type[BaseModel]]:
     response_model: Optional[type[BaseModel]] = None
     try:
-        response_model = create_response_model(config.tag + "_" + config.name, schema)
+        response_model = create_response_model(config.tag + "_" + config.name, schema, basic_config=basic_config)
     except Exception as err:
         logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
         response_model = None
     return response_model
 
 
-def exclude_cols(
-    columns: List[str],
-) -> List[str]:
-    columns = [c for c in columns if not should_hide_colname(c)]
+def exclude_cols(columns: List[str], config: BasicConfig) -> List[str]:
+    columns = [c for c in columns if not config.should_hide_col_name(c)]
     return columns
 
 
@@ -238,7 +236,7 @@ def create_config_endpoint(
         base_schema = df.arrow_schema()
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
-        columns = exclude_cols(df.columns())
+        columns = exclude_cols(df.columns(), basic_config)
         if select:
             columns = [
                 c for c in columns if c in split_csv(select)
