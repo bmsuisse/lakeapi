@@ -16,7 +16,6 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.df_base import ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
 from bmsdna.lakeapi.core.datasource import Datasource
-from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import Engines, MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
 
 from typing import Optional
@@ -92,7 +91,7 @@ def create_detailed_meta_endpoint(
                 assert delta_tbl is not None
                 partition_columns = delta_tbl.metadata().partition_columns
                 partition_columns = [
-                    c for c in partition_columns if not should_hide_colname(c)
+                    c for c in partition_columns if not basic_config.should_hide_col_name(c)
                 ]  # also hide those from metadata detail
                 if len(partition_columns) > 0:
                     qb: QueryBuilder = (
@@ -104,14 +103,14 @@ def create_detailed_meta_endpoint(
                 name
                 for name in schema.names
                 if (pa.types.is_string(schema.field(name).type) or pa.types.is_large_string(schema.field(name).type))
-                and not should_hide_colname(name)
+                and not basic_config.should_hide_col_name(name)
             ]
             complex_str_cols = (
                 [
                     name
                     for name in schema.names
                     if (pa.types.is_struct(schema.field(name).type) or pa.types.is_list(schema.field(name).type))
-                    and not should_hide_colname(name)
+                    and not basic_config.should_hide_col_name(name)
                 ]
                 if jsonify_complex
                 else []
@@ -175,7 +174,7 @@ def create_detailed_meta_endpoint(
                         name=n, type=_recursive_get_type(schema.field(n).type), max_str_length=str_lengths.get(n, None)
                     )
                     for n in schema.names
-                    if not should_hide_colname(n)
+                    if not basic_config.should_hide_col_name(n)
                 ],
                 delta_meta=_to_dict(delta_tbl.metadata() if delta_tbl else None),
                 delta_schema=json.loads(delta_tbl.schema().to_json()) if delta_tbl else None,

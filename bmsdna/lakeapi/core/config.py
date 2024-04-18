@@ -53,6 +53,11 @@ class BasicConfig:
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
     local_data_cache_path: str
     token_retrieval_func: Optional[Callable[[SourceUri], str]]
+    should_hide_col_name: Callable[[str], bool]
+
+
+def _should_hide_colname(name: str):
+    return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name or "_md5_mod_" in name
 
 
 def get_default_config():
@@ -67,6 +72,7 @@ def get_default_config():
         prepare_sql_db_hook=None,
         schema_cache_ttl=5 * 60,  # 5 minutes
         token_retrieval_func=None,
+        should_hide_col_name=_should_hide_colname,
     )
 
 
@@ -260,7 +266,7 @@ class Config:
             filters=None,
         )
 
-        new_params = _with_implicit_parameters(_params, file_type, uri_obj)
+        new_params = _with_implicit_parameters(_params, file_type, uri_obj, basic_config=basic_config)
 
         return cls(
             name=name,

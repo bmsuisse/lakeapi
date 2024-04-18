@@ -7,14 +7,11 @@ if TYPE_CHECKING:
     from bmsdna.lakeapi.core.types import Param
 
 
-def should_hide_colname(name: str):
-    return name.startswith("_") or "_md5_prefix_" in name or "_xxhash64_prefix_" in name or "_md5_mod_" in name
-
-
 def _with_implicit_parameters(
     paramslist: "List[Param]",
     file_type: str,
     uri: SourceUri,
+    basic_config: "BasicConfig",
 ):
     if file_type == "delta":
         fs, fs_spec = uri.get_fs_spec()
@@ -30,7 +27,7 @@ def _with_implicit_parameters(
                 all_names = [(p.colname or p.name).lower() for p in paramslist]
                 new_params = list(paramslist)
                 for pc in part_cols:
-                    if pc.lower() not in all_names and not should_hide_colname(pc):
+                    if pc.lower() not in all_names and not basic_config.should_hide_col_name(pc):
                         from bmsdna.lakeapi.core.types import Param
 
                         new_params.append(Param(pc, operators=["="], colname=pc))
