@@ -14,15 +14,24 @@ def get_app(default_engine="duckdb"):
     os.environ["MY_SQL_PWD"] = "MyPass@word4tests"
     app = FastAPI()
     def_cfg = bmsdna.lakeapi.get_default_config()
-    cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data", default_engine=default_engine)
+    cfg = dataclasses.replace(
+        def_cfg,
+        enable_sql_endpoint=True,
+        data_path="tests/data",
+        default_engine=default_engine,
+    )
     sti = bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
 
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
         exc_str = f"{exc}".replace("\n", " ").replace("   ", " ")
         logging.error(f"{request}: {exc_str}")
         content = {"status_code": 10422, "message": exc_str, "data": None}
-        return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return JSONResponse(
+            content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
 
     @app.get("/")
     async def root(req: Request):
@@ -60,7 +69,8 @@ def create_rows_faker(num=1):
             "Conrad": fake.catch_phrase(),
             "randomdata": random.randint(1000, 2000),
             "abc": random.choice(["a", "b", "c"]),
-            "geo_lat": lat1 + (lat1 - lat2) / num * x,  # not really random, but good to test
+            "geo_lat": lat1
+            + (lat1 - lat2) / num * x,  # not really random, but good to test
             "geo_lon": lon1 + (lon2 - lon1) / num * x,
         }
         for x in range(num)

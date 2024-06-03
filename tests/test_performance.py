@@ -23,7 +23,8 @@ def test_async_execution():
     async def call_api_1(engine, format):
         start = time.time()
         response = client.get(
-            f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}", auth=auth
+            f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}",
+            auth=auth,
         )
         end = time.time()
         assert response.status_code == 200

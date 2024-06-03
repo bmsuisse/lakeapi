@@ -7,14 +7,26 @@ import pypika.queries
 import pypika.terms
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+)
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.source_uri import SourceUri
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
-from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
+from bmsdna.lakeapi.core.datasource import (
+    Datasource,
+    filter_df_based_on_params,
+    filter_partitions_based_on_params,
+)
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.response import create_response
@@ -69,7 +81,9 @@ async def get_params_filter_expr(
 ) -> Optional[pypika.Criterion]:
     expr = await filter_df_based_on_params(
         context,
-        remove_search_nearby(params.model_dump(exclude_unset=True) if params else {}, config),
+        remove_search_nearby(
+            params.model_dump(exclude_unset=True) if params else {}, config
+        ),
         config.params if config.params else [],
         columns,
     )
@@ -83,7 +97,9 @@ def get_response_model(
 ) -> Optional[Type[BaseModel]]:
     response_model: Optional[type[BaseModel]] = None
     try:
-        response_model = create_response_model(config.tag + "_" + config.name, schema, basic_config=basic_config)
+        response_model = create_response_model(
+            config.tag + "_" + config.name, schema, basic_config=basic_config
+        )
     except Exception as err:
         logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
         response_model = None
@@ -166,7 +182,9 @@ def create_config_endpoint(
     api_method = api_method_mapping[apimethod]
     has_complex = True
     if schema is not None:
-        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
+        has_complex = any(
+            (pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types)
+        )
 
     @api_method
     async def data(
@@ -205,12 +223,16 @@ def create_config_endpoint(
             default=None,
         ),
     ):  # type: ignore
-        logger.debug(f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
+        logger.debug(
+            f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}"
+        )
 
         engine = engine or config.engine or basic_config.default_engine
 
         logger.debug(f"Engine: {engine}")
-        real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
+        real_chunk_size = (
+            chunk_size or config.chunk_size or basic_config.default_chunk_size
+        )
         context = get_context_by_engine(
             engine,
             chunk_size=real_chunk_size,
@@ -247,7 +269,9 @@ def create_config_endpoint(
             for s in config.datasource.sortby:
                 new_query = new_query.orderby(
                     s.by,
-                    order=pypika.Order.desc if s.direction and s.direction.lower() == "desc" else pypika.Order.asc,
+                    order=pypika.Order.desc
+                    if s.direction and s.direction.lower() == "desc"
+                    else pypika.Order.asc,
                 )
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True

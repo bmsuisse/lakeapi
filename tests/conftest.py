@@ -32,5 +32,7 @@ def spawn_azurite():
     else:
         azurite = test_server.start_azurite()
         yield azurite
-        if os.getenv("KEEP_AZURITE_DOCKER", "0") == "0":  # can be handy during development
+        if (
+            os.getenv("KEEP_AZURITE_DOCKER", "0") == "0"
+        ):  # can be handy during development
             azurite.stop()

@@ -40,7 +40,11 @@ def init_duck_con(
                     df.config.file_type,
                     None,
                 )
-            except (FileTypeNotSupportedError, TableNotFoundError, FileNotFoundError) as err:
+            except (
+                FileTypeNotSupportedError,
+                TableNotFoundError,
+                FileNotFoundError,
+            ) as err:
                 logger.warning(f"Cannot query {df.tablename}")
 
 
@@ -87,7 +91,9 @@ def create_sql_endpoint(
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine", alias="$engine", default="duckdb", include_in_schema=False
+        ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
         return con.list_tables().to_arrow_table().to_pylist()

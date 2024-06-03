@@ -1,4 +1,8 @@
-from bmsdna.lakeapi.context.source_uri import SourceUri, _convert_options, _get_default_token
+from bmsdna.lakeapi.context.source_uri import (
+    SourceUri,
+    _convert_options,
+    _get_default_token,
+)
 
 
 def fake_token(**kwargs):
@@ -21,7 +25,9 @@ def test_fsspec():
 
 def test_object_store():
     o_non_anon = {"account_name": "blubb"}
-    o = _convert_options(o_non_anon, flavor="object_store", token_retrieval_func=fake_token)
+    o = _convert_options(
+        o_non_anon, flavor="object_store", token_retrieval_func=fake_token
+    )
     assert o == {"account_name": "blubb", "token": "fake_token"}
     assert "anon" not in o_non_anon
 
@@ -29,14 +35,24 @@ def test_object_store():
     o = _convert_options(o_anon, flavor="object_store", token_retrieval_func=fake_token)
     assert o == {"account_name": "blubb"}
 
-    o_non_anon = {"account_name": "blubb", "exclude_interactive_browser_credential": False}
-    o = _convert_options(o_non_anon, flavor="object_store", token_retrieval_func=fake_token)
-    assert o == {"account_name": "blubb", "token": "fake_token_exclude_interactive_browser_credential=False"}
+    o_non_anon = {
+        "account_name": "blubb",
+        "exclude_interactive_browser_credential": False,
+    }
+    o = _convert_options(
+        o_non_anon, flavor="object_store", token_retrieval_func=fake_token
+    )
+    assert o == {
+        "account_name": "blubb",
+        "token": "fake_token_exclude_interactive_browser_credential=False",
+    }
 
 
 def test_account_key():
     o_non_anon = {"account_name": "blubb", "account_key": "nix"}
-    o = _convert_options(o_non_anon, flavor="object_store", token_retrieval_func=fake_token)
+    o = _convert_options(
+        o_non_anon, flavor="object_store", token_retrieval_func=fake_token
+    )
     assert o == {"account_name": "blubb", "account_key": "nix"}
 
     o2 = _convert_options(o_non_anon, flavor="fsspec", token_retrieval_func=fake_token)

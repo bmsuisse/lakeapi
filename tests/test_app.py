@@ -30,7 +30,9 @@ def test_authentication():
 def test_fruits_limit_1():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert response.json() == [
                 {
@@ -45,7 +47,10 @@ def test_fruits_limit_1():
 def test_fruits_sort_asc():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_sortby_asc?limit=1&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert response.json() == [
                 {
@@ -60,7 +65,10 @@ def test_fruits_sort_asc():
 def test_fruits_sort_desc():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_sortby_desc?limit=1&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_sortby_desc?limit=1&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert response.json() == [
                 {
@@ -93,7 +101,10 @@ def test_fruits_offset_1():
 def test_data_limit():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert len(response.json()) == 1000
 
@@ -132,7 +143,10 @@ def test_data_filter():
 def test_data_csv():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             txt = response.text
             import csv
@@ -161,7 +175,9 @@ def test_data_scsv():
 def test_data_minus_1():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_delta?limit=-1&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 100_011
 
@@ -173,7 +189,10 @@ def test_data_minus_1_csv():
         for f in ("csv", "scsv"):
             separator = ";" if f == "scsv" else ","
             for e in engines:
-                response = client.get(f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}", auth=auth)
+                response = client.get(
+                    f"/api/v1/test/fake_delta?limit=-1&format={f}&%24engine={e}",
+                    auth=auth,
+                )
                 assert response.status_code == 200
                 csv_file = StringIO(response.text)
                 assert len(pd.read_csv(csv_file, sep=separator)) == 100_011
@@ -182,7 +201,9 @@ def test_data_minus_1_csv():
 def test_data_default_limit():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_delta?format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 100
 
@@ -389,7 +410,10 @@ def test_fruits_combi_multi():
 def test_fruits_select():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_select?limit=1&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert response.json() == [{"fruits_new": "banana"}]
 
@@ -397,7 +421,10 @@ def test_fruits_select():
 def test_fake_parquet():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_parquet?limit=10&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert len(response.json()) == 10
 
@@ -405,7 +432,10 @@ def test_fake_parquet():
 def test_fake_parquet_ns():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_parquet_ns?limit=10&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert len(response.json()) == 10
 
@@ -413,7 +443,9 @@ def test_fake_parquet_ns():
 def test_fake_csv():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_csv?limit=3&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 3
 
@@ -421,7 +453,9 @@ def test_fake_csv():
 def test_json():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_json?limit=3&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 3
 
@@ -429,7 +463,10 @@ def test_json():
 def test_ndjson():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_ndjson?limit=3&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert len(response.json()) == 3
 
@@ -437,7 +474,9 @@ def test_ndjson():
 def test_avro():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 3
 
@@ -445,7 +484,9 @@ def test_avro():
 def test_fake_arrow():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fake_arrow?limit=10&format=json&%24engine={e}", auth=auth
+            )
             assert response.status_code == 200
             assert len(response.json()) == 10
 
@@ -475,7 +516,8 @@ def test_all_metadata():
 def test_metadata_stringify():
     for e in engines:
         response = client.get(
-            f"/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True&%24engine={e}", auth=auth
+            f"/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True&%24engine={e}",
+            auth=auth,
         )
         assert response.status_code == 200
         assert response.json()["modified_date"] is not None
@@ -484,7 +526,8 @@ def test_metadata_stringify():
 def test_metadata_no_str_length():
     for e in engines:
         response = client.get(
-            f"/api/v1/complexer/complex_fruits/metadata_detail?include_str_lengths=False&%24engine={e}", auth=auth
+            f"/api/v1/complexer/complex_fruits/metadata_detail?include_str_lengths=False&%24engine={e}",
+            auth=auth,
         )
         assert response.status_code == 200
         assert response.json()["modified_date"] is not None
@@ -516,13 +559,29 @@ def test_data_partition():
                 auth=auth,
             )
             assert response.status_code == 200
-            assert response.json() == [{"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "my_empty_col": None}]
+            assert response.json() == [
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                    "my_empty_col": None,
+                }
+            ]
             response = client.get(
                 f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
                 auth=auth,
             )
             assert response.status_code == 200
-            assert response.json() == [{"A": 9, "fruits": "ananas", "B": 9, "cars": "fiat", "my_empty_col": None}]
+            assert response.json() == [
+                {
+                    "A": 9,
+                    "fruits": "ananas",
+                    "B": 9,
+                    "cars": "fiat",
+                    "my_empty_col": None,
+                }
+            ]
 
 
 def test_data_partition_mod():
@@ -560,7 +619,10 @@ def test_data_partition_mod():
 def test_fruits_nested():
     for _ in range(2):
         for e in engines:
-            response = client.get(f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}", auth=auth)
+            response = client.get(
+                f"/api/v1/test/fruits_nested?limit=2&format=json&%24engine={e}",
+                auth=auth,
+            )
             assert response.status_code == 200
             assert response.json() == [
                 {
@@ -570,7 +632,13 @@ def test_fruits_nested():
                     "cars": "beetle",
                     "nested": {"fruits": "banana", "cars": "beetle"},
                 },
-                {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"fruits": "banana", "cars": "audi"}},
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                    "nested": {"fruits": "banana", "cars": "audi"},
+                },
             ] or response.json() == [
                 {
                     "A": 1,
@@ -579,7 +647,13 @@ def test_fruits_nested():
                     "cars": "beetle",
                     "nested": {"cars": "beetle", "fruits": "banana"},
                 },
-                {"A": 2, "fruits": "banana", "B": 4, "cars": "audi", "nested": {"cars": "audi", "fruits": "banana"}},
+                {
+                    "A": 2,
+                    "fruits": "banana",
+                    "B": 4,
+                    "cars": "audi",
+                    "nested": {"cars": "audi", "fruits": "banana"},
+                },
             ]
 
 

@@ -4,7 +4,12 @@ from deltalake import DeltaTable
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
-from bmsdna.lakeapi.context.df_base import FLAVORS, ExecutionContext, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import (
+    FLAVORS,
+    ExecutionContext,
+    ResultData,
+    get_sql,
+)
 import arrow_odbc
 import pyarrow.dataset
 import pypika.queries
@@ -59,7 +64,11 @@ class ODBCResultData(ResultData):
         self.connection_string = connection_string
         self._arrow_schema = None
         self._df = None
-        self.flavor: FLAVORS = "mssql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
+        self.flavor: FLAVORS = (
+            "mssql"
+            if " for SQL Server".lower() in connection_string.lower()
+            else "ansi"
+        )
 
     def columns(self):
         return self.arrow_schema().names
@@ -83,7 +92,9 @@ class ODBCResultData(ResultData):
         if self._df is None:
             query = get_sql(self.original_sql, flavor=self.flavor)
             batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
-                query, connection_string=self.connection_string, batch_size=self.chunk_size
+                query,
+                connection_string=self.connection_string,
+                batch_size=self.chunk_size,
             )
             assert batch_reader is not None
             self._df = pa.Table.from_batches(batch_reader, batch_reader.schema)
@@ -111,7 +122,9 @@ class ODBCExecutionContext(ExecutionContext):
         self.datasources = dict()
         self.persistance_file_name = None
 
-    def register_arrow(self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]):
+    def register_arrow(
+        self, name: str, ds: Union[pyarrow.dataset.Dataset, pyarrow.Table]
+    ):
         raise NotImplementedError("Cannot read arrow in remote sql")
 
     def close(self):
@@ -131,7 +144,9 @@ class ODBCExecutionContext(ExecutionContext):
         # todo: get correct connection string somehow
         assert len(self.datasources) == 1
         return ODBCResultData(
-            sql, chunk_size=self.chunk_size, connection_string=self.datasources[list(self.datasources.keys())[0]]
+            sql,
+            chunk_size=self.chunk_size,
+            connection_string=self.datasources[list(self.datasources.keys())[0]],
         )
 
     def json_function(self, term: Term, assure_string=False):
@@ -159,7 +174,9 @@ class ODBCExecutionContext(ExecutionContext):
         self.datasources[target_name] = uri.uri
 
     def list_tables(self) -> ResultData:
-        return self.execute_sql("SELECT table_schema, table_name as name, table_type from information_schema.tables")
+        return self.execute_sql(
+            "SELECT table_schema, table_name as name, table_type from information_schema.tables"
+        )
 
     def get_modified_date(
         self,

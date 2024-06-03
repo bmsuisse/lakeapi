@@ -26,7 +26,10 @@ def generate_strong_password():
         for i in range(pwd_length):
             pwd += "".join(secrets.choice(alphabet))
 
-        if any(char in special_chars for char in pwd) and sum(char in digits for char in pwd) >= 2:
+        if (
+            any(char in special_chars for char in pwd)
+            and sum(char in digits for char in pwd) >= 2
+        ):
             break
     return pwd
 

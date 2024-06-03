@@ -40,7 +40,8 @@ def get_sql(
         sql_or_pypika = (
             sql_or_pypika.limit(limit)
             if not isinstance(sql_or_pypika, str)
-            else (  # why not just support limit/offset like everyone else, microsoft?
+            # why not just support limit/offset like everyone else, microsoft?
+            else (
                 f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
                 if flavor == "ansi"
                 else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
@@ -51,8 +52,12 @@ def get_sql(
     if len(sql_or_pypika._selects) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "mssql" and (sql_or_pypika._limit is not None or sql_or_pypika._offset is not None):
-        old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
+    if flavor == "mssql" and (
+        sql_or_pypika._limit is not None or sql_or_pypika._offset is not None
+    ):
+        old_limit = (
+            sql_or_pypika._limit
+        )  # why not just support limit/offset like everyone else, microsoft?
         old_offset = sql_or_pypika._offset
         no_limit = sql_or_pypika.limit(None).offset(None)
         if old_offset is None or old_offset == 0:
@@ -92,7 +97,9 @@ class ResultData(ABC):
     def to_arrow_table(self) -> "pa.Table": ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> "pa.RecordBatchReader": ...
+    def to_arrow_recordbatch(
+        self, chunk_size: int = 10000
+    ) -> "pa.RecordBatchReader": ...
 
     @abstractmethod
     def query_builder(self) -> pypika.queries.QueryBuilder: ...
@@ -182,14 +189,23 @@ class ExecutionContext(ABC):
         self.array_contains_func = "array_contains"
 
     def term_like(
-        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+        self,
+        a: Term,
+        value: str,
+        wildcard_loc: Literal["start", "end", "both"],
+        *,
+        negate=False,
     ) -> Criterion:
         if wildcard_loc == "start":
             return a.like("%" + value) if not negate else a.not_like("%" + value)
         elif wildcard_loc == "end":
             return a.like(value + "%") if not negate else a.not_like(value + "%")
         else:
-            return a.like("%" + value + "%") if not negate else a.not_like("%" + value + "%")
+            return (
+                a.like("%" + value + "%")
+                if not negate
+                else a.not_like("%" + value + "%")
+            )
 
     @property
     @abstractmethod
@@ -253,9 +269,12 @@ class ExecutionContext(ABC):
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if dt.protocol().min_reader_version > 1:
-                    raise ValueError("Delta table protocol version not supported, use DuckDB or Polars")
+                    raise ValueError(
+                        "Delta table protocol version not supported, use DuckDB or Polars"
+                    )
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                    partitions=partitions,
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -290,11 +309,16 @@ class ExecutionContext(ABC):
     ) -> Term: ...
 
     def jsonify_complex(
-        self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]
+        self,
+        query: pypika.queries.QueryBuilder,
+        complex_cols: list[str],
+        columns: list[str],
     ) -> pypika.queries.QueryBuilder:
         return query.select(
             *[
-                pypika.Field(c) if not c in complex_cols else self.json_function(pypika.Field(c)).as_(c)
+                pypika.Field(c)
+                if not c in complex_cols
+                else self.json_function(pypika.Field(c)).as_(c)
                 for c in columns
             ]
         )
@@ -335,7 +359,9 @@ class ExecutionContext(ABC):
         summ = None
         for part in parts:
             case = pypika.Case()
-            cond = pypika.functions.Concat(*[pypika.Field(c) for c in search_config.columns]).like("%" + part + "%")
+            cond = pypika.functions.Concat(
+                *[pypika.Field(c) for c in search_config.columns]
+            ).like("%" + part + "%")
             case.when(cond, Term.wrap_constant(1))
             case.else_(Term.wrap_constant(0))
             cases.append(case)
@@ -381,7 +407,9 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData: ...
+    def execute_sql(
+        self, sql: Union[pypika.queries.QueryBuilder, str]
+    ) -> ResultData: ...
 
     @abstractmethod
     def list_tables(self) -> ResultData: ...

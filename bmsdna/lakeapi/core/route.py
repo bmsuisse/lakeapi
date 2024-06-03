@@ -1,7 +1,11 @@
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter, Depends, Request
-from bmsdna.lakeapi.context import get_context_by_engine, ExecutionContext, ExecutionContextManager
+from bmsdna.lakeapi.context import (
+    get_context_by_engine,
+    ExecutionContext,
+    ExecutionContextManager,
+)
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger
@@ -48,7 +52,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     basic_config=basic_config,
                     accounts=configs.accounts,
                 )
-                schema = get_schema_cached(basic_config, realdataframe, config.datasource.get_unique_hash())
+                schema = get_schema_cached(
+                    basic_config, realdataframe, config.datasource.get_unique_hash()
+                )
                 if schema is None:
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe}"
@@ -62,7 +68,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         "file_type": config.datasource.file_type,
                         "uri": config.datasource.uri,
                         "version": config.version,
-                        "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
+                        "schema": {n: str(schema.field(n).type) for n in schema.names}
+                        if schema
+                        else None,
                     }
                 )
 
@@ -70,7 +78,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 import traceback
 
                 print(traceback.format_exc())
-                logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
+                logger.warning(
+                    f"Could not get response type for f{config.route}. Error:{err}"
+                )
                 schema = None
 
             response_model = (

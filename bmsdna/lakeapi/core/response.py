@@ -63,7 +63,10 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         return (OutputFormats.XLSX, ".xlsx")
     elif realaccept == "text/html" or realaccept == "html":
         return (OutputFormats.HTML, ".html")
-    elif realaccept == "application/vnd.apache.arrow.stream" or realaccept == "arrow-stream":
+    elif (
+        realaccept == "application/vnd.apache.arrow.stream"
+        or realaccept == "arrow-stream"
+    ):
         return (OutputFormats.ARROW_STREAM, "")
 
     elif (
@@ -75,7 +78,11 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         or realaccept == "ipc"
     ):
         return (OutputFormats.ARROW_IPC, ".arrow")
-    elif realaccept == "application/json+newline" or realaccept == "application/jsonl" or realaccept == "ndjson":
+    elif (
+        realaccept == "application/json+newline"
+        or realaccept == "application/jsonl"
+        or realaccept == "ndjson"
+    ):
         return (OutputFormats.ND_JSON, ".ndjson")
     elif realaccept == "application/parquet" or realaccept == "parquet":
         return (OutputFormats.PARQUET, ".parquet")
@@ -84,7 +91,11 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
 
 
 def write_frame(
-    url: URL, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
+    url: URL,
+    content: ResultData,
+    format: OutputFormats,
+    out: str,
+    basic_config: BasicConfig,
 ) -> list[str]:
     if format == OutputFormats.AVRO:
         import polars as pl
@@ -191,7 +202,9 @@ class StreamingResponseWCharset(StreamingResponse):
                     content_disposition_type, content_disposition_filename
                 )
             else:
-                content_disposition = '{}; filename="{}"'.format(content_disposition_type, self.filename)
+                content_disposition = '{}; filename="{}"'.format(
+                    content_disposition_type, self.filename
+                )
             self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
         if stat_result is not None:
@@ -246,12 +259,24 @@ async def create_response(
     format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
-    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
+    media_type = (
+        "text/csv"
+        if extension == ".csv"
+        else mimetypes.guess_type("file" + extension)[0]
+    )
 
     if format == OutputFormats.JSON:
-        return Response(content=context.execute_sql(sql).to_json(), headers=headers, media_type=media_type)
+        return Response(
+            content=context.execute_sql(sql).to_json(),
+            headers=headers,
+            media_type=media_type,
+        )
     if format == OutputFormats.ND_JSON:
-        return Response(content=context.execute_sql(sql).to_ndjson(), headers=headers, media_type=media_type)
+        return Response(
+            content=context.execute_sql(sql).to_ndjson(),
+            headers=headers,
+            media_type=media_type,
+        )
 
     if format in [
         OutputFormats.JSON,

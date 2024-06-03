@@ -14,7 +14,8 @@ def get_schema_cached(cfg: BasicConfig, datasource: Datasource, key: str):
         )
         if (
             not os.path.exists(schema_cache_file)
-            or (time.time() - os.path.getmtime(schema_cache_file)) > cfg.schema_cache_ttl
+            or (time.time() - os.path.getmtime(schema_cache_file))
+            > cfg.schema_cache_ttl
         ):
             if not datasource.file_exists():
                 schema = None

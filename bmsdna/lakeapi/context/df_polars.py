@@ -75,7 +75,11 @@ class PolarsResultData(ResultData):
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
-        from polars.datatypes.convert import DataTypeMappings, py_type_to_arrow_type, dtype_to_py_type
+        from polars.datatypes.convert import (
+            DataTypeMappings,
+            py_type_to_arrow_type,
+            dtype_to_py_type,
+        )
 
         if isinstance(t, pl.Struct):
             return pa.struct({f.name: self._to_arrow_type(f.dtype) for f in t.fields})
@@ -97,7 +101,9 @@ class PolarsResultData(ResultData):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            return pa.schema([(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()])
+            return pa.schema(
+                [(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()]
+            )
         else:
             return self.df.limit(0).to_arrow().schema
 
@@ -173,7 +179,11 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        ds = pl.scan_pyarrow_dataset(ds) if isinstance(ds, pyarrow.dataset.Dataset) else pl.from_arrow(ds)
+        ds = (
+            pl.scan_pyarrow_dataset(ds)
+            if isinstance(ds, pyarrow.dataset.Dataset)
+            else pl.from_arrow(ds)
+        )
         self.sql_context.register(name, ds)
 
     def close(self):
@@ -182,7 +192,12 @@ class PolarsExecutionContext(ExecutionContext):
     def json_function(self, term: Term, assure_string=False):
         raise NotImplementedError()
 
-    def jsonify_complex(self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]):
+    def jsonify_complex(
+        self,
+        query: pypika.queries.QueryBuilder,
+        complex_cols: list[str],
+        columns: list[str],
+    ):
         import polars as pl
 
         old_query = query.select(*columns)
@@ -196,7 +211,10 @@ class PolarsExecutionContext(ExecutionContext):
                 return json.dumps(x.to_list())
             return json.dumps(x)
 
-        map_cols = [pl.col(c).map_elements(to_json, return_dtype=pl.Utf8).alias(c) for c in complex_cols]
+        map_cols = [
+            pl.col(c).map_elements(to_json, return_dtype=pl.Utf8).alias(c)
+            for c in complex_cols
+        ]
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
         self.sql_context.register(nt_id, df)
@@ -218,13 +236,14 @@ class PolarsExecutionContext(ExecutionContext):
         match file_type:
             case "delta":
                 try:
-
                     db_uri, db_opts = uri.get_uri_options(flavor="deltalake2db")
                     from deltalake2db import polars_scan_delta
 
                     df = polars_scan_delta(db_uri, storage_options=db_opts)
                 except DeltaProtocolError as de:
-                    raise FileTypeNotSupportedError(f"Delta table version {ab_uri} not supported") from de
+                    raise FileTypeNotSupportedError(
+                        f"Delta table version {ab_uri} not supported"
+                    ) from de
             case "parquet":
                 df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
             case "arrow":
@@ -242,7 +261,9 @@ class PolarsExecutionContext(ExecutionContext):
             case "sqlite" if uri_opts is None:
                 query = "SELECT * FROM " + (source_table_name or target_name)
 
-                df = pl.read_database_uri(query=query, uri="sqlite://" + ab_uri, engine="adbc")
+                df = pl.read_database_uri(
+                    query=query, uri="sqlite://" + ab_uri, engine="adbc"
+                )
             case "duckdb" if uri_opts is None:
                 query = "SELECT * FROM " + (source_table_name or target_name)
                 import duckdb
