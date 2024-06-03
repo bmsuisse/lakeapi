@@ -98,9 +98,9 @@ def get_schema_for(
             Union[
                 create_model(
                     model_ns + ("_" + field_name if field_name else ""),
-                    **res,
+                    **res,  # type: ignore
                     __base__=TypeBaseModel,
-                ),  # type: ignore
+                ),
                 None,
             ],
             None,
