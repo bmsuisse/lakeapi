@@ -38,10 +38,9 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.308"
-black = "^23.3.0"
 uvicorn = "^0.29.0"
 psutil = "^5.9.5"
-pycln = "^2.1.5"
+ruff = "^0.4.7"
 
 [tool.poetry.group.test]
 optional = true
