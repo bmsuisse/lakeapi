@@ -51,7 +51,7 @@ def test_sql_where_post():
         and A = 2 and B = 4"""
 
     response = client.post(
-        f"/api/sql",
+        "/api/sql",
         auth=auth,
         data=query,  # type: ignore
     )
@@ -77,7 +77,7 @@ def test_sql_where_get():
         and A = 2 and B = 4"""
 
     response = client.get(
-        f"/api/sql",
+        "/api/sql",
         auth=auth,
         params={"sql": query},
     )

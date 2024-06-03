@@ -25,15 +25,12 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.partition_utils import _with_implicit_parameters
 from bmsdna.lakeapi.core.types import (
     FileTypes,
-    OperatorType,
     Param,
-    PolaryTypeFunction,
     Engines,
     SearchConfig,
     NearbyConfig,
 )
 import expandvars
-from pathlib import Path
 from hashlib import md5
 
 if TYPE_CHECKING:
@@ -215,7 +212,7 @@ class Config:
             uri,
             datasource.get("account"),
             accounts=accounts,
-            data_path=basic_config.data_path if not file_type in ["odbc"] else None,
+            data_path=basic_config.data_path if file_type not in ["odbc"] else None,
         )
         if config.get("config_from_delta"):
             import deltalake
@@ -237,7 +234,7 @@ class Config:
                 )  # get data source again, could have select, columns etc
             except json.JSONDecodeError as err:
                 logger.warning(f"Not correct json: {real_path}\n{err}")
-            except deltalake.exceptions.TableNotFoundError as err:
+            except deltalake.exceptions.TableNotFoundError:
                 logger.warning(f"Not a real delta path: {real_path}")
             except Exception as err:
                 logger.warning(f"Error reading delta: {real_path}\n{err}")

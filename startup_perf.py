@@ -1,4 +1,4 @@
-from bmsdna.lakeapi.core.config import BasicConfig, Configs, get_default_config
+from bmsdna.lakeapi.core.config import Configs, get_default_config
 import dataclasses
 from bmsdna.lakeapi.core.route import init_routes
 import os

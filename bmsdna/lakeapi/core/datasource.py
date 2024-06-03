@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime, date
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, cast, get_args
+from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
 import pyarrow.compute as pac
@@ -17,7 +17,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes, Engines
+from bmsdna.lakeapi.core.types import DeltaOperatorTypes
 
 logger = get_logger(__name__)
 
@@ -48,7 +48,7 @@ class Datasource:
             config.uri,
             config.account,
             accounts,
-            basic_config.data_path if not config.file_type in ["odbc"] else None,
+            basic_config.data_path if config.file_type not in ["odbc"] else None,
             token_retrieval_func=basic_config.token_retrieval_func,
         )
         self.copy_local = config.copy_local
@@ -309,7 +309,7 @@ async def _create_inner_expr(
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
         logger.debug(f"key = {ck}, value = {cv}, columns = {columns}")
-        if (columns and not ck in columns) and not ck in prmdef.combi:
+        if (columns and ck not in columns) and ck not in prmdef.combi:
             pass
         else:
             if inner_expr is None:
@@ -373,7 +373,7 @@ async def filter_df_based_on_params(
             if outer_expr is not None:
                 exprs.append(outer_expr)
 
-        elif columns and not colname in columns:
+        elif columns and colname not in columns:
             pass
 
         else:

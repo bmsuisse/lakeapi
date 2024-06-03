@@ -3,8 +3,6 @@ import fsspec
 import adlfs
 import os
 import urllib.parse
-import expandvars
-from datetime import datetime, timezone, timedelta
 
 if TYPE_CHECKING:
     from azure.identity import DefaultAzureCredential, ManagedIdentityCredential

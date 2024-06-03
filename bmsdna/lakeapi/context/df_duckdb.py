@@ -1,5 +1,4 @@
 from datetime import datetime
-from deltalake import DeltaTable
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
@@ -14,7 +13,7 @@ import pypika.functions
 import pypika.enums
 import pypika
 import os
-from datetime import datetime, timezone
+from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 from pypika.terms import Term

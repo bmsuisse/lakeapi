@@ -1,12 +1,8 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import sys
-import pyarrow as pa
 import polars as pl
-import pytest
 import pandas as pd
-from urllib.parse import quote
-from httpx._types import RequestData
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -276,7 +272,7 @@ def test_fruits_in():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"fruits_in": ["banana", "ananas"]},
                 auth=auth,
             )
@@ -284,7 +280,7 @@ def test_fruits_in():
             assert len(response.json()) == 4
 
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"fruits_in": ["apple", "ananas"]},
                 auth=auth,
             )
@@ -296,7 +292,7 @@ def test_fruits_in_zero():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"A_in": [0, 9]},
                 auth=auth,
             )
@@ -308,7 +304,7 @@ def test_fruits_combi():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"pk": [{"cars": "audi"}]},
                 auth=auth,
             )
@@ -327,7 +323,7 @@ def test_fruits_combi_int():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"combiint": [{"A": 0, "cars": "lamborghini", "B": 5}]},
                 auth=auth,
             )
@@ -342,7 +338,7 @@ def test_fruits_combi_int():
             ]
 
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"combiint": [{"A": 1, "cars": "beetle", "B": 5}]},
                 auth=auth,
             )
@@ -361,7 +357,7 @@ def test_fruits_combi_different_name():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={"combi": [{"cars": "audi", "fruits": "banana"}]},
                 auth=auth,
             )
@@ -380,7 +376,7 @@ def test_fruits_combi_multi():
     for _ in range(2):
         for e in engines:
             response = client.post(
-                f"/api/v1/test/fruits?limit=1000",
+                "/api/v1/test/fruits?limit=1000",
                 json={
                     "pk": [
                         {"cars": "audi", "fruits": "banana"},
@@ -492,7 +488,7 @@ def test_fake_arrow():
 
 
 def test_all_metadata():
-    response = client.get(f"/metadata", auth=auth)
+    response = client.get("/metadata", auth=auth)
     assert response.status_code == 200
     jsd = response.json()
     for item in jsd:
@@ -507,7 +503,7 @@ def test_all_metadata():
             else:
                 assert name + "_" + str(response.status_code) == name + "_404"
 
-    response = client.get(f"/api/v1/test/fake_arrow/metadata_detail", auth=auth)
+    response = client.get("/api/v1/test/fake_arrow/metadata_detail", auth=auth)
     assert response.status_code == 200
     jsd = response.json()
     assert len(jsd["parameters"]) == 2
@@ -534,7 +530,7 @@ def test_metadata_no_str_length():
 
 
 def test_metadata_no_hidden():
-    response = client.get(f"/api/v1/test/fruits_partition/metadata_detail", auth=auth)
+    response = client.get("/api/v1/test/fruits_partition/metadata_detail", auth=auth)
     assert response.status_code == 200
     jsd = response.json()
     prm_names = [p["name"] for p in jsd["parameters"]]
@@ -544,10 +540,10 @@ def test_metadata_no_hidden():
 
 
 def test_auth_metadata():
-    response = client.get(f"/metadata")
+    response = client.get("/metadata")
     assert response.status_code == 401
 
-    response = client.get(f"/api/v1/test/fake_arrow/metadata_detail")
+    response = client.get("/api/v1/test/fake_arrow/metadata_detail")
     assert response.status_code == 401
 
 

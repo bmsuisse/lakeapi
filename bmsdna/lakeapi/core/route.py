@@ -1,15 +1,12 @@
 from typing import Literal, Tuple, cast
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter
 from bmsdna.lakeapi.context import (
-    get_context_by_engine,
-    ExecutionContext,
     ExecutionContextManager,
 )
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.utils.fast_api_utils import _repeat_every
 
 
 logger = get_logger(__name__)

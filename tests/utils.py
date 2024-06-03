@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, Request, status
+from fastapi import FastAPI, Request, status
 import dataclasses
 from faker import Faker
 from fastapi.exceptions import RequestValidationError

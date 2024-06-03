@@ -1,7 +1,7 @@
 import json
 import yaml
 import pydantic
-from bmsdna.lakeapi.core.config import Config, YamlData
+from bmsdna.lakeapi.core.config import YamlData
 
 
 def validate_schema(schema_file: str, yaml_file: str):

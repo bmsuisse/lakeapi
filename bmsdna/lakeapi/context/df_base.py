@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
@@ -9,7 +9,6 @@ import pypika.queries
 import polars as pl
 
 from pypika.terms import Term, Criterion
-import os
 from .source_uri import SourceUri
 
 if TYPE_CHECKING:
@@ -160,7 +159,6 @@ class ResultData(ABC):
 
     def write_csv(self, file_name: str, *, separator: str):
         import pyarrow.csv as pacsv
-        import decimal
 
         batches = self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
@@ -317,7 +315,7 @@ class ExecutionContext(ABC):
         return query.select(
             *[
                 pypika.Field(c)
-                if not c in complex_cols
+                if c not in complex_cols
                 else self.json_function(pypika.Field(c)).as_(c)
                 for c in columns
             ]

@@ -1,7 +1,5 @@
 from bmsdna.lakeapi.context.source_uri import (
-    SourceUri,
     _convert_options,
-    _get_default_token,
 )
 
 

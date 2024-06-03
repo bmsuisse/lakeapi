@@ -1,4 +1,3 @@
-from uuid import uuid4
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 import pypika.queries
