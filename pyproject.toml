@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmsdna-lakeapi"
-version = "0.19.12"
+version = "0.19.13"
 description = ""
 authors = ["DWH Team <you@example.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ packages = [{ include = "bmsdna" }]
 python = "^3.10"
 pyyaml = "^6.0"
 pypika = "^0.48.9"
-duckdb = "^0.10.2"
+duckdb = "^1.0.0"
 polars = ">=0.20.16"
 
 
@@ -31,8 +31,10 @@ expandvars = "^0.12.0"
 pandas = "^2.1.0"
 fsspec = "^2024.2.0"
 adlfs = "^2024.2.0"
-deltalake2db = ">=0.3.2"
+deltalake2db = ">=0.3.4"
 
+[tool.poetry.group.dev]
+optional = true
 
 [tool.poetry.group.dev.dependencies]
 pyright = "^1.1.308"
@@ -40,6 +42,9 @@ black = "^23.3.0"
 uvicorn = "^0.29.0"
 psutil = "^5.9.5"
 pycln = "^2.1.5"
+
+[tool.poetry.group.test]
+optional = true
 
 
 [tool.poetry.group.test.dependencies]
