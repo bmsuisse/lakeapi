@@ -5,7 +5,6 @@ from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-import pyarrow.dataset
 import pypika.queries
 import polars as pl
 
@@ -15,17 +14,21 @@ from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow.dataset as pas
+    import pyarrow as pa
     from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "mssql"]
 
 
 def is_complex_type(
-    schema: pa.Schema,
+    schema: "pa.Schema",
     col_name: str,
 ):
+    import pyarrow.types as pat
+
     f = schema.field(col_name)
-    return pa.types.is_nested(f.type)
+    return pat.is_nested(f.type)
 
 
 def get_sql(
@@ -83,13 +86,13 @@ class ResultData(ABC):
     def columns(self) -> List[str]: ...
 
     @abstractmethod
-    def arrow_schema(self) -> pa.Schema: ...
+    def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
-    def to_arrow_table(self) -> pa.Table: ...
+    def to_arrow_table(self) -> "pa.Table": ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader: ...
+    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> "pa.RecordBatchReader": ...
 
     @abstractmethod
     def query_builder(self) -> pypika.queries.QueryBuilder: ...
@@ -206,13 +209,13 @@ class ExecutionContext(ABC):
         uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
-    ) -> Optional[pa.dataset.Dataset | pa.Table]:
+    ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
 
-                return pa.dataset.dataset(
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
@@ -220,13 +223,16 @@ class ExecutionContext(ABC):
                     ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
-                return pa.dataset.dataset(
+                import pyarrow.dataset as ds
+
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=file_type,
                 )
             case "ndjson" | "json":
                 import pandas
+                import pyarrow
 
                 ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
@@ -260,7 +266,7 @@ class ExecutionContext(ABC):
     def register_arrow(
         self,
         name: str,
-        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+        ds: "Union[pas.Dataset, pa.Table]",
     ): ...
 
     @abstractmethod

@@ -5,6 +5,7 @@ from datetime import datetime, date
 from typing import Any, Callable, List, Literal, Optional, Tuple, Union, cast, get_args
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
+import pyarrow.compute as pac
 import pyarrow.parquet
 import pypika
 import pypika.terms
@@ -273,12 +274,12 @@ async def filter_partitions_based_on_params(
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
+ExpType = Union[list[pypika.Criterion], list[pac.Expression]]
 
 
 async def concat_expr(
     exprs: ExpType,
-) -> Union[pypika.Criterion, pa.compute.Expression]:
+) -> Union[pypika.Criterion, pac.Expression]:
     expr: Optional[pypika.Criterion] = None
     for e in exprs:
         if expr is None:
