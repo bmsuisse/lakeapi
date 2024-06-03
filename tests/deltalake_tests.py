@@ -1,5 +1,3 @@
-import pyarrow as pa
-import duckdb
 from threading import active_count
 from uuid import uuid4
 import os
@@ -36,7 +34,6 @@ while i < 100:
     print(f"{i} run")
     i += 1
 
-    import pyarrow.fs as fs
 
     dt = deltalake.DeltaTable(
         "tests/data/delta/fake",

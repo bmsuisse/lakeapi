@@ -4,8 +4,6 @@ import sys
 sys.path.append(".")
 from .utils import get_app
 
-import duckdb
-import pandas as pd
 import pytest
 
 client = TestClient(get_app())

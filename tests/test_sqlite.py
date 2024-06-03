@@ -7,7 +7,7 @@ auth = get_auth()
 
 def test_simple_customers():
     response = client.get(
-        f"/api/v1/sqlite/sqlite_customers?format=json&limit=50",
+        "/api/v1/sqlite/sqlite_customers?format=json&limit=50",
         auth=auth,
     )
     assert response.status_code == 200
@@ -17,7 +17,7 @@ def test_simple_customers():
 
 def test_filter_country():
     response = client.get(
-        f"/api/v1/sqlite/sqlite_customers?format=json&limit=100&Country=Germany",
+        "/api/v1/sqlite/sqlite_customers?format=json&limit=100&Country=Germany",
         auth=auth,
     )
     assert response.status_code == 200
@@ -27,7 +27,7 @@ def test_filter_country():
 
 def test_metadata_detail():
     response = client.get(
-        f"/api/v1/sqlite/sqlite_customers/metadata_detail",
+        "/api/v1/sqlite/sqlite_customers/metadata_detail",
         auth=auth,
     )
     assert response.status_code == 200

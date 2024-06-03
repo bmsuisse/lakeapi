@@ -1,10 +1,9 @@
 from typing import Sequence
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI, Request, Response
+from fastapi.security import HTTPBasic
 
-from bmsdna.lakeapi.core.config import BasicConfig, Configs, UserConfig
-from datetime import timedelta
+from bmsdna.lakeapi.core.config import BasicConfig, UserConfig
 from functools import lru_cache
 
 security = HTTPBasic()
@@ -42,7 +41,7 @@ def get_basic_auth_middleware_func(users: Sequence[UserConfig]):
             ud["name"].casefold(): ud["passwordhash"] for ud in users if ud["name"]
         }  # pay attention not to include an empty user by accident
 
-        if not credentials.username.casefold() in userhashmap.keys():
+        if credentials.username.casefold() not in userhashmap.keys():
             return Response(
                 status_code=401,
                 headers={"WWW-Authenticate": "Basic"},
@@ -56,7 +55,9 @@ def get_basic_auth_middleware_func(users: Sequence[UserConfig]):
             is_correct_password = is_correct_password
         if not is_correct_password:
             return Response(
-                status_code=401, headers={"WWW-Authenticate": "Basic"}, content="Incorrect email or password"
+                status_code=401,
+                headers={"WWW-Authenticate": "Basic"},
+                content="Incorrect email or password",
             )
         request.scope["user"] = {"username": credentials.username}
         return await call_next(request)
@@ -71,4 +72,6 @@ def add_user_middlware(
 ):
     from starlette.middleware.base import BaseHTTPMiddleware
 
-    app.add_middleware(BaseHTTPMiddleware, dispatch=get_basic_auth_middleware_func(users))
+    app.add_middleware(
+        BaseHTTPMiddleware, dispatch=get_basic_auth_middleware_func(users)
+    )

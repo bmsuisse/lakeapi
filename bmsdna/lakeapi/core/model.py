@@ -2,11 +2,9 @@
 
 import datetime
 from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
-from bmsdna.lakeapi.context.df_base import ResultData
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from pydantic.fields import FieldInfo
-from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig, BasicConfig
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
@@ -60,7 +58,9 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
-async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Optional[tuple[Param, OperatorType]]:
+async def get_param_def(
+    queryname: str, paramdef: list[Union[Param, str]]
+) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold().replace(" ", "_")
     for param in paramdef:
         param = Param(name=param) if isinstance(param, str) else param
@@ -72,7 +72,9 @@ async def get_param_def(queryname: str, paramdef: list[Union[Param, str]]) -> Op
     return None
 
 
-def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.DataType) -> tuple[Union[type, Any], Any]:
+def get_schema_for(
+    model_ns: str, field_name: Optional[str], field_type: pa.DataType
+) -> tuple[Union[type, Any], Any]:
     if pa.types.is_timestamp(field_type):
         return (Union[datetime.datetime, None], None)
     if pa.types.is_duration(field_type):
@@ -87,12 +89,18 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
         st = field_type
         assert isinstance(st, pa.StructType)
         res = {
-            st.field(ind).name: get_schema_for(model_ns, st.field(ind).name, st.field(ind).type)
+            st.field(ind).name: get_schema_for(
+                model_ns, st.field(ind).name, st.field(ind).type
+            )
             for ind in range(0, st.num_fields)
         }
         return (
             Union[
-                create_model(model_ns + ("_" + field_name if field_name else ""), **res, __base__=TypeBaseModel),  # type: ignore
+                create_model(
+                    model_ns + ("_" + field_name if field_name else ""),
+                    **res,  # type: ignore
+                    __base__=TypeBaseModel,
+                ),
                 None,
             ],
             None,
@@ -101,7 +109,9 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
         if field_type.value_type is None:
             return (Union[List[Any], None], [])
 
-        itemtype = cast(Any, get_schema_for(model_ns, field_name, field_type.value_type)[0])
+        itemtype = cast(
+            Any, get_schema_for(model_ns, field_name, field_type.value_type)[0]
+        )
         return (Union[List[itemtype], None], [])
     if pa.types.is_integer(field_type):
         return (Union[int, None], None)
@@ -113,7 +123,9 @@ def get_schema_for(model_ns: str, field_name: Optional[str], field_type: pa.Data
         return (Union[str, None], None)
     if pa.types.is_union(field_type):
         types = [
-            get_schema_for(model_ns, field_type.field(ind).name, field_type.field(ind).type)
+            get_schema_for(
+                model_ns, field_type.field(ind).name, field_type.field(ind).type
+            )
             for ind in range(0, field_type.num_fields)
         ]
         types.append(None)  # type: ignore
@@ -134,7 +146,7 @@ def _get_datatype(
         if inner and pa.types.is_list(field.type):
             return get_schema_for("prm_" + name, field.name, field.type.value_type)[0]
         return get_schema_for("prm_" + name, field.name, field.type)[0]
-    except KeyError as err:
+    except KeyError:
         return str | None
 
 
@@ -184,7 +196,11 @@ def create_parameter_model(
                     if apimethod == "post":  # Only supported in POST Requets for now
                         query_params[param.name + postfix] = (  # type: ignore
                             Union[List[realtype], List[dict[str, realtype]], None],  # type: ignore
-                            Query(default=param.real_default if not param.required else ...),
+                            Query(
+                                default=param.real_default
+                                if not param.required
+                                else ...
+                            ),
                         )
                 elif operator in ["has"] and schema is not None:
                     query_params[param.name + postfix] = (  # type: ignore
@@ -210,7 +226,7 @@ def create_parameter_model(
     query_params = _fix_space_names(query_params)
     try:
         query_model = create_model(name + "Parameter", **query_params)  # type: ignore
-    except Exception as err:
+    except Exception:
         # we do not want to throw here as this fails startup which is bad
         logger.error(f"Could not create parameter model for {name}. Use empty instead")
         query_model = create_model(name + "Parameter")

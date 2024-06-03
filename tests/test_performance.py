@@ -2,12 +2,6 @@ from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import time
 import sys
-import pyarrow as pa
-import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
-from httpx._types import RequestData
 import asyncio
 
 sys.path.append(".")
@@ -23,7 +17,8 @@ def test_async_execution():
     async def call_api_1(engine, format):
         start = time.time()
         response = client.get(
-            f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}", auth=auth
+            f"/api/v1/test/fake_delta?limit=10000&format=json&%24engine={engine}&format={format}",
+            auth=auth,
         )
         end = time.time()
         assert response.status_code == 200

@@ -42,7 +42,9 @@ def store_df_as_delta(
     compression: str | None = None,
 ) -> pd.DataFrame:
     dfp: pa.Table | pd.DataFrame = (
-        data if isinstance(data, pd.DataFrame) or isinstance(data, pa.Table) else pl.DataFrame(data).to_pandas()
+        data
+        if isinstance(data, pd.DataFrame) or isinstance(data, pa.Table)
+        else pl.DataFrame(data).to_pandas()
     )
     delta_path = "tests/data/" + data_path
     delete_folder(delta_path)
@@ -52,14 +54,18 @@ def store_df_as_delta(
             return v
         return json.dumps(v)
 
-    opts = ds.ParquetFileFormat().make_write_options(compression=compression or "snappy")
+    opts = ds.ParquetFileFormat().make_write_options(
+        compression=compression or "snappy"
+    )
     write_deltalake(
         delta_path,
         dfp,
         mode="overwrite",
         partition_by=partition_by,
         file_options=opts,
-        configuration={k: _str_or_json(v) for k, v in configuration.items()} if configuration is not None else None,
+        configuration={k: _str_or_json(v) for k, v in configuration.items()}
+        if configuration is not None
+        else None,
     )
     assert not isinstance(dfp, dict)
     return dfp if isinstance(dfp, pd.DataFrame) else dfp.to_pandas()
@@ -68,14 +74,32 @@ def store_df_as_delta(
 if __name__ == "__main__":
     if not os.path.exists("tests/data/parquet/search.parquet"):
         os.makedirs("tests/data/parquet", exist_ok=True)
-        pl.DataFrame(create_rows_faker(1000)).write_parquet("tests/data/parquet/search.parquet")
+        pl.DataFrame(create_rows_faker(1000)).write_parquet(
+            "tests/data/parquet/search.parquet"
+        )
 
     df_fruits = store_df_as_delta(
         {
             "A": [1, 2, 3, 4, 5, 0, 9],
-            "fruits": ["banana", "banana", "apple", "apple", "banana", "apple", "ananas"],
+            "fruits": [
+                "banana",
+                "banana",
+                "apple",
+                "apple",
+                "banana",
+                "apple",
+                "ananas",
+            ],
             "B": [5, 4, 3, 2, 1, 5, 9],
-            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "lamborghini", "fiat"],
+            "cars": [
+                "beetle",
+                "audi",
+                "beetle",
+                "beetle",
+                "beetle",
+                "lamborghini",
+                "fiat",
+            ],
         },
         "delta/fruits",
     )
@@ -91,9 +115,25 @@ if __name__ == "__main__":
                 date(2021, 12, 2),
                 date(2023, 10, 2),
             ],
-            "fruits": ["banana", "banana", "apple", "apple", "banana", "apple", "ananas"],
+            "fruits": [
+                "banana",
+                "banana",
+                "apple",
+                "apple",
+                "banana",
+                "apple",
+                "ananas",
+            ],
             "B": [5, 4, 3, 2, 1, 5, 9],
-            "cars": ["beetle", "audi", "beetle", "beetle", "beetle", "lamborghini", "fiat"],
+            "cars": [
+                "beetle",
+                "audi",
+                "beetle",
+                "beetle",
+                "beetle",
+                "lamborghini",
+                "fiat",
+            ],
         },
         "delta/dates",
     )
@@ -112,15 +152,53 @@ if __name__ == "__main__":
                 {"name": "marc", "age": 3},
                 {"name": "peter", "age": 32},
             ],
-            "vitamines": [["A", "B12"], [], ["C", "B12"], ["D", "B12", "C"], ["C"], ["E", "B12"]],
+            "vitamines": [
+                ["A", "B12"],
+                [],
+                ["C", "B12"],
+                ["D", "B12", "C"],
+                ["C"],
+                ["E", "B12"],
+            ],
         },
         "delta/struct_fruits",
         configuration={
             "lakeapi.config": {
                 "params": [
-                    {"name": "fruits", "operators": ["not in", "in", "contains", "startswith", "not contains", "<>"]},
-                    {"name": "cars", "operators": ["not in", "in", "contains", "startswith", "not contains", "<>"]},
-                    {"name": "B", "operators": [">", "<", "<=", ">=", "between", "startswith", "not between"]},
+                    {
+                        "name": "fruits",
+                        "operators": [
+                            "not in",
+                            "in",
+                            "contains",
+                            "startswith",
+                            "not contains",
+                            "<>",
+                        ],
+                    },
+                    {
+                        "name": "cars",
+                        "operators": [
+                            "not in",
+                            "in",
+                            "contains",
+                            "startswith",
+                            "not contains",
+                            "<>",
+                        ],
+                    },
+                    {
+                        "name": "B",
+                        "operators": [
+                            ">",
+                            "<",
+                            "<=",
+                            ">=",
+                            "between",
+                            "startswith",
+                            "not between",
+                        ],
+                    },
                 ]
             }
         },
@@ -149,17 +227,32 @@ if __name__ == "__main__":
     fruits_partition["cars_md5_prefix_2"] = [
         md5(val.encode("UTF-8")).hexdigest()[:2] for val in fruits_partition["cars"]
     ]
-    store_df_as_delta(fruits_partition, "delta/fruits_partition", partition_by=["cars_md5_prefix_2", "cars"])
-    store_df_as_delta(fruits_partition, "startest/fruits_partition", partition_by=["cars_md5_prefix_2", "cars"])
+    store_df_as_delta(
+        fruits_partition,
+        "delta/fruits_partition",
+        partition_by=["cars_md5_prefix_2", "cars"],
+    )
+    store_df_as_delta(
+        fruits_partition,
+        "startest/fruits_partition",
+        partition_by=["cars_md5_prefix_2", "cars"],
+    )
     fruits_partition_mod = df_fruits.copy()
     fruits_partition_mod["cars_md5_mod_27"] = [
-        str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27) for val in fruits_partition_mod["cars"]
+        str(int(md5(val.encode("UTF-8")).hexdigest(), 16) % 27)
+        for val in fruits_partition_mod["cars"]
     ]
-    store_df_as_delta(fruits_partition_mod, "delta/fruits_partition_mod", partition_by=["cars_md5_mod_27"])
+    store_df_as_delta(
+        fruits_partition_mod,
+        "delta/fruits_partition_mod",
+        partition_by=["cars_md5_mod_27"],
+    )
 
     df_fruits_nested = pl.from_pandas(df_fruits)
     df_fruits_nested = df_fruits_nested.with_columns(
-        pl.struct([df_fruits_nested["fruits"], df_fruits_nested["cars"]]).alias("nested")
+        pl.struct([df_fruits_nested["fruits"], df_fruits_nested["cars"]]).alias(
+            "nested"
+        )
     )
 
     df_fruits_nested = df_fruits_nested.to_pandas()
@@ -177,7 +270,9 @@ if __name__ == "__main__":
             ],
         }
     )
-    out = weather.with_columns(pl.col("temperatures").str.split(" "))  # thanks for the sample, polars
+    out = weather.with_columns(
+        pl.col("temperatures").str.split(" ")
+    )  # thanks for the sample, polars
     store_df_as_delta(out.to_pandas(), "delta/weather", compression="zstd")
 
     csv_path = "tests/data/csv/fruits.csv"
@@ -199,7 +294,9 @@ if __name__ == "__main__":
 
     df_faker = pl.DataFrame(create_rows_faker(100_011)).to_pandas()
 
-    df_faker["name_md5_prefix_2"] = [md5(val.encode("UTF-8")).hexdigest()[:1] for val in df_faker["name"]]
+    df_faker["name_md5_prefix_2"] = [
+        md5(val.encode("UTF-8")).hexdigest()[:1] for val in df_faker["name"]
+    ]
 
     df_faker["name1"] = df_faker["name"]
 
@@ -232,7 +329,11 @@ if __name__ == "__main__":
     from faker import Faker
 
     fakeit = Faker()
-    df_ns["ts"] = pl.Series("ts", [fakeit.date_time() for _ in range(0, df_ns.shape[0])], pl.Datetime(time_unit="ns"))
+    df_ns["ts"] = pl.Series(
+        "ts",
+        [fakeit.date_time() for _ in range(0, df_ns.shape[0])],
+        pl.Datetime(time_unit="ns"),
+    )
     df_ns.to_parquet("tests/data/parquet/fake_ns.parquet")
 
     import test_server

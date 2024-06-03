@@ -1,11 +1,6 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import sys
-import pyarrow as pa
-import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
 import json
 
 sys.path.append(".")
@@ -23,7 +18,9 @@ def test_nearby():
         )
         assert response.status_code == 200
         lines = [json.loads(l) for l in response.text.split("\n") if len(l) > 0]
-        assert len(lines) >= 15 and len(lines) <= 40  # it's a bit fuzzy since distance calc is never 100% accurate
+        assert (
+            len(lines) >= 15 and len(lines) <= 40
+        )  # it's a bit fuzzy since distance calc is never 100% accurate
 
         assert lines[0]["nearby"] <= lines[1]["nearby"]
         assert lines[1]["nearby"] <= lines[2]["nearby"]

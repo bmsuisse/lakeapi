@@ -3,8 +3,6 @@ import fsspec
 import adlfs
 import os
 import urllib.parse
-import expandvars
-from datetime import datetime, timezone, timedelta
 
 if TYPE_CHECKING:
     from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
@@ -113,9 +111,13 @@ class SourceUri:
         self.accounts = accounts or {}
         self.data_path = data_path
         self.token_retrieval_func = token_retrieval_func
-        self.retrieve_token = (lambda: token_retrieval_func(self)) if token_retrieval_func else None
+        self.retrieve_token = (
+            (lambda: token_retrieval_func(self)) if token_retrieval_func else None
+        )
         self.real_uri = (
-            uri if "://" in uri or account is not None or data_path is None else os.path.join(data_path, uri)
+            uri
+            if "://" in uri or account is not None or data_path is None
+            else os.path.join(data_path, uri)
         )
 
     def is_azure(self):
@@ -130,7 +132,9 @@ class SourceUri:
         if self.account is None:
             return fsspec.filesystem("file"), self.real_uri
         opts = _convert_options(
-            self.accounts.get(self.account, {}), "fsspec", token_retrieval_func=self.retrieve_token
+            self.accounts.get(self.account, {}),
+            "fsspec",
+            token_retrieval_func=self.retrieve_token,
         )
         assert opts is not None
         if self.is_azure():
@@ -139,7 +143,10 @@ class SourceUri:
             raise ValueError("Not supported FS")
 
     def get_uri_options(
-        self, *, flavor: Literal["fsspec", "object_store", "deltalake2db"], azure_protocol="original"
+        self,
+        *,
+        flavor: Literal["fsspec", "object_store", "deltalake2db"],
+        azure_protocol="original",
     ) -> tuple[str, dict | None]:
         if self.is_azure() and azure_protocol != "original":
             pr = urllib.parse.urlparse(self.uri)

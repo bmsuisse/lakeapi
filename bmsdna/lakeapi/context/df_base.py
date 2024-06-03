@@ -1,31 +1,33 @@
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-import pyarrow.dataset
 import pypika.queries
 import polars as pl
 
 from pypika.terms import Term, Criterion
-import os
 from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow.dataset as pas
+    import pyarrow as pa
     from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "mssql"]
 
 
 def is_complex_type(
-    schema: pa.Schema,
+    schema: "pa.Schema",
     col_name: str,
 ):
+    import pyarrow.types as pat
+
     f = schema.field(col_name)
-    return pa.types.is_nested(f.type)
+    return pat.is_nested(f.type)
 
 
 def get_sql(
@@ -37,7 +39,8 @@ def get_sql(
         sql_or_pypika = (
             sql_or_pypika.limit(limit)
             if not isinstance(sql_or_pypika, str)
-            else (  # why not just support limit/offset like everyone else, microsoft?
+            # why not just support limit/offset like everyone else, microsoft?
+            else (
                 f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
                 if flavor == "ansi"
                 else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
@@ -48,8 +51,12 @@ def get_sql(
     if len(sql_or_pypika._selects) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "mssql" and (sql_or_pypika._limit is not None or sql_or_pypika._offset is not None):
-        old_limit = sql_or_pypika._limit  # why not just support limit/offset like everyone else, microsoft?
+    if flavor == "mssql" and (
+        sql_or_pypika._limit is not None or sql_or_pypika._offset is not None
+    ):
+        old_limit = (
+            sql_or_pypika._limit
+        )  # why not just support limit/offset like everyone else, microsoft?
         old_offset = sql_or_pypika._offset
         no_limit = sql_or_pypika.limit(None).offset(None)
         if old_offset is None or old_offset == 0:
@@ -83,13 +90,15 @@ class ResultData(ABC):
     def columns(self) -> List[str]: ...
 
     @abstractmethod
-    def arrow_schema(self) -> pa.Schema: ...
+    def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
-    def to_arrow_table(self) -> pa.Table: ...
+    def to_arrow_table(self) -> "pa.Table": ...
 
     @abstractmethod
-    def to_arrow_recordbatch(self, chunk_size: int = 10000) -> pa.RecordBatchReader: ...
+    def to_arrow_recordbatch(
+        self, chunk_size: int = 10000
+    ) -> "pa.RecordBatchReader": ...
 
     @abstractmethod
     def query_builder(self) -> pypika.queries.QueryBuilder: ...
@@ -150,7 +159,6 @@ class ResultData(ABC):
 
     def write_csv(self, file_name: str, *, separator: str):
         import pyarrow.csv as pacsv
-        import decimal
 
         batches = self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
@@ -179,14 +187,23 @@ class ExecutionContext(ABC):
         self.array_contains_func = "array_contains"
 
     def term_like(
-        self, a: Term, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False
+        self,
+        a: Term,
+        value: str,
+        wildcard_loc: Literal["start", "end", "both"],
+        *,
+        negate=False,
     ) -> Criterion:
         if wildcard_loc == "start":
             return a.like("%" + value) if not negate else a.not_like("%" + value)
         elif wildcard_loc == "end":
             return a.like(value + "%") if not negate else a.not_like(value + "%")
         else:
-            return a.like("%" + value + "%") if not negate else a.not_like("%" + value + "%")
+            return (
+                a.like("%" + value + "%")
+                if not negate
+                else a.not_like("%" + value + "%")
+            )
 
     @property
     @abstractmethod
@@ -206,13 +223,13 @@ class ExecutionContext(ABC):
         uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
-    ) -> Optional[pa.dataset.Dataset | pa.Table]:
+    ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
 
-                return pa.dataset.dataset(
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
@@ -220,13 +237,16 @@ class ExecutionContext(ABC):
                     ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
-                return pa.dataset.dataset(
+                import pyarrow.dataset as ds
+
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=file_type,
                 )
             case "ndjson" | "json":
                 import pandas
+                import pyarrow
 
                 ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
@@ -247,9 +267,12 @@ class ExecutionContext(ABC):
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if dt.protocol().min_reader_version > 1:
-                    raise ValueError("Delta table protocol version not supported, use DuckDB or Polars")
+                    raise ValueError(
+                        "Delta table protocol version not supported, use DuckDB or Polars"
+                    )
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                    partitions=partitions,
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -260,7 +283,7 @@ class ExecutionContext(ABC):
     def register_arrow(
         self,
         name: str,
-        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+        ds: "Union[pas.Dataset, pa.Table]",
     ): ...
 
     @abstractmethod
@@ -284,11 +307,16 @@ class ExecutionContext(ABC):
     ) -> Term: ...
 
     def jsonify_complex(
-        self, query: pypika.queries.QueryBuilder, complex_cols: list[str], columns: list[str]
+        self,
+        query: pypika.queries.QueryBuilder,
+        complex_cols: list[str],
+        columns: list[str],
     ) -> pypika.queries.QueryBuilder:
         return query.select(
             *[
-                pypika.Field(c) if not c in complex_cols else self.json_function(pypika.Field(c)).as_(c)
+                pypika.Field(c)
+                if c not in complex_cols
+                else self.json_function(pypika.Field(c)).as_(c)
                 for c in columns
             ]
         )
@@ -329,7 +357,9 @@ class ExecutionContext(ABC):
         summ = None
         for part in parts:
             case = pypika.Case()
-            cond = pypika.functions.Concat(*[pypika.Field(c) for c in search_config.columns]).like("%" + part + "%")
+            cond = pypika.functions.Concat(
+                *[pypika.Field(c) for c in search_config.columns]
+            ).like("%" + part + "%")
             case.when(cond, Term.wrap_constant(1))
             case.else_(Term.wrap_constant(0))
             cases.append(case)
@@ -375,7 +405,9 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[pypika.queries.QueryBuilder, str]) -> ResultData: ...
+    def execute_sql(
+        self, sql: Union[pypika.queries.QueryBuilder, str]
+    ) -> ResultData: ...
 
     @abstractmethod
     def list_tables(self) -> ResultData: ...

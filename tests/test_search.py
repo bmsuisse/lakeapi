@@ -1,11 +1,6 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import sys
-import pyarrow as pa
-import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -31,8 +26,10 @@ def test_search():
         assert jsd[1]["search_score"] >= jsd[2]["search_score"]
         for item in jsd:
             assert (
-                "karen" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
-                or "example" in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
+                "karen"
+                in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
+                or "example"
+                in (item["email"] + " " + item["name"] + " " + item["address"]).lower()
             )
 
 

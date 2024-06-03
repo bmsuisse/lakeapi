@@ -1,4 +1,3 @@
-from uuid import uuid4
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 import pypika.queries
@@ -42,7 +41,7 @@ def handle_nearby_request(
     basic_config: BasicConfig,
     *,
     source_view: str,
-    query: pypika.queries.QueryBuilder
+    query: pypika.queries.QueryBuilder,
 ):
     if config.nearby is None:
         return query
@@ -70,7 +69,9 @@ def handle_nearby_request(
         wheres.append(pypika.Field(nearby_cfg.name) <= nearby_val.distance_m)
 
     if len(orders) > 0 or len(wheres) > 0:
-        query2: pypika.queries.QueryBuilder = pypika.Query.from_("nearbys").with_(query, "nearbys")
+        query2: pypika.queries.QueryBuilder = pypika.Query.from_("nearbys").with_(
+            query, "nearbys"
+        )
         for w in wheres:
             query2 = query2.where(w)
         return query2.select("*").orderby(*orders, order=pypika.Order.asc)

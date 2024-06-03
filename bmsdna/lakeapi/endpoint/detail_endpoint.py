@@ -2,23 +2,25 @@ from typing import Optional, cast
 import pyarrow as pa
 import pypika
 import pypika.queries as fn
-from deltalake import DeltaTable, Metadata
+from deltalake import Metadata
 from fastapi import (
     APIRouter,
     HTTPException,
     Query,
     Request,
 )
-from pydantic import BaseModel
 from pypika.queries import QueryBuilder
 
 from bmsdna.lakeapi.context import get_context_by_engine
-from bmsdna.lakeapi.context.df_base import ResultData, get_sql
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource
-from bmsdna.lakeapi.core.types import Engines, MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
+from bmsdna.lakeapi.core.types import (
+    Engines,
+    MetadataDetailResult,
+    MetadataSchemaField,
+    MetadataSchemaFieldType,
+)
 
-from typing import Optional
 
 
 def _to_dict(tblmeta: Optional[Metadata]):
@@ -52,7 +54,9 @@ def create_detailed_meta_endpoint(
     )
     def get_detailed_metadata(
         req: Request,
-        jsonify_complex: bool = Query(title="jsonify_complex", include_in_schema=has_complex, default=False),
+        jsonify_complex: bool = Query(
+            title="jsonify_complex", include_in_schema=has_complex, default=False
+        ),
         include_str_lengths: bool = True,
         engine: Engines | None = Query(
             title="$engine",
@@ -64,10 +68,10 @@ def create_detailed_meta_endpoint(
         import json
 
         req.state.lake_api_basic_config = basic_config
-        from bmsdna.lakeapi.context import get_context_by_engine
 
         with get_context_by_engine(
-            engine or config.engine or basic_config.default_engine, basic_config.default_chunk_size
+            engine or config.engine or basic_config.default_engine,
+            basic_config.default_chunk_size,
         ) as context:
             assert config.datasource is not None
             realdataframe = Datasource(
@@ -91,25 +95,37 @@ def create_detailed_meta_endpoint(
                 assert delta_tbl is not None
                 partition_columns = delta_tbl.metadata().partition_columns
                 partition_columns = [
-                    c for c in partition_columns if not basic_config.should_hide_col_name(c)
+                    c
+                    for c in partition_columns
+                    if not basic_config.should_hide_col_name(c)
                 ]  # also hide those from metadata detail
                 if len(partition_columns) > 0:
                     qb: QueryBuilder = (
-                        df.query_builder().select(*[pypika.Field(c) for c in partition_columns]).distinct()
+                        df.query_builder()
+                        .select(*[pypika.Field(c) for c in partition_columns])
+                        .distinct()
                     )
-                    partition_values = context.execute_sql(qb).to_arrow_table().to_pylist()
+                    partition_values = (
+                        context.execute_sql(qb).to_arrow_table().to_pylist()
+                    )
             schema = df.arrow_schema()
             str_cols = [
                 name
                 for name in schema.names
-                if (pa.types.is_string(schema.field(name).type) or pa.types.is_large_string(schema.field(name).type))
+                if (
+                    pa.types.is_string(schema.field(name).type)
+                    or pa.types.is_large_string(schema.field(name).type)
+                )
                 and not basic_config.should_hide_col_name(name)
             ]
             complex_str_cols = (
                 [
                     name
                     for name in schema.names
-                    if (pa.types.is_struct(schema.field(name).type) or pa.types.is_list(schema.field(name).type))
+                    if (
+                        pa.types.is_struct(schema.field(name).type)
+                        or pa.types.is_list(schema.field(name).type)
+                    )
                     and not basic_config.should_hide_col_name(name)
                 ]
                 if jsonify_complex
@@ -119,18 +135,28 @@ def create_detailed_meta_endpoint(
                 str_lengths_query = (
                     pypika.Query.from_("strcols")
                     .with_(
-                        context.jsonify_complex(df.query_builder(), complex_str_cols, str_cols + complex_str_cols),
+                        context.jsonify_complex(
+                            df.query_builder(),
+                            complex_str_cols,
+                            str_cols + complex_str_cols,
+                        ),
                         "strcols",
                     )
                     .select(
                         *[
-                            fn.Function("MAX", fn.Function(context.len_func, fn.Field(sc))).as_(sc)
+                            fn.Function(
+                                "MAX", fn.Function(context.len_func, fn.Field(sc))
+                            ).as_(sc)
                             for sc in str_cols + complex_str_cols
                         ]
                     )
                 )
                 str_lengths_df = (
-                    (context.execute_sql(str_lengths_query).to_arrow_table().to_pylist())
+                    (
+                        context.execute_sql(str_lengths_query)
+                        .to_arrow_table()
+                        .to_pylist()
+                    )
                     if len(str_cols) > 0 or len(complex_str_cols) > 0
                     else [{}]
                 )
@@ -142,12 +168,19 @@ def create_detailed_meta_endpoint(
                 is_complex = pa.types.is_nested(t)
 
                 return MetadataSchemaFieldType(
-                    type_str=str(pa.string()) if is_complex and jsonify_complex else str(t),
+                    type_str=str(pa.string())
+                    if is_complex and jsonify_complex
+                    else str(t),
                     orig_type_str=str(t),
                     fields=(
                         [
-                            MetadataSchemaField(name=f.name, type=_recursive_get_type(f.type))
-                            for f in [t.field(find) for find in range(0, cast(pa.StructType, t).num_fields)]
+                            MetadataSchemaField(
+                                name=f.name, type=_recursive_get_type(f.type)
+                            )
+                            for f in [
+                                t.field(find)
+                                for find in range(0, cast(pa.StructType, t).num_fields)
+                            ]
                         ]
                         if pa.types.is_struct(t) and not jsonify_complex
                         else None
@@ -164,20 +197,26 @@ def create_detailed_meta_endpoint(
                 )
 
             schema = df.arrow_schema()
-            mdt = realdataframe.sql_context.get_modified_date(realdataframe.source_uri, realdataframe.config.file_type)
+            mdt = realdataframe.sql_context.get_modified_date(
+                realdataframe.source_uri, realdataframe.config.file_type
+            )
             return MetadataDetailResult(
                 partition_values=partition_values,
                 partition_columns=partition_columns,
                 max_string_lengths=str_lengths,
                 data_schema=[
                     MetadataSchemaField(
-                        name=n, type=_recursive_get_type(schema.field(n).type), max_str_length=str_lengths.get(n, None)
+                        name=n,
+                        type=_recursive_get_type(schema.field(n).type),
+                        max_str_length=str_lengths.get(n, None),
                     )
                     for n in schema.names
                     if not basic_config.should_hide_col_name(n)
                 ],
                 delta_meta=_to_dict(delta_tbl.metadata() if delta_tbl else None),
-                delta_schema=json.loads(delta_tbl.schema().to_json()) if delta_tbl else None,
+                delta_schema=json.loads(delta_tbl.schema().to_json())
+                if delta_tbl
+                else None,
                 parameters=config.params,  # type: ignore
                 search=config.search,
                 modified_date=mdt,

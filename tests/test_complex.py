@@ -1,11 +1,6 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import sys
-import pyarrow as pa
-import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -45,7 +40,7 @@ def test_returns_jsonify():
 
 def test_returns_metadatadeta():
     response = client.get(
-        f"/api/v1/complexer/complex_fruits/metadata_detail",
+        "/api/v1/complexer/complex_fruits/metadata_detail",
         auth=auth,
     )
     assert response.status_code == 200
@@ -67,7 +62,7 @@ def test_returns_metadatadeta():
 
 def test_returns_metadatadeta_partition():
     response = client.get(
-        f"/api/v1/test/fruits_partition/metadata_detail",
+        "/api/v1/test/fruits_partition/metadata_detail",
         auth=auth,
     )
     assert response.status_code == 200
@@ -79,7 +74,7 @@ def test_returns_metadatadeta_partition():
 
 def test_returns_metadatadeta_jsonifiyed():
     response = client.get(
-        f"/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True",
+        "/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True",
         auth=auth,
     )
     assert response.status_code == 200

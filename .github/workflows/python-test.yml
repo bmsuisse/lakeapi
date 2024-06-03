@@ -26,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
-          poetry install --all-extras
+          poetry install --all-extras --with dev,test
       - name: Pyright
         run: |
           poetry run pyright .

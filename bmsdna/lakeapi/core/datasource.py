@@ -2,9 +2,10 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime, date
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, cast, get_args
+from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
+import pyarrow.compute as pac
 import pyarrow.parquet
 import pypika
 import pypika.terms
@@ -16,7 +17,7 @@ from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes, Engines
+from bmsdna.lakeapi.core.types import DeltaOperatorTypes
 
 logger = get_logger(__name__)
 
@@ -47,8 +48,8 @@ class Datasource:
             config.uri,
             config.account,
             accounts,
-            basic_config.data_path if not config.file_type in ["odbc"] else None,
-            token_retrieval_func=basic_config.token_retrieval_func
+            basic_config.data_path if config.file_type not in ["odbc"] else None,
+            token_retrieval_func=basic_config.token_retrieval_func,
         )
         self.copy_local = config.copy_local
         self._execution_uri = None
@@ -61,7 +62,9 @@ class Datasource:
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert self.config.file_type == "delta", "only delta is supported for copy_local"
+        assert (
+            self.config.file_type == "delta"
+        ), "only delta is supported for copy_local"
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
@@ -84,9 +87,9 @@ class Datasource:
                 try:
                     from deltalake import DeltaTable
 
-                    df_uri, df_opts = (self.source_uri if schema_only else self.execution_uri).get_uri_options(
-                        flavor="object_store"
-                    )
+                    df_uri, df_opts = (
+                        self.source_uri if schema_only else self.execution_uri
+                    ).get_uri_options(flavor="object_store")
                     return DeltaTable(df_uri, storage_options=df_opts)
                 except TableNotFoundError:
                     return None
@@ -155,7 +158,10 @@ class Datasource:
             schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
         if schema is not None:
             if self.config.select:
-                fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
+                fields = [
+                    schema.field(item.name).with_name(item.alias)
+                    for item in self.config.select
+                ]
                 return pyarrow.schema(fields)
             return schema
         return self.get_df(endpoint="meta").arrow_schema()
@@ -166,7 +172,9 @@ class Datasource:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            unique_table_name = endpoint == "meta" and self.sql_context.supports_view_creation
+            unique_table_name = (
+                endpoint == "meta" and self.sql_context.supports_view_creation
+            )
             query = pypika.Query.from_(self.get_table_name(unique_table_name))
             self.query = self._prep_df(query, endpoint=endpoint)
 
@@ -224,7 +232,10 @@ async def get_partition_filter(
             col_for_partitioning = partcol
             modulo_len = int(partcol[len(colname + "_md5_mod_") :])
             if isinstance(value, (List, Tuple)):
-                hashvl = [int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16) for v in value]
+                hashvl = [
+                    int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16)
+                    for v in value
+                ]
                 value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
             else:
                 hashvl = int(hashlib.md5(str(value).encode("utf8")).hexdigest(), 16)
@@ -266,19 +277,21 @@ async def filter_partitions_based_on_params(
         return None
 
     partition_filters = []
-    tasks = [get_partition_filter(param, deltaMeta, param_def) for param in params.items()]
+    tasks = [
+        get_partition_filter(param, deltaMeta, param_def) for param in params.items()
+    ]
     results = await asyncio.gather(*tasks)
     partition_filters = [result for result in results if result is not None]
 
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType = Union[list[pypika.Criterion], list[pa.compute.Expression]]
+ExpType = Union[list[pypika.Criterion], list[pac.Expression]]
 
 
 async def concat_expr(
     exprs: ExpType,
-) -> Union[pypika.Criterion, pa.compute.Expression]:
+) -> Union[pypika.Criterion, pac.Expression]:
     expr: Optional[pypika.Criterion] = None
     for e in exprs:
         if expr is None:
@@ -296,13 +309,21 @@ async def _create_inner_expr(
     inner_expr: Optional[pypika.Criterion] = None
     for ck, cv in e.items():
         logger.debug(f"key = {ck}, value = {cv}, columns = {columns}")
-        if (columns and not ck in columns) and not ck in prmdef.combi:
+        if (columns and ck not in columns) and ck not in prmdef.combi:
             pass
         else:
             if inner_expr is None:
-                inner_expr = pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull()
+                inner_expr = (
+                    pypika.Field(ck) == cv
+                    if cv or cv == 0
+                    else pypika.Field(ck).isnull()
+                )
             else:
-                inner_expr = inner_expr & (pypika.Field(ck) == cv if cv or cv == 0 else pypika.Field(ck).isnull())
+                inner_expr = inner_expr & (
+                    pypika.Field(ck) == cv
+                    if cv or cv == 0
+                    else pypika.Field(ck).isnull()
+                )
     return inner_expr
 
 
@@ -352,39 +373,56 @@ async def filter_df_based_on_params(
             if outer_expr is not None:
                 exprs.append(outer_expr)
 
-        elif columns and not colname in columns:
+        elif columns and colname not in columns:
             pass
 
         else:
             match op:
                 case "<":
-                    exprs.append(fn.Field(colname) < _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        fn.Field(colname)
+                        < _sql_value(value, engine=context.engine_name)
+                    )
                 case ">":
-                    exprs.append(fn.Field(colname) > _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        fn.Field(colname)
+                        > _sql_value(value, engine=context.engine_name)
+                    )
                 case ">=":
-                    exprs.append(fn.Field(colname) >= _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        fn.Field(colname)
+                        >= _sql_value(value, engine=context.engine_name)
+                    )
                 case "<=":
-                    exprs.append(fn.Field(colname) <= _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        fn.Field(colname)
+                        <= _sql_value(value, engine=context.engine_name)
+                    )
                 case "<>":
                     exprs.append(
-                        fn.Field(colname) != _sql_value(value, engine=context.engine_name)
+                        fn.Field(colname)
+                        != _sql_value(value, engine=context.engine_name)
                         if value is not None
                         else fn.Field(colname).isnotnull()
                     )
                 case "==":
                     exprs.append(
-                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        fn.Field(colname)
+                        == _sql_value(value, engine=context.engine_name)
                         if value is not None
                         else fn.Field(colname).isnull()
                     )
                 case "=":
                     exprs.append(
-                        fn.Field(colname) == _sql_value(value, engine=context.engine_name)
+                        fn.Field(colname)
+                        == _sql_value(value, engine=context.engine_name)
                         if value is not None
                         else fn.Field(colname).isnull()
                     )
                 case "not contains":
-                    exprs.append(context.term_like(fn.Field(colname), value, "both", negate=True))
+                    exprs.append(
+                        context.term_like(fn.Field(colname), value, "both", negate=True)
+                    )
                 case "contains":
                     exprs.append(context.term_like(fn.Field(colname), value, "both"))
                 case "startswith":
@@ -392,7 +430,9 @@ async def filter_df_based_on_params(
                 case "has":
                     exprs.append(
                         fn.Function(
-                            context.array_contains_func, fn.Field(colname), pypika.terms.Term.wrap_constant(value)
+                            context.array_contains_func,
+                            fn.Field(colname),
+                            pypika.terms.Term.wrap_constant(value),
                         )
                     )
                 case "in":
@@ -410,7 +450,9 @@ async def filter_df_based_on_params(
                     else:
                         from fastapi import HTTPException
 
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
+                        raise HTTPException(
+                            400, "Must have an array with 2 elements for between"
+                        )
                 case "not between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
@@ -418,7 +460,9 @@ async def filter_df_based_on_params(
                     else:
                         from fastapi import HTTPException
 
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
+                        raise HTTPException(
+                            400, "Must have an array with 2 elements for between"
+                        )
 
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")

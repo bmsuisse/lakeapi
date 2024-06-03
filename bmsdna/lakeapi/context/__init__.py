@@ -54,7 +54,9 @@ class ExecutionContextManager:
     ):
         real_engine: Engines = engine or self.default_engine
         if real_engine not in self.contexts:
-            self.contexts[real_engine] = get_context_by_engine(real_engine, chunk_size or self.default_chunk_size)
+            self.contexts[real_engine] = get_context_by_engine(
+                real_engine, chunk_size or self.default_chunk_size
+            )
         return self.contexts[real_engine]
 
     def __enter__(self, *args, **kwargs):

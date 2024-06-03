@@ -1,4 +1,3 @@
-import pyarrow as pa
 import duckdb
 from threading import active_count
 from uuid import uuid4
@@ -10,7 +9,9 @@ import deltalake
 process = psutil.Process()
 
 
-def naive_json_1(res: duckdb.DuckDBPyConnection, fn: str):  # This works, no matter how often executed
+def naive_json_1(
+    res: duckdb.DuckDBPyConnection, fn: str
+):  # This works, no matter how often executed
     import json
 
     first = True
