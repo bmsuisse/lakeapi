@@ -34,7 +34,7 @@ def store_df_as_delta(
     data_path: str,
     partition_by: Optional[list[str]] = None,
     *,
-    configuration: Optional[dict[str, str | dict | list]] = None,
+    custom_metadata: Optional[dict[str, str | dict | list]] = None,
     compression: Literal[
         "UNCOMPRESSED", "SNAPPY", "GZIP", "BROTLI", "LZ4", "ZSTD", "LZ4_RAW"
     ]
@@ -61,8 +61,8 @@ def store_df_as_delta(
         mode="overwrite",
         partition_by=partition_by,
         writer_properties=WriterProperties(compression=compression or "SNAPPY"),
-        configuration={k: _str_or_json(v) for k, v in configuration.items()}
-        if configuration is not None
+        custom_metadata={k: _str_or_json(v) for k, v in custom_metadata.items()}
+        if custom_metadata is not None
         else None,
         engine="rust",
     )
@@ -161,7 +161,7 @@ if __name__ == "__main__":
             ],
         },
         "delta/struct_fruits",
-        configuration={
+        custom_metadata={
             "lakeapi.config": {
                 "params": [
                     {
