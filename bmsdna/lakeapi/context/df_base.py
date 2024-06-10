@@ -23,8 +23,10 @@ def is_complex_type(
     schema: pa.Schema,
     col_name: str,
 ):
+    import pyarrow.types as pat
+
     f = schema.field(col_name)
-    return pa.types.is_nested(f.type)
+    return pat.is_nested(f.type)
 
 
 def get_sql(
