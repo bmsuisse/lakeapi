@@ -3,7 +3,6 @@ import fsspec
 import adlfs
 import os
 import urllib.parse
-import expandvars
 from datetime import datetime, timezone, timedelta
 
 _token_state = dict()

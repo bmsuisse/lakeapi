@@ -1,4 +1,3 @@
-from uuid import uuid4
 from pydantic import BaseModel
 from bmsdna.lakeapi.context.df_base import ExecutionContext
 import sqlglot.expressions as ex
@@ -6,9 +5,8 @@ import sqlglot.expressions as ex
 from bmsdna.lakeapi.core.config import BasicConfig, Config
 from bmsdna.lakeapi.core.model import GeoModel
 from bmsdna.lakeapi.core.types import NearbyConfig
-from sqlglot import select, from_
+from sqlglot import select
 
-from typing import cast
 
 NearbyType = list[tuple[GeoModel, NearbyConfig]] | None  # list of config with values
 

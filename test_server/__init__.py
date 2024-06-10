@@ -28,7 +28,7 @@ def start_mssql_server() -> Container:
             return m
         else:
             sql_server = m
-    except docker.errors.NotFound as err:
+    except docker.errors.NotFound:
         pass
 
     envs = _getenvs()
@@ -108,7 +108,7 @@ def start_azurite() -> Container:
             return m
         else:
             azurite_server = m
-    except docker.errors.NotFound as err:
+    except docker.errors.NotFound:
         pass
 
     if azurite_server is None:

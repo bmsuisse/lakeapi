@@ -2,12 +2,6 @@ from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import time
 import sys
-import pyarrow as pa
-import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
-from httpx._types import RequestData
 import asyncio
 
 sys.path.append(".")

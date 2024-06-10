@@ -1,11 +1,7 @@
 from fastapi.testclient import TestClient
 from .utils import get_app, get_auth, create_rows_faker
 import sys
-import pyarrow as pa
 import polars as pl
-import pytest
-import pandas as pd
-from urllib.parse import quote
 from deltalake import write_deltalake
 import os
 from hashlib import md5

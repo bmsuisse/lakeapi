@@ -11,7 +11,7 @@ import pyarrow.dataset
 import sqlglot.expressions as ex
 from sqlglot import from_
 import os
-from datetime import datetime, timezone
+from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
 
@@ -406,7 +406,7 @@ class DuckDbExecutionContext(DuckDbExecutionContextBase):
     def __enter__(self):
         super().__enter__()
         self.con.__enter__()
-        self.con.execute(f"SET memory_limit='500MB'")
+        self.con.execute("SET memory_limit='500MB'")
         self.con.execute(f"SET threads={int(multiprocessing.cpu_count() / 2)}")
         self.con.execute("SET default_null_order='nulls_first'")  # align with polars
         return self

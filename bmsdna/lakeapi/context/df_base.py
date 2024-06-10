@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC, abstractproperty
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
@@ -8,10 +8,8 @@ from deltalake.exceptions import TableNotFoundError
 import pyarrow.dataset
 import sqlglot.expressions as ex
 import polars as pl
-import sqlglot.expressions as ex
 
 
-import os
 from .source_uri import SourceUri
 
 if TYPE_CHECKING:
@@ -130,7 +128,6 @@ class ResultData(ABC):
 
     def write_csv(self, file_name: str, *, separator: str):
         import pyarrow.csv as pacsv
-        import decimal
 
         batches = self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
@@ -267,7 +264,7 @@ class ExecutionContext(ABC):
 
     def jsonify_complex(self, query: ex.Query, complex_cols: list[str], columns: list[str]) -> ex.Query:
         return query.select(
-            *[ex.column(c) if not c in complex_cols else self.json_function(ex.column(c)).as_(c) for c in columns]
+            *[ex.column(c) if c not in complex_cols else self.json_function(ex.column(c)).as_(c) for c in columns]
         )
 
     def distance_m_function(

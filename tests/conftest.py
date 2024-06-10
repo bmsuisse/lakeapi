@@ -1,8 +1,5 @@
-from time import sleep
-import docker
 import pytest
 import os
-from docker.models.containers import Container
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,7 +8,6 @@ load_dotenv()
 @pytest.fixture(scope="session", autouse=True)
 def spawn_sql():
     import test_server
-    import os
 
     if os.getenv("NO_SQL_SERVER", "0") == "1":
         yield None
@@ -25,7 +21,6 @@ def spawn_sql():
 @pytest.fixture(scope="session", autouse=True)
 def spawn_azurite():
     import test_server
-    import os
 
     if os.getenv("NO_AZURITE_DOCKER", "0") == "1":
         yield None

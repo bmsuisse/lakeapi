@@ -4,12 +4,10 @@ from bmsdna.lakeapi.context.df_base import (
     FileTypeNotSupportedError,
     ResultData,
     get_sql,
-    is_complex_type,
 )
 
-import os
 import pyarrow as pa
-from typing import List, Literal, Optional, Tuple, Union, cast, TYPE_CHECKING, Any
+from typing import List, Optional, Tuple, Union, cast, Any
 from bmsdna.lakeapi.core.types import FileTypes
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -19,7 +17,7 @@ from sqlglot import from_
 from uuid import uuid4
 import json
 from .source_uri import SourceUri
-from deltalake.exceptions import DeltaProtocolError, TableNotFoundError
+from deltalake.exceptions import DeltaProtocolError
 
 try:
     import polars as pl  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
@@ -75,7 +73,7 @@ class PolarsResultData(ResultData):
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
-        from polars.datatypes.convert import DataTypeMappings, py_type_to_arrow_type, dtype_to_py_type
+        from polars.datatypes.convert import py_type_to_arrow_type, dtype_to_py_type
 
         if isinstance(t, pl.Struct):
             return pa.struct({f.name: self._to_arrow_type(f.dtype) for f in t.fields})
@@ -278,7 +276,6 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        import polars as pl
 
         df = self.sql_context.execute(get_sql(sql, dialect="postgres"))
         return PolarsResultData(df, self.sql_context, self.chunk_size)

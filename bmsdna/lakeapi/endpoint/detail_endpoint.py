@@ -2,24 +2,21 @@ from typing import Optional, cast
 import pyarrow as pa
 
 import sqlglot.expressions as ex
-from deltalake import DeltaTable, Metadata
+from deltalake import Metadata
 from fastapi import (
     APIRouter,
     HTTPException,
     Query,
     Request,
 )
-from pydantic import BaseModel
-from sqlglot import select, from_
+from sqlglot import select
 
 from bmsdna.lakeapi.context import get_context_by_engine
-from bmsdna.lakeapi.context.df_base import ResultData, get_sql
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
+from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import Engines, MetadataDetailResult, MetadataSchemaField, MetadataSchemaFieldType
 
-from typing import Optional
 
 
 def _to_dict(tblmeta: Optional[Metadata]):
@@ -65,7 +62,6 @@ def create_detailed_meta_endpoint(
         import json
 
         req.state.lake_api_basic_config = basic_config
-        from bmsdna.lakeapi.context import get_context_by_engine
 
         with get_context_by_engine(
             engine or config.engine or basic_config.default_engine, basic_config.default_chunk_size

@@ -7,7 +7,7 @@ auth = get_auth()
 
 def test_simple_department():
     response = client.get(
-        f"/api/v1/mssql/mssql_department?format=json&limit=50",
+        "/api/v1/mssql/mssql_department?format=json&limit=50",
         auth=auth,
     )
     assert response.status_code == 200
@@ -17,7 +17,7 @@ def test_simple_department():
 
 def test_filter_group_name():
     response = client.get(
-        f"/api/v1/mssql/mssql_department?format=json&limit=100&GroupName=Research%20and%20Development",
+        "/api/v1/mssql/mssql_department?format=json&limit=100&GroupName=Research%20and%20Development",
         auth=auth,
     )
     assert response.status_code == 200
@@ -27,7 +27,7 @@ def test_filter_group_name():
 
 def test_filter_offset():
     response = client.get(
-        f"/api/v1/mssql/mssql_department?format=json&limit=100&offset=10",
+        "/api/v1/mssql/mssql_department?format=json&limit=100&offset=10",
         auth=auth,
     )
     assert response.status_code == 200
@@ -37,7 +37,7 @@ def test_filter_offset():
 
 def test_metadata_detail():
     response = client.get(
-        f"/api/v1/mssql/mssql_department/metadata_detail",
+        "/api/v1/mssql/mssql_department/metadata_detail",
         auth=auth,
     )
     assert response.status_code == 200

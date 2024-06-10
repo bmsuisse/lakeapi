@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from bmsdna.lakeapi.core.config import BasicConfig, Configs, get_default_config
 from bmsdna.lakeapi.core.route import init_routes
 import os

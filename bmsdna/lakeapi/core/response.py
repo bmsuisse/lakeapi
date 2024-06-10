@@ -4,18 +4,16 @@ import tempfile
 from enum import Enum
 from typing import Union
 from uuid import uuid4
-import polars as pl
 import pyarrow as pa
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL
-from starlette.responses import FileResponse, Response, StreamingResponse
-from email.utils import format_datetime, formatdate
+from starlette.responses import Response, StreamingResponse
+from email.utils import formatdate
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
-from datetime import timedelta
 import typing
 from urllib.parse import quote
 from mimetypes import guess_type

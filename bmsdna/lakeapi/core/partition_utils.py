@@ -1,9 +1,7 @@
 from typing import List, TYPE_CHECKING
-import os
 from bmsdna.lakeapi.context.source_uri import SourceUri
 
 if TYPE_CHECKING:
-    from bmsdna.lakeapi.core.config import BasicConfig
     from bmsdna.lakeapi.core.types import Param
 
 
@@ -35,9 +33,9 @@ def _with_implicit_parameters(
 
                         new_params.append(Param(pc, operators=["="], colname=pc))
                 return new_params
-        except FileNotFoundError as err:
+        except FileNotFoundError:
             return paramslist  # this is not critical here
-        except DeltaError as err:
+        except DeltaError:
             return paramslist  # this is not critical here
 
     return paramslist

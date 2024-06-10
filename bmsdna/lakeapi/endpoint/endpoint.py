@@ -7,12 +7,12 @@ import sqlglot.expressions as ex
 
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.source_uri import SourceUri
-from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
+from bmsdna.lakeapi.context.df_base import ExecutionContext, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
 from bmsdna.lakeapi.core.log import get_logger
@@ -22,7 +22,6 @@ from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
-from starlette.responses import Response
 
 logger = get_logger(__name__)
 

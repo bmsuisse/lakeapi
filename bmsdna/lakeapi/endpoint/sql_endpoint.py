@@ -1,10 +1,10 @@
 from typing import Optional, Union
 from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
 from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError
-from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs, Param, SearchConfig
+from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.log import get_logger
-from bmsdna.lakeapi.core.types import OutputFileType, FileTypes
+from bmsdna.lakeapi.core.types import OutputFileType
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 from deltalake.exceptions import TableNotFoundError
@@ -40,7 +40,7 @@ def init_duck_con(
                     df.config.file_type,
                     None,
                 )
-            except (FileTypeNotSupportedError, TableNotFoundError, FileNotFoundError) as err:
+            except (FileTypeNotSupportedError, TableNotFoundError, FileNotFoundError):
                 logger.warning(f"Cannot query {df.tablename}")
 
 
@@ -51,7 +51,7 @@ def _get_sql_context(
 ):
     assert engine not in ["odbc", "sqlite"]
     global sql_contexts
-    if not engine in sql_contexts:
+    if engine not in sql_contexts:
         sql_contexts[engine] = get_context_by_engine(
             engine,
             basic_config.default_chunk_size,
@@ -110,7 +110,6 @@ def create_sql_endpoint(
         ),
     ):
         body = await request.body()
-        from bmsdna.lakeapi.context.df_duckdb import DuckDbExecutionContextBase
 
         con = _get_sql_context(engine, basic_config, configs)
 

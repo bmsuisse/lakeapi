@@ -1,4 +1,4 @@
-from bmsdna.lakeapi.context.source_uri import SourceUri, _convert_options, _get_default_token
+from bmsdna.lakeapi.context.source_uri import _convert_options
 
 
 def fake_token(**kwargs):

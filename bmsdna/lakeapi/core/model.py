@@ -2,11 +2,9 @@
 
 import datetime
 from typing import Any, Dict, List, Literal, Union, cast, Optional, Iterable
-from bmsdna.lakeapi.context.df_base import ResultData
 from fastapi import Query
 from pydantic import ConfigDict, BaseModel, create_model
 from pydantic.fields import FieldInfo
-from bmsdna.lakeapi.context.df_base import ResultData
 from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig
 from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.types import OperatorType
@@ -135,7 +133,7 @@ def _get_datatype(
         if inner and pa.types.is_list(field.type):
             return get_schema_for("prm_" + name, field.name, field.type.value_type)[0]
         return get_schema_for("prm_" + name, field.name, field.type)[0]
-    except KeyError as err:
+    except KeyError:
         return str | None
 
 
@@ -211,7 +209,7 @@ def create_parameter_model(
     query_params = _fix_space_names(query_params)
     try:
         query_model = create_model(name + "Parameter", **query_params)  # type: ignore
-    except Exception as err:
+    except Exception:
         # we do not want to throw here as this fails startup which is bad
         logger.error(f"Could not create parameter model for {name}. Use empty instead")
         query_model = create_model(name + "Parameter")
