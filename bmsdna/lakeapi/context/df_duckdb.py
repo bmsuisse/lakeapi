@@ -1,14 +1,14 @@
 from datetime import datetime
 
 import pyarrow as pa
-from typing import List, Optional, Tuple, Any, Union
+from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from deltalake2db import duckdb_create_view_for_delta
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_
+from sqlglot import from_, parse_one
 import os
 from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -50,11 +50,11 @@ class DuckDBResultData(ResultData):
 
     def query_builder(self) -> ex.Query:
         if not isinstance(self.original_sql, str):
-            return self.original_sql.copy()
-        random_name = "temp_" + str(uuid4()).replace("-", "")
-        return from_(ex.table_(random_name)).with_(
-            random_name, as_=self.original_sql, dialect="duckdb"
-        )
+            return self.original_sql.subquery()
+        else:
+            return cast(
+                ex.Select, parse_one(self.original_sql, dialect="duckdb")
+            ).subquery()
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
