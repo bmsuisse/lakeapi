@@ -5,11 +5,11 @@ from enum import Enum
 from typing import Union
 from uuid import uuid4
 import pyarrow as pa
+import starlette
 from starlette.background import BackgroundTask
-from starlette.datastructures import URL
+from starlette.datastructures import URL, QueryParams
 from starlette.responses import Response, StreamingResponse
 from email.utils import formatdate
-
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
@@ -88,13 +88,17 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         return (OutputFormats.JSON, ".json")
 
 
-def write_frame(
+def _write_frame(
     url: URL,
     content: ResultData,
     format: OutputFormats,
     out: str,
     basic_config: BasicConfig,
+    *,
+    csv_separator: str | None = None,
 ) -> list[str]:
+    if csv_separator == "\\t":
+        csv_separator = "\t"
     if format == OutputFormats.AVRO:
         import polars as pl
 
@@ -102,11 +106,11 @@ def write_frame(
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
     elif format == OutputFormats.CSV:
-        content.write_csv(out, separator=",")
+        content.write_csv(out, separator=csv_separator or ",")
     elif format == OutputFormats.SEMI_CSV:
-        content.write_csv(out, separator=";")
+        content.write_csv(out, separator=csv_separator or ";")
     elif format == OutputFormats.CSV4EXCEL:  # need to write sep=, on first line
-        content.write_csv(out + "_u8", separator=",")  # type: ignore
+        content.write_csv(out + "_u8", separator=csv_separator or ",")  # type: ignore
         with open(
             out, mode="wb"
         ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
@@ -244,6 +248,7 @@ def get_temp_file(extension: str):
 
 async def create_response(
     url: URL,
+    query_params: QueryParams,
     accept: str,
     context: ExecutionContext,
     sql: QueryBuilder | str,
@@ -292,7 +297,13 @@ async def create_response(
         chunk_size = 64 * 1024
         content = await anyio.to_thread.run_sync(context.execute_sql, sql)  # type: ignore
         additional_files = await anyio.to_thread.run_sync(  # type: ignore
-            write_frame, url, content, format, temp_file.name, basic_config
+            _write_frame,
+            url,
+            content,
+            format,
+            temp_file.name,
+            basic_config,
+            csv_separator=query_params.get("$csv_separator", None),
         )
 
         async with await anyio.open_file(temp_file.name, mode="rb") as file:

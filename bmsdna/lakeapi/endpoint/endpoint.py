@@ -308,6 +308,7 @@ def create_config_endpoint(
         try:
             return await create_response(
                 request.url,
+                request.query_params,
                 format or request.headers["Accept"],
                 context=context,
                 sql=new_query,
