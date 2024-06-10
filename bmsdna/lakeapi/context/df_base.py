@@ -39,7 +39,8 @@ def get_sql(
         sql_or_pypika = (
             sql_or_pypika.limit(limit)
             if not isinstance(sql_or_pypika, str)
-            else (  # why not just support limit/offset like everyone else, microsoft?
+            # why not just support limit/offset like everyone else, microsoft?
+            else (
                 f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
                 if dialect != "tsql"
                 else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
@@ -276,7 +277,6 @@ class ExecutionContext(ABC):
         lat2: ex.Expression,
         lon2: ex.Expression,
     ) -> ex.Expression:
-
         # haversine which works for duckdb and polars and probably most sql systems
         acos = lambda t: ex.func("acos", t)
         cos = lambda t: ex.func("cos", t)
@@ -294,7 +294,6 @@ class ExecutionContext(ABC):
         search_config: "SearchConfig",
         alias: Optional[str],
     ) -> ex.Expression:
-
         assert len(search_text) > 2
         parts = search_text.split(" ")
 

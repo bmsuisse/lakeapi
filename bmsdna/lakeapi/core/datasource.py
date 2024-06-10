@@ -98,11 +98,7 @@ class Datasource:
             ]
             df = df.select(*select, append=False)
         else:
-
-            df = df.select(
-                ex.Star(),
-                append=False
-            )
+            df = df.select(ex.Star(), append=False)
         return df
 
     def _prep_df(self, df: ex.Query, endpoint: endpoints) -> ex.Query:

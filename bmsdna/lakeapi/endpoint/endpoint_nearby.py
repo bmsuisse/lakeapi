@@ -43,7 +43,7 @@ def handle_nearby_request(
     basic_config: BasicConfig,
     *,
     source_view: str,
-    query: ex.Query
+    query: ex.Query,
 ):
     if config.nearby is None:
         return query

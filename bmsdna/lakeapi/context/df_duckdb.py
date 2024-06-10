@@ -127,11 +127,13 @@ class DuckDBResultData(ResultData):
 def match_25(table: str, field: str, search_text: str, fields: Optional[str] = None, alias: Optional[str] = None):
     f_args = [ex.convert(field), ex.convert(search_text)]
     if fields is not None:
-        f_args.append(
-            ex.PropertyEQ(
-                this=ex.Column(this=ex.Identifier(this="fields", quoted=False)), expression=ex.convert(fields)
-            )
-        ),
+        (
+            f_args.append(
+                ex.PropertyEQ(
+                    this=ex.Column(this=ex.Identifier(this="fields", quoted=False)), expression=ex.convert(fields)
+                )
+            ),
+        )
     fn = ex.Dot(this=ex.to_identifier(table), expression=ex.func("match_bm25", *f_args, dialect="duckdb"))
     if alias:
         return fn.as_(alias)
@@ -288,7 +290,6 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 secrets = cur.fetchall()
                 se_names = [s[0] for s in secrets]
             if "sec_" + uri.account not in se_names:
-
                 AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
                 assert " " not in uri.account
                 assert "'" not in uri.account
@@ -364,7 +365,6 @@ class DuckDbExecutionContextBase(ExecutionContext):
             dt = DeltaTable(ab_uri, storage_options=uri_opts)
 
             if dt.protocol().min_reader_version > 1:
-
                 sql = get_sql_for_delta(dt, duck_con=self.con)
                 self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
                 return
