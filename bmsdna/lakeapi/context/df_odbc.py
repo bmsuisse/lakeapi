@@ -63,9 +63,7 @@ class ODBCResultData(ResultData):
         self._arrow_schema = None
         self._df = None
         self.flavor: FLAVORS = (
-            "mssql"
-            if " for SQL Server".lower() in connection_string.lower()
-            else "ansi"
+            "tsql" if " for SQL Server".lower() in connection_string.lower() else "ansi"
         )
 
     def columns(self):
