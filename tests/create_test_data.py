@@ -13,11 +13,7 @@ import pyarrow.dataset as ds
 import duckdb
 import sqlite3
 from datetime import date
-
-try:
-    from .utils import create_rows_faker
-except ImportError:
-    from utils import create_rows_faker
+from .utils import create_rows_faker
 
 
 dir_path = pathlib.Path(os.path.dirname(os.path.realpath(__file__))).parent
