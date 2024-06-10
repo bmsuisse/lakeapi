@@ -33,4 +33,4 @@ jobs:
       - name: Create Test data
         run: poetry run python -m tests.create_test_data
       - name: Test with pytest (no benchmarks)
-        run: poetry run pytest --cov=bmsdna tests --benchmark-skip
+        run: poetry run pytest -x --cov=bmsdna tests --benchmark-skip
