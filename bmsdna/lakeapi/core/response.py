@@ -93,7 +93,6 @@ def _write_frame(
     format: OutputFormats,
     out: str,
     basic_config: BasicConfig,
-    *,
     csv_separator: str | None = None,
 ) -> list[str]:
     if csv_separator == "\\t":
@@ -302,7 +301,7 @@ async def create_response(
             format,
             temp_file.name,
             basic_config,
-            csv_separator=query_params.get("$csv_separator", None),
+            query_params.get("$csv_separator", None),
         )
 
         async with await anyio.open_file(temp_file.name, mode="rb") as file:
