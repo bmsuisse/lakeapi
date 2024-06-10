@@ -17,7 +17,9 @@ def get_searches(
     v = [
         (v, search_dict[k.lower()])
         for k, v in params.model_dump(exclude_unset=True).items()
-        if k.lower() in search_dict and v is not None and len(v) >= basic_config.min_search_length
+        if k.lower() in search_dict
+        and v is not None
+        and len(v) >= basic_config.min_search_length
     ]
     return v if len(v) > 0 else None
 
@@ -41,9 +43,14 @@ def handle_search_request(
 
     for search_val, search_cfg in searches:
         score_sum = (
-            context.search_score_function(source_view, search_val, search_cfg, alias=None)
+            context.search_score_function(
+                source_view, search_val, search_cfg, alias=None
+            )
             if score_sum is None
-            else score_sum + context.search_score_function(source_view, search_val, search_cfg, alias=None)
+            else score_sum
+            + context.search_score_function(
+                source_view, search_val, search_cfg, alias=None
+            )
         )
     assert score_sum is not None
     query = query.select(score_sum.as_("search_score"))

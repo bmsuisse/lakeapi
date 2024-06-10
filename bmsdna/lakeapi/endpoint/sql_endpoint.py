@@ -87,7 +87,9 @@ def create_sql_endpoint(
         background_tasks: BackgroundTasks,
         Accept: Union[str, None] = Header(default=None),
         format: Optional[OutputFileType] = "json",
-        engine: Engines = Query(title="$engine", alias="$engine", default="duckdb", include_in_schema=False),
+        engine: Engines = Query(
+            title="$engine", alias="$engine", default="duckdb", include_in_schema=False
+        ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
         return con.list_tables().to_arrow_table().to_pylist()
@@ -117,6 +119,7 @@ def create_sql_endpoint(
 
         return await create_response(
             request.url,
+            request.query_params,
             format or request.headers["Accept"],
             con,
             sql,
@@ -147,6 +150,7 @@ def create_sql_endpoint(
         df = con.execute_sql(sql)
         return await create_response(
             request.url,
+            request.query_params,
             format or request.headers["Accept"],
             con,
             sql,

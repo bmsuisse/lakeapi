@@ -2,9 +2,21 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime, date
-from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
+from typing import (
+    Any,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+    get_args,
+    TYPE_CHECKING,
+    TypeAlias,
+)
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
+import pyarrow.compute as pac
 import pyarrow.parquet
 import sqlglot.expressions as ex
 from sqlglot import select
@@ -46,6 +58,7 @@ class Datasource:
             config.account,
             accounts,
             basic_config.data_path if config.file_type not in ["odbc"] else None,
+            token_retrieval_func=basic_config.token_retrieval_func,
         )
         self.copy_local = config.copy_local
         self._execution_uri = None
@@ -58,7 +71,9 @@ class Datasource:
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert self.config.file_type == "delta", "only delta is supported for copy_local"
+        assert (
+            self.config.file_type == "delta"
+        ), "only delta is supported for copy_local"
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
@@ -81,9 +96,9 @@ class Datasource:
                 try:
                     from deltalake import DeltaTable
 
-                    df_uri, df_opts = (self.source_uri if schema_only else self.execution_uri).get_uri_options(
-                        flavor="object_store"
-                    )
+                    df_uri, df_opts = (
+                        self.source_uri if schema_only else self.execution_uri
+                    ).get_uri_options(flavor="object_store")
                     return DeltaTable(df_uri, storage_options=df_opts)
                 except TableNotFoundError:
                     return None
@@ -129,10 +144,14 @@ class Datasource:
             parts = tname.split(".")
             if len(parts) == 3:
                 return ex.Table(
-                    this=ex.to_identifier(parts[2]), db=ex.to_identifier(parts[1]), catalog=ex.to_identifier(parts[0])
+                    this=ex.to_identifier(parts[2]),
+                    db=ex.to_identifier(parts[1]),
+                    catalog=ex.to_identifier(parts[0]),
                 )
             assert len(parts) == 2
-            return ex.Table(this=ex.to_identifier(parts[1]), db=ex.to_identifier(parts[0]))
+            return ex.Table(
+                this=ex.to_identifier(parts[1]), db=ex.to_identifier(parts[0])
+            )
         return ex.table_(tname)
 
     def get_schema(self) -> pa.Schema:
@@ -145,7 +164,10 @@ class Datasource:
             schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
         if schema is not None:
             if self.config.select:
-                fields = [schema.field(item.name).with_name(item.alias) for item in self.config.select]
+                fields = [
+                    schema.field(item.name).with_name(item.alias)
+                    for item in self.config.select
+                ]
                 return pyarrow.schema(fields)
             return schema
         return self.get_df(endpoint="meta").arrow_schema()
@@ -156,7 +178,9 @@ class Datasource:
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
-            unique_table_name = endpoint == "meta" and self.sql_context.supports_view_creation
+            unique_table_name = (
+                endpoint == "meta" and self.sql_context.supports_view_creation
+            )
             query = select("*").from_(self.get_table_name(unique_table_name))
             self.query = self._prep_df(query, endpoint=endpoint)
 
@@ -214,7 +238,10 @@ async def get_partition_filter(
             col_for_partitioning = partcol
             modulo_len = int(partcol[len(colname + "_md5_mod_") :])
             if isinstance(value, (List, Tuple)):
-                hashvl = [int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16) for v in value]
+                hashvl = [
+                    int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16)
+                    for v in value
+                ]
                 value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
             else:
                 hashvl = int(hashlib.md5(str(value).encode("utf8")).hexdigest(), 16)
@@ -256,19 +283,21 @@ async def filter_partitions_based_on_params(
         return None
 
     partition_filters = []
-    tasks = [get_partition_filter(param, deltaMeta, param_def) for param in params.items()]
+    tasks = [
+        get_partition_filter(param, deltaMeta, param_def) for param in params.items()
+    ]
     results = await asyncio.gather(*tasks)
     partition_filters = [result for result in results if result is not None]
 
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType = Union[list[ex.Binary], list[pa.compute.Expression]]
+ExpType: TypeAlias = "Union[list[ex.Binary], list[pac.Expression]]"
 
 
 async def concat_expr(
     exprs: ExpType,
-) -> Union[ex.Binary, pa.compute.Expression]:
+) -> "Union[ex.Binary, pac.Expression]":
     expr: Optional[ex.Binary] = None
     for e in exprs:
         if expr is None:
@@ -290,9 +319,17 @@ async def _create_inner_expr(
             pass
         else:
             if inner_expr is None:
-                inner_expr = ex.column(ck).eq(cv) if (cv or cv == 0) else ex.column(ck).is_(ex.Null())
+                inner_expr = (
+                    ex.column(ck).eq(cv)
+                    if (cv or cv == 0)
+                    else ex.column(ck).is_(ex.Null())
+                )
             else:
-                inner_expr = inner_expr & (ex.column(ck).eq(cv) if cv or cv == 0 else ex.column(ck).is_(ex.Null()))
+                inner_expr = inner_expr & (
+                    ex.column(ck).eq(cv)
+                    if cv or cv == 0
+                    else ex.column(ck).is_(ex.Null())
+                )
     return inner_expr
 
 
@@ -347,39 +384,67 @@ async def filter_df_based_on_params(
         else:
             match op:
                 case "<":
-                    exprs.append(ex.column(colname) < _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        ex.column(colname)
+                        < _sql_value(value, engine=context.engine_name)
+                    )
                 case ">":
-                    exprs.append(ex.column(colname) > _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        ex.column(colname)
+                        > _sql_value(value, engine=context.engine_name)
+                    )
                 case ">=":
-                    exprs.append(ex.column(colname) >= _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        ex.column(colname)
+                        >= _sql_value(value, engine=context.engine_name)
+                    )
                 case "<=":
-                    exprs.append(ex.column(colname) <= _sql_value(value, engine=context.engine_name))
+                    exprs.append(
+                        ex.column(colname)
+                        <= _sql_value(value, engine=context.engine_name)
+                    )
                 case "<>":
                     exprs.append(
-                        ex.column(colname).neq(_sql_value(value, engine=context.engine_name))
+                        ex.column(colname).neq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
                         else ~ex.column(colname).is_(ex.convert(None))
                     )
                 case "==":
                     exprs.append(
-                        ex.column(colname).eq(_sql_value(value, engine=context.engine_name))
+                        ex.column(colname).eq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
                         else ex.column(colname).is_(ex.convert(None))
                     )
                 case "=":
                     exprs.append(
-                        ex.column(colname).eq(_sql_value(value, engine=context.engine_name))
+                        ex.column(colname).eq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
                         else ex.column(colname).is_(ex.convert(None))
                     )
                 case "not contains":
-                    exprs.append(context.term_like(ex.column(colname), value, "both", negate=True))
+                    exprs.append(
+                        context.term_like(
+                            ex.column(colname), value, "both", negate=True
+                        )
+                    )
                 case "contains":
                     exprs.append(context.term_like(ex.column(colname), value, "both"))
                 case "startswith":
                     exprs.append(context.term_like(ex.column(colname), value, "end"))
                 case "has":
-                    exprs.append(ex.func(context.array_contains_func, ex.column(colname), ex.convert(value)))
+                    exprs.append(
+                        ex.func(
+                            context.array_contains_func,
+                            ex.column(colname),
+                            ex.convert(value),
+                        )
+                    )
                 case "in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
@@ -395,7 +460,9 @@ async def filter_df_based_on_params(
                     else:
                         from fastapi import HTTPException
 
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
+                        raise HTTPException(
+                            400, "Must have an array with 2 elements for between"
+                        )
                 case "not between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
@@ -403,7 +470,9 @@ async def filter_df_based_on_params(
                     else:
                         from fastapi import HTTPException
 
-                        raise HTTPException(400, "Must have an array with 2 elements for between")
+                        raise HTTPException(
+                            400, "Must have an array with 2 elements for between"
+                        )
 
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")

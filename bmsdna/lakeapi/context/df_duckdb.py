@@ -1,11 +1,10 @@
 from datetime import datetime
-from deltalake import DeltaTable
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from deltalake2db import get_sql_for_delta
+from deltalake2db import duckdb_create_view_for_delta
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -53,7 +52,9 @@ class DuckDBResultData(ResultData):
         if not isinstance(self.original_sql, str):
             return self.original_sql.copy()
         random_name = "temp_" + str(uuid4()).replace("-", "")
-        return from_(ex.table_(random_name)).with_(random_name, as_=self.original_sql, dialect="duckdb")
+        return from_(ex.table_(random_name)).with_(
+            random_name, as_=self.original_sql, dialect="duckdb"
+        )
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
@@ -124,17 +125,27 @@ class DuckDBResultData(ResultData):
         self.con.execute(full_query)
 
 
-def match_25(table: str, field: str, search_text: str, fields: Optional[str] = None, alias: Optional[str] = None):
+def match_25(
+    table: str,
+    field: str,
+    search_text: str,
+    fields: Optional[str] = None,
+    alias: Optional[str] = None,
+):
     f_args = [ex.convert(field), ex.convert(search_text)]
     if fields is not None:
         (
             f_args.append(
                 ex.PropertyEQ(
-                    this=ex.Column(this=ex.Identifier(this="fields", quoted=False)), expression=ex.convert(fields)
+                    this=ex.Column(this=ex.Identifier(this="fields", quoted=False)),
+                    expression=ex.convert(fields),
                 )
             ),
         )
-    fn = ex.Dot(this=ex.to_identifier(table), expression=ex.func("match_bm25", *f_args, dialect="duckdb"))
+    fn = ex.Dot(
+        this=ex.to_identifier(table),
+        expression=ex.func("match_bm25", *f_args, dialect="duckdb"),
+    )
     if alias:
         return fn.as_(alias)
     return fn
@@ -181,7 +192,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
         ],
     ) -> DuckDBResultData:
         if self.persistance_file_name is not None:
-            self.res_con = duckdb.connect(self.persistance_file_name, read_only=True, config=DUCK_CONFIG)
+            self.res_con = duckdb.connect(
+                self.persistance_file_name, read_only=True, config=DUCK_CONFIG
+            )
 
             return DuckDBResultData(
                 sql,
@@ -210,7 +223,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
             alias=alias,
         )
 
-    def distance_m_function(self, lat1: ex.Expression, lon1: ex.Expression, lat2: ex.Expression, lon2: ex.Expression):
+    def distance_m_function(
+        self,
+        lat1: ex.Expression,
+        lon1: ex.Expression,
+        lat2: ex.Expression,
+        lon2: ex.Expression,
+    ):
         return ex.func("haversine", lat1, lon1, lat2, lon2)
 
     def json_function(self, term: ex.Expression, assure_string=False):
@@ -235,28 +254,42 @@ class DuckDbExecutionContextBase(ExecutionContext):
         pk_name = "__search_id"
         real_query = f"CREATE TABLE search_con.{persistence_name} AS SELECT ROW_NUMBER() OVER () AS __search_id, * FROM {source_view} s"
         persitance_path = os.getenv("TEMP", "/tmp/")
-        persistance_file_name = os.path.join(persitance_path, persistence_name + ".duckdb")
+        persistance_file_name = os.path.join(
+            persitance_path, persistence_name + ".duckdb"
+        )
 
         if (
             not os.path.exists(persistance_file_name)
-            or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
+            or datetime.fromtimestamp(
+                os.path.getmtime(persistance_file_name), tz=timezone.utc
+            )
             < modified_date.astimezone(timezone.utc)
-            or datetime.fromtimestamp(os.path.getmtime(persistance_file_name), tz=timezone.utc)
-            < datetime.fromisoformat("2023-05-19").astimezone(timezone.utc)  # before duckdb upgrade
+            or datetime.fromtimestamp(
+                os.path.getmtime(persistance_file_name), tz=timezone.utc
+            )
+            < datetime.fromisoformat("2023-05-19").astimezone(
+                timezone.utc
+            )  # before duckdb upgrade
         ):
             persistance_file_name_temp = persistance_file_name + "_temp"
             if os.path.exists(persistance_file_name_temp):
                 os.remove(persistance_file_name_temp)
-            search_con = duckdb.connect(persistance_file_name_temp, read_only=False, config=DUCK_CONFIG)
+            search_con = duckdb.connect(
+                persistance_file_name_temp, read_only=False, config=DUCK_CONFIG
+            )
 
             search_con.commit()  # create empty duck file
             search_con.close()
             self.con.execute(f"ATTACH '{persistance_file_name_temp}' AS search_con")
             self.con.execute(real_query)
             self.con.execute("DETACH search_con")
-            search_con = duckdb.connect(persistance_file_name_temp, read_only=False, config=DUCK_CONFIG)
+            search_con = duckdb.connect(
+                persistance_file_name_temp, read_only=False, config=DUCK_CONFIG
+            )
             scc = ", ".join([f"'{sc}'" for sc in search_columns])
-            search_con.execute(f"PRAGMA create_fts_index('{persistence_name}', '{pk_name}', {scc})")
+            search_con.execute(
+                f"PRAGMA create_fts_index('{persistence_name}', '{pk_name}', {scc})"
+            )
             search_con.close()
             if os.path.exists(persistance_file_name):
                 os.remove(persistance_file_name)
@@ -282,7 +315,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
-        remote_uri, remote_opts = uri.get_uri_options(azure_protocol="azure", flavor="fsspec")
+        remote_uri, remote_opts = uri.get_uri_options(
+            azure_protocol="azure", flavor="fsspec"
+        )
 
         if uri.account and remote_opts:
             with self.con.cursor() as cur:
@@ -297,7 +332,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 assert "/" not in uri.account
                 try:
                     if AZURE_EXT_LOC:
-                        self.con.execute(f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'")
+                        self.con.execute(
+                            f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'"
+                        )
                     else:
                         self.con.install_extension("azure")
                 except Exception as e:
@@ -361,28 +398,31 @@ class DuckDbExecutionContextBase(ExecutionContext):
             )
             return
         if file_type == "delta" and uri.exists():
-            ab_uri, uri_opts = uri.get_uri_options(flavor="object_store")
-            dt = DeltaTable(ab_uri, storage_options=uri_opts)
-
-            if dt.protocol().min_reader_version > 1:
-                sql = get_sql_for_delta(dt, duck_con=self.con)
-                self.con.execute(f"CREATE OR REPLACE VIEW  {target_name}  as {sql}")
-                return
-
+            ab_uri, uri_opts = uri.get_uri_options(flavor="deltalake2db")
+            duckdb_create_view_for_delta(
+                self.con, ab_uri, target_name, storage_options=uri_opts
+            )
+            return
         if file_type == "duckdb":
-            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_duckdb (READ_ONLY);")
+            self.con.execute(
+                f"ATTACH '{remote_uri}' AS  {target_name}_duckdb (READ_ONLY);"
+            )
             self.con.execute(
                 f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_duckdb.{source_table_name or target_name}"
             )
             return
         if file_type == "sqlite":
-            self.con.execute(f"ATTACH '{remote_uri}' AS  {target_name}_sqlite (TYPE sqlite, READ_ONLY);")
+            self.con.execute(
+                f"ATTACH '{remote_uri}' AS  {target_name}_sqlite (TYPE sqlite, READ_ONLY);"
+            )
             self.con.execute(
                 f"CREATE VIEW  {target_name} as SELECT *FROM  {target_name}_sqlite.{source_table_name or target_name}"
             )
             return
 
-        return super().register_datasource(target_name, source_table_name, uri, file_type, partitions)
+        return super().register_datasource(
+            target_name, source_table_name, uri, file_type, partitions
+        )
 
     def list_tables(self) -> ResultData:
         return self.execute_sql(

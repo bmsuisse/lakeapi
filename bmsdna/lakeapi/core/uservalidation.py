@@ -55,7 +55,9 @@ def get_basic_auth_middleware_func(users: Sequence[UserConfig]):
             is_correct_password = is_correct_password
         if not is_correct_password:
             return Response(
-                status_code=401, headers={"WWW-Authenticate": "Basic"}, content="Incorrect email or password"
+                status_code=401,
+                headers={"WWW-Authenticate": "Basic"},
+                content="Incorrect email or password",
             )
         request.scope["user"] = {"username": credentials.username}
         return await call_next(request)
@@ -70,4 +72,6 @@ def add_user_middlware(
 ):
     from starlette.middleware.base import BaseHTTPMiddleware
 
-    app.add_middleware(BaseHTTPMiddleware, dispatch=get_basic_auth_middleware_func(users))
+    app.add_middleware(
+        BaseHTTPMiddleware, dispatch=get_basic_auth_middleware_func(users)
+    )

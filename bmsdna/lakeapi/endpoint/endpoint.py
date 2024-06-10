@@ -14,10 +14,13 @@ from bmsdna.lakeapi.context import get_context_by_engine
 from bmsdna.lakeapi.context.source_uri import SourceUri
 from bmsdna.lakeapi.context.df_base import ExecutionContext, get_sql
 from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
-from bmsdna.lakeapi.core.datasource import Datasource, filter_df_based_on_params, filter_partitions_based_on_params
+from bmsdna.lakeapi.core.datasource import (
+    Datasource,
+    filter_df_based_on_params,
+    filter_partitions_based_on_params,
+)
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
-from bmsdna.lakeapi.core.partition_utils import should_hide_colname
 from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
@@ -69,7 +72,9 @@ async def get_params_filter_expr(
 ) -> Optional[ex.Condition]:
     expr = await filter_df_based_on_params(
         context,
-        remove_search_nearby(params.model_dump(exclude_unset=True) if params else {}, config),
+        remove_search_nearby(
+            params.model_dump(exclude_unset=True) if params else {}, config
+        ),
         config.params if config.params else [],
         columns,
     )
@@ -79,20 +84,21 @@ async def get_params_filter_expr(
 def get_response_model(
     config: Config,
     schema: pa.Schema,
+    basic_config: BasicConfig,
 ) -> Optional[Type[BaseModel]]:
     response_model: Optional[type[BaseModel]] = None
     try:
-        response_model = create_response_model(config.tag + "_" + config.name, schema)
+        response_model = create_response_model(
+            config.tag + "_" + config.name, schema, basic_config=basic_config
+        )
     except Exception as err:
         logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
         response_model = None
     return response_model
 
 
-def exclude_cols(
-    columns: List[str],
-) -> List[str]:
-    columns = [c for c in columns if not should_hide_colname(c)]
+def exclude_cols(columns: List[str], config: BasicConfig) -> List[str]:
+    columns = [c for c in columns if not config.should_hide_col_name(c)]
     return columns
 
 
@@ -167,7 +173,9 @@ def create_config_endpoint(
     api_method = api_method_mapping[apimethod]
     has_complex = True
     if schema is not None:
-        has_complex = any((pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types))
+        has_complex = any(
+            (pa.types.is_struct(t) or pa.types.is_list(t) for t in schema.types)
+        )
 
     @api_method
     async def data(
@@ -206,12 +214,16 @@ def create_config_endpoint(
             default=None,
         ),
     ):  # type: ignore
-        logger.debug(f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}")
+        logger.debug(
+            f"{params.model_dump(exclude_unset=True) if params else None}Union[ ,  ]{request.url.path}"
+        )
 
         engine = engine or config.engine or basic_config.default_engine
 
         logger.debug(f"Engine: {engine}")
-        real_chunk_size = chunk_size or config.chunk_size or basic_config.default_chunk_size
+        real_chunk_size = (
+            chunk_size or config.chunk_size or basic_config.default_chunk_size
+        )
         context = get_context_by_engine(
             engine,
             chunk_size=real_chunk_size,
@@ -237,7 +249,7 @@ def create_config_endpoint(
         base_schema = df.arrow_schema()
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
-        columns = exclude_cols(df.columns())
+        columns = exclude_cols(df.columns(), basic_config)
         if select:
             columns = [
                 c for c in columns if c in split_csv(select)
@@ -247,7 +259,9 @@ def create_config_endpoint(
         if config.datasource.sortby:
             for s in config.datasource.sortby:
                 new_query = cast(ex.Select, new_query).order_by(
-                    ex.column(s.by).desc() if s.direction and s.direction.lower() == "desc" else ex.column(s.by),
+                    ex.column(s.by).desc()
+                    if s.direction and s.direction.lower() == "desc"
+                    else ex.column(s.by),
                     copy=False,
                 )
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
@@ -290,6 +304,7 @@ def create_config_endpoint(
         try:
             return await create_response(
                 request.url,
+                request.query_params,
                 format or request.headers["Accept"],
                 context=context,
                 sql=new_query,

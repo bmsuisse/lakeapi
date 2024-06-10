@@ -5,7 +5,6 @@ from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-import pyarrow.dataset
 import sqlglot.expressions as ex
 import polars as pl
 
@@ -14,6 +13,7 @@ from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow.dataset as pas
     from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "tsql"]
@@ -155,13 +155,22 @@ class ExecutionContext(ABC):
 
         self.array_contains_func = "array_contains"
 
-    def term_like(self, a: ex.Expression, value: str, wildcard_loc: Literal["start", "end", "both"], *, negate=False):
+    def term_like(
+        self,
+        a: ex.Expression,
+        value: str,
+        wildcard_loc: Literal["start", "end", "both"],
+        *,
+        negate=False,
+    ):
         if wildcard_loc == "start":
             return a.like("%" + value) if not negate else ~a.like("%" + value)
         elif wildcard_loc == "end":
             return a.like(value + "%") if not negate else ~a.like(value + "%")
         else:
-            return a.like("%" + value + "%") if not negate else ~a.like("%" + value + "%")
+            return (
+                a.like("%" + value + "%") if not negate else ~a.like("%" + value + "%")
+            )
 
     @property
     @abstractmethod
@@ -185,13 +194,13 @@ class ExecutionContext(ABC):
         uri: SourceUri,
         file_type: FileTypes,
         partitions: Optional[List[Tuple[str, str, Any]]],
-    ) -> Optional[pa.dataset.Dataset | pa.Table]:
+    ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
             case "parquet":
                 import pyarrow.dataset as ds
 
-                return pa.dataset.dataset(
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
@@ -199,13 +208,16 @@ class ExecutionContext(ABC):
                     ),
                 )
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
-                return pa.dataset.dataset(
+                import pyarrow.dataset as ds
+
+                return ds.dataset(
                     spec_uri,
                     filesystem=spec_fs,
                     format=file_type,
                 )
             case "ndjson" | "json":
                 import pandas
+                import pyarrow
 
                 ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
@@ -226,9 +238,12 @@ class ExecutionContext(ABC):
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
                 dt = DeltaTable(ab_uri, storage_options=ab_opts)
                 if dt.protocol().min_reader_version > 1:
-                    raise ValueError("Delta table protocol version not supported, use DuckDB or Polars")
+                    raise ValueError(
+                        "Delta table protocol version not supported, use DuckDB or Polars"
+                    )
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions, parquet_read_options={"coerce_int96_timestamp_unit": "us"}
+                    partitions=partitions,
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -239,7 +254,7 @@ class ExecutionContext(ABC):
     def register_arrow(
         self,
         name: str,
-        ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
+        ds: "Union[pas.Dataset, pa.Table]",
     ): ...
 
     @abstractmethod
@@ -262,9 +277,16 @@ class ExecutionContext(ABC):
         assure_string=False,
     ) -> ex.Expression: ...
 
-    def jsonify_complex(self, query: ex.Query, complex_cols: list[str], columns: list[str]) -> ex.Query:
+    def jsonify_complex(
+        self, query: ex.Query, complex_cols: list[str], columns: list[str]
+    ) -> ex.Query:
         return query.select(
-            *[ex.column(c) if c not in complex_cols else self.json_function(ex.column(c)).as_(c) for c in columns]
+            *[
+                ex.column(c)
+                if c not in complex_cols
+                else self.json_function(ex.column(c)).as_(c)
+                for c in columns
+            ]
         )
 
     def distance_m_function(
@@ -298,7 +320,9 @@ class ExecutionContext(ABC):
         summ = None
         for part in parts:
             case = ex.case()
-            cond = ex.Concat(expressions=[ex.column(c) for c in search_config.columns]).like("%" + part + "%")
+            cond = ex.Concat(
+                expressions=[ex.column(c) for c in search_config.columns]
+            ).like("%" + part + "%")
             case.when(cond, ex.convert(1), copy=False)
             case.else_(ex.convert(0), copy=False)
             cases.append(case)

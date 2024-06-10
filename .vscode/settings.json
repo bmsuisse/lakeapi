@@ -4,7 +4,7 @@
     "python.testing.pytestEnabled": true,
     "editor.formatOnSave": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "python.formatting.provider": "none",
     "cSpell.words": ["deltalake", "duckdb", "lakeapi", "odbc", "pyarrow", "sqlglot"]

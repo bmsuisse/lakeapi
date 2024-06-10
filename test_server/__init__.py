@@ -14,7 +14,11 @@ def _getenvs():
         lines = f.readlines()
         envs = {
             item[0].strip(): item[1].strip()
-            for item in [line.split("=") for line in lines if len(line.strip()) > 0 and not line.startswith("#")]
+            for item in [
+                line.split("=")
+                for line in lines
+                if len(line.strip()) > 0 and not line.startswith("#")
+            ]
         }
     return envs
 
@@ -46,7 +50,9 @@ def start_mssql_server() -> Container:
     assert sql_server is not None
     sql_server.start()
     print(sql_server.status)
-    sleep(45)  # the install script takes a sleep of 30s to create the db and then restores adventureworks
+    sleep(
+        45
+    )  # the install script takes a sleep of 30s to create the db and then restores adventureworks
     import pyodbc
 
     with pyodbc.connect(
@@ -92,7 +98,11 @@ def upload_to_azurite():
                 try:
                     rel = str(Path(root).relative_to(fakeroot))
                     with open(os.path.join(root, fl), "rb") as f:
-                        target_path = f"td/delta/fake/{rel}/{fl}" if rel != "." else f"td/delta/fake/{fl}"
+                        target_path = (
+                            f"td/delta/fake/{rel}/{fl}"
+                            if rel != "."
+                            else f"td/delta/fake/{fl}"
+                        )
                         cc.upload_blob(target_path, f)
                 except ResourceExistsError:
                     pass  # already uploaded

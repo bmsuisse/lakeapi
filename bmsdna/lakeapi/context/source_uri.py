@@ -1,11 +1,12 @@
-from typing import Callable, Literal
+from typing import Callable, Literal, TYPE_CHECKING
 import fsspec
 import adlfs
 import os
 import urllib.parse
-from datetime import datetime, timezone, timedelta
 
-_token_state = dict()
+if TYPE_CHECKING:
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
+_credential: "DefaultAzureCredential | None | ManagedIdentityCredential" = None
 
 default_azure_args = [
     "authority",
@@ -31,21 +32,24 @@ default_azure_args = [
 
 
 def _get_default_token(**kwargs) -> str:
-    global _token_state
-    token_expiry: datetime | None = _token_state.get("token_expiry", None)
-    if not token_expiry or (token_expiry - datetime.now(tz=timezone.utc)) < timedelta(minutes=2):
-        from azure.identity import DefaultAzureCredential
+    global _credential
+    if _credential is None:
+        if os.getenv("LAKE_MANAGED_IDENTITY_ID") is not None:
+            from azure.identity import ManagedIdentityCredential
 
-        tk = DefaultAzureCredential(**kwargs).get_token("https://storage.azure.com/.default")
-        _token_state["token_dt"] = tk
-        _token_state["token_expiry"] = datetime.fromtimestamp(tk.expires_on, tz=timezone.utc)
-        _token_state["token"] = tk.token
-    return _token_state["token"]
+            mid = os.environ["LAKE_MANAGED_IDENTITY_ID"]
+            mid = None if mid == "default" else mid
+            _credential = ManagedIdentityCredential(client_id=mid)
+        else:
+            from azure.identity import DefaultAzureCredential
+
+            _credential = DefaultAzureCredential(**kwargs)
+    return _credential.get_token("https://storage.azure.com/.default").token
 
 
 def _convert_options(
     options: dict | None,
-    flavor: Literal["fsspec", "object_store"],
+    flavor: Literal["fsspec", "object_store", "deltalake2db"],
     token_retrieval_func: Callable[[], str] | None = None,
 ):
     if options is None:
@@ -55,17 +59,35 @@ def _convert_options(
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
         return {"connection_string": constr}
     elif (
-        flavor == "fsspec" and "account_key" not in options and "anon" not in options and "account_name" in options
+        flavor == "fsspec"
+        and "account_key" not in options
+        and "anon" not in options
+        and "sas_token" not in options
+        and "account_name" in options
+        and "chain" not in options
     ):  # anon is true by default in fsspec which makes no sense mostly
         return {"anon": False} | options
 
     new_opts = options.copy()
     anon_value = False
-    if flavor == "object_store" and "anon" in options:
+    if flavor in ["deltalake2db", "object_store"] and "anon" in options:
         anon_value = new_opts.pop("anon")
-    if flavor == "object_store" and "account_key" not in options and not use_emulator and not anon_value:
+
+    if (
+        flavor in ["deltalake2db", "object_store"]
+        and "account_key" not in options
+        and "sas_token" not in options
+        and "token" not in options
+        and "chain" not in options
+        and not use_emulator
+        and not anon_value
+    ):
         token_kwargs = {k: new_opts.pop(k) for k in default_azure_args if k in new_opts}
         new_opts["token"] = (token_retrieval_func or _get_default_token)(**token_kwargs)
+    if "chain" in options and flavor != "deltalake2db":
+        from deltalake2db.azure_helper import apply_azure_chain
+
+        return apply_azure_chain(new_opts)
     return new_opts
 
 
@@ -82,15 +104,20 @@ class SourceUri:
         account: str | None,
         accounts: dict,
         data_path: str | None,
-        token_retrieval_func: Callable[[], str] | None = None,
+        token_retrieval_func: "Callable[[SourceUri], str] | None" = None,
     ):
         self.uri = uri
         self.account = account
         self.accounts = accounts or {}
         self.data_path = data_path
         self.token_retrieval_func = token_retrieval_func
+        self.retrieve_token = (
+            (lambda: token_retrieval_func(self)) if token_retrieval_func else None
+        )
         self.real_uri = (
-            uri if "://" in uri or account is not None or data_path is None else os.path.join(data_path, uri)
+            uri
+            if "://" in uri or account is not None or data_path is None
+            else os.path.join(data_path, uri)
         )
 
     def is_azure(self):
@@ -105,7 +132,9 @@ class SourceUri:
         if self.account is None:
             return fsspec.filesystem("file"), self.real_uri
         opts = _convert_options(
-            self.accounts.get(self.account, {}), "fsspec", token_retrieval_func=self.token_retrieval_func
+            self.accounts.get(self.account, {}),
+            "fsspec",
+            token_retrieval_func=self.retrieve_token,
         )
         assert opts is not None
         if self.is_azure():
@@ -114,7 +143,10 @@ class SourceUri:
             raise ValueError("Not supported FS")
 
     def get_uri_options(
-        self, *, flavor: Literal["fsspec", "object_store"], azure_protocol="original"
+        self,
+        *,
+        flavor: Literal["fsspec", "object_store", "deltalake2db"],
+        azure_protocol="original",
     ) -> tuple[str, dict | None]:
         if self.is_azure() and azure_protocol != "original":
             pr = urllib.parse.urlparse(self.uri)
@@ -123,13 +155,13 @@ class SourceUri:
                 _convert_options(
                     self.accounts.get(self.account) if self.account else None,
                     flavor,
-                    token_retrieval_func=self.token_retrieval_func,
+                    token_retrieval_func=self.retrieve_token,
                 ),
             )
         return self.real_uri, _convert_options(
             self.accounts.get(self.account) if self.account else None,
             flavor,
-            token_retrieval_func=self.token_retrieval_func,
+            token_retrieval_func=self.retrieve_token,
         )
 
     def exists(self) -> bool:
@@ -148,12 +180,24 @@ class SourceUri:
         dt = DeltaTable(df_uri, storage_options=df_opts)
         vnr = dt.version()
         if local_versions.get(self.uri) == vnr:
-            return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
+            return SourceUri(
+                uri=local_path,
+                data_path=None,
+                account=None,
+                accounts=self.accounts,
+                token_retrieval_func=self.token_retrieval_func,
+            )
         os.makedirs(local_path, exist_ok=True)
         fs, fs_path = self.get_fs_spec()
         fs.get(fs_path + "/", local_path, recursive=True)
         local_versions[self.uri] = vnr
-        return SourceUri(uri=local_path, data_path=None, account=None, accounts=self.accounts)
+        return SourceUri(
+            uri=local_path,
+            data_path=None,
+            account=None,
+            accounts=self.accounts,
+            token_retrieval_func=self.token_retrieval_func,
+        )
 
     def __str__(self):
         return self.real_uri

@@ -5,11 +5,11 @@ from enum import Enum
 from typing import Union
 from uuid import uuid4
 import pyarrow as pa
+import starlette
 from starlette.background import BackgroundTask
-from starlette.datastructures import URL
+from starlette.datastructures import URL, QueryParams
 from starlette.responses import Response, StreamingResponse
 from email.utils import formatdate
-
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import BasicConfig
 from bmsdna.lakeapi.core.log import get_logger
@@ -60,7 +60,10 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         return (OutputFormats.XLSX, ".xlsx")
     elif realaccept == "text/html" or realaccept == "html":
         return (OutputFormats.HTML, ".html")
-    elif realaccept == "application/vnd.apache.arrow.stream" or realaccept == "arrow-stream":
+    elif (
+        realaccept == "application/vnd.apache.arrow.stream"
+        or realaccept == "arrow-stream"
+    ):
         return (OutputFormats.ARROW_STREAM, "")
 
     elif (
@@ -72,7 +75,11 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         or realaccept == "ipc"
     ):
         return (OutputFormats.ARROW_IPC, ".arrow")
-    elif realaccept == "application/json+newline" or realaccept == "application/jsonl" or realaccept == "ndjson":
+    elif (
+        realaccept == "application/json+newline"
+        or realaccept == "application/jsonl"
+        or realaccept == "ndjson"
+    ):
         return (OutputFormats.ND_JSON, ".ndjson")
     elif realaccept == "application/parquet" or realaccept == "parquet":
         return (OutputFormats.PARQUET, ".parquet")
@@ -80,9 +87,17 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         return (OutputFormats.JSON, ".json")
 
 
-def write_frame(
-    url: URL, content: ResultData, format: OutputFormats, out: str, basic_config: BasicConfig
+def _write_frame(
+    url: URL,
+    content: ResultData,
+    format: OutputFormats,
+    out: str,
+    basic_config: BasicConfig,
+    *,
+    csv_separator: str | None = None,
 ) -> list[str]:
+    if csv_separator == "\\t":
+        csv_separator = "\t"
     if format == OutputFormats.AVRO:
         import polars as pl
 
@@ -90,11 +105,11 @@ def write_frame(
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
     elif format == OutputFormats.CSV:
-        content.write_csv(out, separator=",")
+        content.write_csv(out, separator=csv_separator or ",")
     elif format == OutputFormats.SEMI_CSV:
-        content.write_csv(out, separator=";")
+        content.write_csv(out, separator=csv_separator or ";")
     elif format == OutputFormats.CSV4EXCEL:  # need to write sep=, on first line
-        content.write_csv(out + "_u8", separator=",")  # type: ignore
+        content.write_csv(out + "_u8", separator=csv_separator or ",")  # type: ignore
         with open(
             out, mode="wb"
         ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
@@ -188,7 +203,9 @@ class StreamingResponseWCharset(StreamingResponse):
                     content_disposition_type, content_disposition_filename
                 )
             else:
-                content_disposition = '{}; filename="{}"'.format(content_disposition_type, self.filename)
+                content_disposition = '{}; filename="{}"'.format(
+                    content_disposition_type, self.filename
+                )
             self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
         if stat_result is not None:
@@ -230,6 +247,7 @@ def get_temp_file(extension: str):
 
 async def create_response(
     url: URL,
+    query_params: QueryParams,
     accept: str,
     context: ExecutionContext,
     sql: ex.Query | str,
@@ -243,12 +261,24 @@ async def create_response(
     format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
     filename = "file" + extension
-    media_type = "text/csv" if extension == ".csv" else mimetypes.guess_type("file" + extension)[0]
+    media_type = (
+        "text/csv"
+        if extension == ".csv"
+        else mimetypes.guess_type("file" + extension)[0]
+    )
 
     if format == OutputFormats.JSON:
-        return Response(content=context.execute_sql(sql).to_json(), headers=headers, media_type=media_type)
+        return Response(
+            content=context.execute_sql(sql).to_json(),
+            headers=headers,
+            media_type=media_type,
+        )
     if format == OutputFormats.ND_JSON:
-        return Response(content=context.execute_sql(sql).to_ndjson(), headers=headers, media_type=media_type)
+        return Response(
+            content=context.execute_sql(sql).to_ndjson(),
+            headers=headers,
+            media_type=media_type,
+        )
 
     if format in [
         OutputFormats.JSON,
@@ -266,7 +296,13 @@ async def create_response(
         chunk_size = 64 * 1024
         content = await anyio.to_thread.run_sync(context.execute_sql, sql)  # type: ignore
         additional_files = await anyio.to_thread.run_sync(  # type: ignore
-            write_frame, url, content, format, temp_file.name, basic_config
+            _write_frame,
+            url,
+            content,
+            format,
+            temp_file.name,
+            basic_config,
+            csv_separator=query_params.get("$csv_separator", None),
         )
 
         async with await anyio.open_file(temp_file.name, mode="rb") as file:

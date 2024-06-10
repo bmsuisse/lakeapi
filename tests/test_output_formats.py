@@ -12,7 +12,10 @@ engines = ["duckdb", "polars"]
 def test_data_csv4excel():
     for e in engines:
         # csv 4 excel is a really ... strange... format
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=csv4excel&cars=audi&%24engine={e}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&format=csv4excel&cars=audi&%24engine={e}",
+            auth=auth,
+        )
         assert response.status_code == 200
 
         import csv
@@ -28,7 +31,10 @@ def test_data_csv4excel():
 def test_data_html():
     for e in engines:
         # csv 4 excel is a really ... strange... format
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=html&cars=audi&%24engine={e}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&format=html&cars=audi&%24engine={e}",
+            auth=auth,
+        )
         assert response.status_code == 200
         assert response.text.startswith("<")
 
@@ -36,7 +42,9 @@ def test_data_html():
 def test_data_xml():
     for e in engines:
         # csv 4 excel is a really ... strange... format
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=xml&cars=audi&%24engine={e}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&format=xml&cars=audi&%24engine={e}", auth=auth
+        )
         assert response.status_code == 200
         assert response.text.startswith("<")
 
@@ -44,7 +52,10 @@ def test_data_xml():
 def test_data_arrow_stream():
     for e in engines:
         # csv 4 excel is a really ... strange... format
-        response = client.get(f"/api/v1/test/fruits?limit=1&format=arrow-stream&cars=audi&%24engine={e}", auth=auth)
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&format=arrow-stream&cars=audi&%24engine={e}",
+            auth=auth,
+        )
         assert response.status_code == 200
         import tempfile
 

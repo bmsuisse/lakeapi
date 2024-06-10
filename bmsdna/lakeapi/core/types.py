@@ -10,7 +10,17 @@ Engines = Literal["duckdb", "polars", "odbc"]
 
 
 FileTypes = Literal[
-    "delta", "parquet", "arrow", "arrow-stream", "avro", "csv", "json", "ndjson", "odbc", "sqlite", "duckdb"
+    "delta",
+    "parquet",
+    "arrow",
+    "arrow-stream",
+    "avro",
+    "csv",
+    "json",
+    "ndjson",
+    "odbc",
+    "sqlite",
+    "duckdb",
 ]
 OutputFileType = Literal[
     "json",

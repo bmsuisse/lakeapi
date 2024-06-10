@@ -174,3 +174,5 @@ __azurite*
 __blobstorage__
 __tablestorage__
 __queuestorage__
+test_requests
+azure.duckdb_extension.gz

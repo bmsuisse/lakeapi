@@ -47,7 +47,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     basic_config=basic_config,
                     accounts=configs.accounts,
                 )
-                schema = get_schema_cached(basic_config, realdataframe, config.datasource.get_unique_hash())
+                schema = get_schema_cached(
+                    basic_config, realdataframe, config.datasource.get_unique_hash()
+                )
                 if schema is None:
                     logger.warning(
                         f"Could not get response type for f{config.route}. Path does not exist:{realdataframe}"
@@ -61,7 +63,9 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                         "file_type": config.datasource.file_type,
                         "uri": config.datasource.uri,
                         "version": config.version,
-                        "schema": {n: str(schema.field(n).type) for n in schema.names} if schema else None,
+                        "schema": {n: str(schema.field(n).type) for n in schema.names}
+                        if schema
+                        else None,
                     }
                 )
 
@@ -69,13 +73,16 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 import traceback
 
                 print(traceback.format_exc())
-                logger.warning(f"Could not get response type for f{config.route}. Error:{err}")
+                logger.warning(
+                    f"Could not get response type for f{config.route}. Error:{err}"
+                )
                 schema = None
 
             response_model = (
                 get_response_model(
                     config=config,
                     schema=schema,
+                    basic_config=basic_config,
                 )
                 if schema is not None
                 else None
