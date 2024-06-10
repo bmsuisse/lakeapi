@@ -50,11 +50,13 @@ class DuckDBResultData(ResultData):
 
     def query_builder(self) -> ex.Query:
         if not isinstance(self.original_sql, str):
-            return self.original_sql.subquery()
+            return from_(self.original_sql.subquery())
         else:
-            return cast(
-                ex.Select, parse_one(self.original_sql, dialect="duckdb")
-            ).subquery()
+            return from_(
+                cast(
+                    ex.Select, parse_one(self.original_sql, dialect="duckdb")
+                ).subquery()
+            )
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
