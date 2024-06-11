@@ -68,7 +68,7 @@ def handle_nearby_request(
         wheres.append(ex.column(nearby_cfg.name) <= nearby_val.distance_m)
 
     if len(orders) > 0 or len(wheres) > 0:
-        sel = select("*").from_("nearbys")
+        sel = select("*").from_(ex.to_identifier("nearbys"))
         sel.with_(query, "nearbys", copy=False)
 
         for w in wheres:
