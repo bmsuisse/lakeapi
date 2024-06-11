@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from bmsdna.lakeapi.core.config import SearchConfig
 
-FLAVORS = Literal["ansi", "mssql"]
+FLAVORS = Literal["ansi", "tsql"]
 
 
 def is_complex_type(
@@ -51,7 +51,7 @@ def get_sql(
     if len(sql_or_pypika._selects) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "mssql" and (
+    if flavor == "tsql" and (
         sql_or_pypika._limit is not None or sql_or_pypika._offset is not None
     ):
         old_limit = (

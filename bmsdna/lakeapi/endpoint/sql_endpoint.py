@@ -123,6 +123,7 @@ def create_sql_endpoint(
 
         return await create_response(
             request.url,
+            request.query_params,
             format or request.headers["Accept"],
             con,
             sql,
@@ -153,6 +154,7 @@ def create_sql_endpoint(
         df = con.execute_sql(sql)
         return await create_response(
             request.url,
+            request.query_params,
             format or request.headers["Accept"],
             con,
             sql,

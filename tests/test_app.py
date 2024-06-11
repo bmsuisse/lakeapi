@@ -168,6 +168,22 @@ def test_data_scsv():
             assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
+def test_data_tsv():
+    for _ in range(2):
+        for e in engines:
+            response = client.get(
+                f"/api/v1/test/fruits?limit=1&format=csv&$csv_separator=\\t&cars=audi&%24engine={e}",
+                auth=auth,
+            )
+            assert response.status_code == 200
+            txt = response.text
+            import csv
+
+            reader = csv.DictReader(txt.splitlines(), delimiter="\t")
+            line1 = reader.__next__()
+            assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+
+
 def test_data_minus_1():
     for _ in range(2):
         for e in engines:

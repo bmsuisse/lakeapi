@@ -141,11 +141,18 @@ class PolarsResultData(ResultData):
             self.df = self.df.collect()
         self.df.write_json(file_name, pretty=False, row_oriented=True)
 
+    def write_csv(self, file_name: str, *, separator: str):
+        import polars as pl
+
+        if isinstance(self.df, pl.LazyFrame):
+            self.df = self.df.collect()  # sink_csv not supported in standard_engine
+        self.df.write_csv(file_name, separator=separator)
+
     def write_nd_json(self, file_name: str):
         import polars as pl
 
         if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
+            self.df = self.df.collect()  # sink_ndjson not supported in standard_engine
         self.df.write_ndjson(file_name)
 
 
@@ -281,7 +288,6 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-
         df = self.sql_context.execute(get_sql(sql))
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 

@@ -1,9 +1,9 @@
 import sys
 import os
 import pathlib
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 import polars as pl
-from deltalake import write_deltalake
+from deltalake import write_deltalake, DeltaTable
 import shutil
 import pandas as pd
 from hashlib import md5
@@ -13,11 +13,7 @@ import pyarrow.dataset as ds
 import duckdb
 import sqlite3
 from datetime import date
-
-try:
-    from .utils import create_rows_faker
-except ImportError:
-    from utils import create_rows_faker
+from .utils import create_rows_faker
 
 
 dir_path = pathlib.Path(os.path.dirname(os.path.realpath(__file__))).parent
@@ -38,9 +34,14 @@ def store_df_as_delta(
     data_path: str,
     partition_by: Optional[list[str]] = None,
     *,
-    configuration: Optional[dict[str, str | dict | list]] = None,
-    compression: str | None = None,
+    table_properties: Optional[dict[str, str | dict | list]] = None,
+    compression: Literal[
+        "UNCOMPRESSED", "SNAPPY", "GZIP", "BROTLI", "LZ4", "ZSTD", "LZ4_RAW"
+    ]
+    | None = None,
 ) -> pd.DataFrame:
+    from deltalake import WriterProperties
+
     dfp: pa.Table | pd.DataFrame = (
         data
         if isinstance(data, pd.DataFrame) or isinstance(data, pa.Table)
@@ -54,19 +55,19 @@ def store_df_as_delta(
             return v
         return json.dumps(v)
 
-    opts = ds.ParquetFileFormat().make_write_options(
-        compression=compression or "snappy"
-    )
     write_deltalake(
         delta_path,
         dfp,
         mode="overwrite",
         partition_by=partition_by,
-        file_options=opts,
-        configuration={k: _str_or_json(v) for k, v in configuration.items()}
-        if configuration is not None
-        else None,
+        writer_properties=WriterProperties(compression=compression or "SNAPPY"),
+        engine="rust",
     )
+    if table_properties is not None:
+        DeltaTable(delta_path).alter.set_table_properties(
+            {k: _str_or_json(v) for k, v in table_properties.items()},
+            raise_if_not_exists=False,
+        )
     assert not isinstance(dfp, dict)
     return dfp if isinstance(dfp, pd.DataFrame) else dfp.to_pandas()
 
@@ -162,7 +163,7 @@ if __name__ == "__main__":
             ],
         },
         "delta/struct_fruits",
-        configuration={
+        table_properties={
             "lakeapi.config": {
                 "params": [
                     {
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     out = weather.with_columns(
         pl.col("temperatures").str.split(" ")
     )  # thanks for the sample, polars
-    store_df_as_delta(out.to_pandas(), "delta/weather", compression="zstd")
+    store_df_as_delta(out.to_pandas(), "delta/weather", compression="ZSTD")
 
     csv_path = "tests/data/csv/fruits.csv"
     delete_folder(csv_path)

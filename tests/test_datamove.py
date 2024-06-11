@@ -31,7 +31,7 @@ def test_data_overwrite():
     print(df_faker)
     assert os.path.exists("tests/data/delta/fake/_delta_log")
     write_deltalake(
-        "tests/data/delta/fake", df_faker, mode="overwrite", overwrite_schema=True
+        "tests/data/delta/fake", df_faker, mode="overwrite", schema_mode="overwrite"
     )
 
     for e in engines:
