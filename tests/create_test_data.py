@@ -3,7 +3,7 @@ import os
 import pathlib
 from typing import Any, Literal, Optional
 import polars as pl
-from deltalake import write_deltalake
+from deltalake import write_deltalake, DeltaTable
 import shutil
 import pandas as pd
 from hashlib import md5
@@ -34,7 +34,7 @@ def store_df_as_delta(
     data_path: str,
     partition_by: Optional[list[str]] = None,
     *,
-    custom_metadata: Optional[dict[str, str | dict | list]] = None,
+    table_properties: Optional[dict[str, str | dict | list]] = None,
     compression: Literal[
         "UNCOMPRESSED", "SNAPPY", "GZIP", "BROTLI", "LZ4", "ZSTD", "LZ4_RAW"
     ]
@@ -61,11 +61,13 @@ def store_df_as_delta(
         mode="overwrite",
         partition_by=partition_by,
         writer_properties=WriterProperties(compression=compression or "SNAPPY"),
-        custom_metadata={k: _str_or_json(v) for k, v in custom_metadata.items()}
-        if custom_metadata is not None
-        else None,
         engine="rust",
     )
+    if table_properties is not None:
+        DeltaTable(delta_path).alter.set_table_properties(
+            {k: _str_or_json(v) for k, v in table_properties.items()},
+            raise_if_not_exists=False,
+        )
     assert not isinstance(dfp, dict)
     return dfp if isinstance(dfp, pd.DataFrame) else dfp.to_pandas()
 
@@ -161,7 +163,7 @@ if __name__ == "__main__":
             ],
         },
         "delta/struct_fruits",
-        custom_metadata={
+        table_properties={
             "lakeapi.config": {
                 "params": [
                     {
