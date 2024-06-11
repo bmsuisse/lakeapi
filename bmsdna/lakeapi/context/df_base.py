@@ -37,6 +37,18 @@ def get_sql(
     *,
     dialect: str | Dialect,
 ) -> str:
+    if not isinstance(sql_or_pypika, str) and dialect == "tsql":
+        from_ = sql_or_pypika.args.get(
+            "from"
+        )  # for sql server always add an alias for sub queries
+        if (
+            from_
+            and not from_.alias
+            and isinstance(from_.args.get("this"), ex.Subquery)
+            and not from_.args.get("this").alias
+        ):
+            sub_query = from_.args.get("this")
+            sub_query.as_("s", copy=False)
     if limit is not None:
         sql_or_pypika = (
             sql_or_pypika.limit(limit)
