@@ -17,6 +17,15 @@ from uuid import uuid4
 import json
 from .source_uri import SourceUri
 from deltalake.exceptions import DeltaProtocolError
+from sqlglot.dialects.postgres import Postgres
+
+
+class Polars(Postgres):
+    class Generator(Postgres.Generator):
+        NULL_ORDERING_SUPPORTED = None
+
+
+polars_dialect = Polars()
 
 try:
     import polars as pl  # we want to lazy import in case we one day no longer rely on polars if only duckdb is needed
@@ -166,8 +175,8 @@ class PolarsExecutionContext(ExecutionContext):
         self.sql_context = sql_context or pl.SQLContext()
 
     @property
-    def dialect(self) -> str:
-        return "postgres"
+    def dialect(self):
+        return polars_dialect
 
     @property
     def supports_view_creation(self) -> bool:
@@ -286,7 +295,7 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        df = self.sql_context.execute(get_sql(sql, dialect="postgres"))
+        df = self.sql_context.execute(get_sql(sql, dialect=polars_dialect))
         return PolarsResultData(df, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:

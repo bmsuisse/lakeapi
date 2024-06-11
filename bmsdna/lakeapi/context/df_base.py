@@ -1,5 +1,7 @@
 from abc import abstractmethod, ABC
 from datetime import datetime, timezone
+
+from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
@@ -33,7 +35,7 @@ def get_sql(
     sql_or_pypika: str | ex.Query,
     limit: int | None = None,
     *,
-    dialect: str,
+    dialect: str | Dialect,
 ) -> str:
     if limit is not None:
         sql_or_pypika = (
@@ -51,7 +53,7 @@ def get_sql(
     if len(sql_or_pypika.expressions) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    return sql_or_pypika.sql()
+    return sql_or_pypika.sql(dialect=dialect)
 
 
 class ResultData(ABC):
@@ -178,7 +180,7 @@ class ExecutionContext(ABC):
 
     @property
     @abstractmethod
-    def dialect(self) -> str: ...
+    def dialect(self) -> str | Dialect: ...
 
     @property
     @abstractmethod
