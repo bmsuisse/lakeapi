@@ -259,9 +259,9 @@ def create_config_endpoint(
         if config.datasource.sortby:
             for s in config.datasource.sortby:
                 new_query = cast(ex.Select, new_query).order_by(
-                    ex.column(s.by).desc()
+                    ex.column(s.by, quoted=True).desc()
                     if s.direction and s.direction.lower() == "desc"
-                    else ex.column(s.by),
+                    else ex.column(s.by, quoted=True),
                     copy=False,
                 )
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
@@ -271,7 +271,9 @@ def create_config_endpoint(
 
             new_query = context.jsonify_complex(new_query, complex_cols, columns)
         else:
-            new_query = new_query.select(*[ex.column(c) for c in columns], append=False)
+            new_query = new_query.select(
+                *[ex.column(c, quoted=True) for c in columns], append=False
+            )
 
         if distinct:
             assert len(columns) <= 3  # reduce complexity here

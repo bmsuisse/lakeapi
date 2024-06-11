@@ -107,7 +107,7 @@ class Datasource:
     def select_df(self, df: ex.Query) -> ex.Query:
         if self.config.select:
             select = [
-                ex.column(c.name).as_(c.alias or c.name)
+                ex.column(c.name, quoted=True).as_(c.alias or c.name, quoted=True)
                 for c in self.config.select
                 if c not in (self.config.exclude or [])
             ]
@@ -320,15 +320,15 @@ async def _create_inner_expr(
         else:
             if inner_expr is None:
                 inner_expr = (
-                    ex.column(ck).eq(cv)
+                    ex.column(ck, quoted=True).eq(cv)
                     if (cv or cv == 0)
-                    else ex.column(ck).is_(ex.Null())
+                    else ex.column(ck, quoted=True).is_(ex.Null())
                 )
             else:
                 inner_expr = inner_expr & (
-                    ex.column(ck).eq(cv)
+                    ex.column(ck, quoted=True).eq(cv)
                     if cv or cv == 0
-                    else ex.column(ck).is_(ex.Null())
+                    else ex.column(ck, quoted=True).is_(ex.Null())
                 )
     return inner_expr
 
@@ -385,78 +385,86 @@ async def filter_df_based_on_params(
             match op:
                 case "<":
                     exprs.append(
-                        ex.column(colname)
+                        ex.column(colname, quoted=True)
                         < _sql_value(value, engine=context.engine_name)
                     )
                 case ">":
                     exprs.append(
-                        ex.column(colname)
+                        ex.column(colname, quoted=True)
                         > _sql_value(value, engine=context.engine_name)
                     )
                 case ">=":
                     exprs.append(
-                        ex.column(colname)
+                        ex.column(colname, quoted=True)
                         >= _sql_value(value, engine=context.engine_name)
                     )
                 case "<=":
                     exprs.append(
-                        ex.column(colname)
+                        ex.column(colname, quoted=True)
                         <= _sql_value(value, engine=context.engine_name)
                     )
                 case "<>":
                     exprs.append(
-                        ex.column(colname).neq(
+                        ex.column(colname, quoted=True).neq(
                             _sql_value(value, engine=context.engine_name)
                         )
                         if value is not None
-                        else ~ex.column(colname).is_(ex.convert(None))
+                        else ~ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "==":
                     exprs.append(
-                        ex.column(colname).eq(
+                        ex.column(colname, quoted=True).eq(
                             _sql_value(value, engine=context.engine_name)
                         )
                         if value is not None
-                        else ex.column(colname).is_(ex.convert(None))
+                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "=":
                     exprs.append(
-                        ex.column(colname).eq(
+                        ex.column(colname, quoted=True).eq(
                             _sql_value(value, engine=context.engine_name)
                         )
                         if value is not None
-                        else ex.column(colname).is_(ex.convert(None))
+                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "not contains":
                     exprs.append(
                         context.term_like(
-                            ex.column(colname), value, "both", negate=True
+                            ex.column(colname, quoted=True), value, "both", negate=True
                         )
                     )
                 case "contains":
-                    exprs.append(context.term_like(ex.column(colname), value, "both"))
+                    exprs.append(
+                        context.term_like(
+                            ex.column(colname, quoted=True), value, "both"
+                        )
+                    )
                 case "startswith":
-                    exprs.append(context.term_like(ex.column(colname), value, "end"))
+                    exprs.append(
+                        context.term_like(ex.column(colname, quoted=True), value, "end")
+                    )
                 case "has":
                     exprs.append(
                         ex.func(
                             context.array_contains_func,
-                            ex.column(colname),
+                            ex.column(colname, quoted=True),
                             ex.convert(value),
                         )
                     )
                 case "in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(ex.column(colname).isin(*lsv))
+                        exprs.append(ex.column(colname, quoted=True).isin(*lsv))
                 case "not in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(~ex.column(colname).isin(*lsv))
+                        exprs.append(~ex.column(colname, quoted=True).isin(*lsv))
                 case "between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
-                        exprs.append(ex.column(colname).between(lsv[0], lsv[1]))
+                        exprs.append(
+                            ex.column(colname, quoted=True).between(lsv[0], lsv[1])
+                        )
                     else:
                         from fastapi import HTTPException
 
@@ -466,7 +474,9 @@ async def filter_df_based_on_params(
                 case "not between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
-                        exprs.append(~ex.column(colname).between(lsv[0], lsv[1]))
+                        exprs.append(
+                            ~ex.column(colname, quoted=True).between(lsv[0], lsv[1])
+                        )
                     else:
                         from fastapi import HTTPException
 

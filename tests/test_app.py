@@ -513,6 +513,7 @@ def test_all_metadata():
             tag = item["tag"]
             route = item["route"]
             meta_detail_route = route + f"/metadata_detail?%24engine={e}"
+            print(meta_detail_route)
             response = client.get(meta_detail_route, auth=auth)
             if name not in ["not_existing", "not_existing2"]:
                 assert name + "_" + str(response.status_code) == name + "_200"

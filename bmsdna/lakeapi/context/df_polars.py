@@ -228,7 +228,9 @@ class PolarsExecutionContext(ExecutionContext):
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
         self.sql_context.register(nt_id, df)
-        return from_(ex.to_identifier(nt_id)).select(*[ex.column(c) for c in columns])
+        return from_(ex.to_identifier(nt_id)).select(
+            *[ex.column(c, quoted=True) for c in columns]
+        )
 
     def register_datasource(
         self,

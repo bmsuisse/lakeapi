@@ -102,7 +102,8 @@ def create_detailed_meta_endpoint(
                     qb = cast(
                         ex.Select,
                         df.query_builder().select(
-                            *[ex.column(c) for c in partition_columns], append=False
+                            *[ex.column(c, quoted=True) for c in partition_columns],
+                            append=False,
                         ),
                     ).distinct()
                     partition_values = (
@@ -136,7 +137,8 @@ def create_detailed_meta_endpoint(
                     select(
                         *[
                             ex.func(
-                                "MAX", ex.func(context.len_func, ex.column(sc))
+                                "MAX",
+                                ex.func(context.len_func, ex.column(sc, quoted=True)),
                             ).as_(sc)
                             for sc in str_cols + complex_str_cols
                         ]

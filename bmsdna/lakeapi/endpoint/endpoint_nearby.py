@@ -58,8 +58,8 @@ def handle_nearby_request(
     wheres = []
     for nearby_val, nearby_cfg in nearbyes:
         fn = context.distance_m_function(
-            ex.column(nearby_cfg.lat_col),
-            ex.column(nearby_cfg.lon_col),
+            ex.column(nearby_cfg.lat_col, quoted=True),
+            ex.column(nearby_cfg.lon_col, quoted=True),
             ex.convert(nearby_val.lat),
             ex.convert(nearby_val.lon),
         )

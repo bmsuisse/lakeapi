@@ -288,9 +288,9 @@ class ExecutionContext(ABC):
     ) -> ex.Query:
         return query.select(
             *[
-                ex.column(c)
+                ex.column(c, quoted=True)
                 if c not in complex_cols
-                else self.json_function(ex.column(c)).as_(c)
+                else self.json_function(ex.column(c, quoted=True)).as_(c)
                 for c in columns
             ]
         )
