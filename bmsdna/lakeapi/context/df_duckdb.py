@@ -144,7 +144,7 @@ def match_25(
         )
 
     fn = ex.Dot(
-        this=ex.to_identifier(table),
+        this=ex.to_identifier("fts_main_" + table),
         expression=ex.func("match_bm25", *f_args, dialect="duckdb"),
     )
     if alias:
@@ -295,6 +295,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             if os.path.exists(persistance_file_name):
                 os.remove(persistance_file_name)
             os.rename(persistance_file_name_temp, persistance_file_name)
+        if not self.persistance_file_name:
+            self.con.load_extension("fts")
         self.persistance_file_name = persistance_file_name
 
     def init_spatial(self):
