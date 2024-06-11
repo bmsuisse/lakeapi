@@ -72,12 +72,12 @@ class ODBCResultData(ResultData):
 
     def query_builder(self) -> ex.Query:
         if not isinstance(self.original_sql, str):
-            return from_(self.original_sql.subquery())
+            return from_(self.original_sql.subquery().as_("t"))
         else:
             return from_(
-                cast(
-                    ex.Select, parse_one(self.original_sql, dialect=self.dialect)
-                ).subquery()
+                cast(ex.Select, parse_one(self.original_sql, dialect=self.dialect))
+                .subquery()
+                .as_("t")
             )
 
     def arrow_schema(self) -> pa.Schema:
