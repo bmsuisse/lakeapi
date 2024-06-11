@@ -51,7 +51,7 @@ def get_sql(
     if len(sql_or_pypika.expressions) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    return sql_or_pypika.sql(dialect=dialect)
+    return sql_or_pypika.sql()
 
 
 class ResultData(ABC):
