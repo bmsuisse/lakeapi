@@ -276,7 +276,7 @@ async def create_response(
         return Response(
             content=context.execute_sql(sql).to_ndjson(),
             headers=headers,
-            media_type=media_type,
+            media_type="application/json-nd",
         )
 
     if format in [
