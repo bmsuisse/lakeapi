@@ -134,7 +134,7 @@ def match_25(
     fields: Optional[str] = None,
     alias: Optional[str] = None,
 ):
-    f_args = [ex.convert(field), ex.convert(search_text)]
+    f_args = [ex.column(field), ex.convert(search_text)]
     if fields is not None:
         f_args.append(
             ex.PropertyEQ(

@@ -69,7 +69,7 @@ def handle_nearby_request(
 
     if len(orders) > 0 or len(wheres) > 0:
         sel = select("*").from_(ex.to_identifier("nearbys"))
-        sel.with_(query, "nearbys", copy=False)
+        sel.with_("nearbys", query, copy=False)
 
         for w in wheres:
             sel.where(w, append=True, copy=False)
