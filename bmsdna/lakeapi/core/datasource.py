@@ -2,15 +2,24 @@ import asyncio
 import hashlib
 import os
 from datetime import datetime, date
-from typing import Any, List, Literal, Optional, Tuple, Union, cast, get_args
+from typing import (
+    Any,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+    get_args,
+    TYPE_CHECKING,
+    TypeAlias,
+)
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
 import pyarrow.compute as pac
 import pyarrow.parquet
-import pypika
-import pypika.terms
-import pypika.queries as fn
-from pypika.queries import QueryBuilder
+import sqlglot.expressions as ex
+from sqlglot import select
 from deltalake.exceptions import TableNotFoundError
 
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
@@ -95,25 +104,19 @@ class Datasource:
                     return None
         return None
 
-    def select_df(self, df: QueryBuilder) -> QueryBuilder:
+    def select_df(self, df: ex.Query) -> ex.Query:
         if self.config.select:
             select = [
-                pypika.Field(c.name).as_(c.alias or c.name)
+                ex.column(c.name, quoted=True).as_(c.alias or c.name, quoted=True)
                 for c in self.config.select
                 if c not in (self.config.exclude or [])
             ]
-            df = df.select(*select)
+            df = df.select(*select, append=False)
         else:
-            from pypika.terms import Star
-
-            df = df.select(
-                Star(
-                    table=pypika.Table(self.tablename),
-                )
-            )
+            df = df.select(ex.Star(), append=False)
         return df
 
-    def _prep_df(self, df: QueryBuilder, endpoint: endpoints) -> QueryBuilder:
+    def _prep_df(self, df: ex.Query, endpoint: endpoints) -> ex.Query:
         if endpoint == "query":
             pass
         else:
@@ -134,19 +137,22 @@ class Datasource:
             return self.tag + "_" + self.name
         return self.tag + "_" + self.name + "_" + self.version
 
-    def get_table_name(self, force_unique_name: bool) -> pypika.Table:
+    def get_table_name(self, force_unique_name: bool) -> ex.Table:
         tname = self.tablename if not force_unique_name else self.unique_table_name
 
         if "." in tname:
             parts = tname.split(".")
             if len(parts) == 3:
-                return pypika.Table(
-                    parts[2],
-                    schema=pypika.Schema(parts[1], parent=pypika.Database(parts[0])),
+                return ex.Table(
+                    this=ex.to_identifier(parts[2]),
+                    db=ex.to_identifier(parts[1]),
+                    catalog=ex.to_identifier(parts[0]),
                 )
             assert len(parts) == 2
-            return pypika.Table(parts[1], schema=pypika.Schema(parts[0]))
-        return pypika.Table(tname)
+            return ex.Table(
+                this=ex.to_identifier(parts[1]), db=ex.to_identifier(parts[0])
+            )
+        return ex.table_(tname)
 
     def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
@@ -175,7 +181,7 @@ class Datasource:
             unique_table_name = (
                 endpoint == "meta" and self.sql_context.supports_view_creation
             )
-            query = pypika.Query.from_(self.get_table_name(unique_table_name))
+            query = select("*").from_(self.get_table_name(unique_table_name))
             self.query = self._prep_df(query, endpoint=endpoint)
 
             if self.df is None:
@@ -286,19 +292,19 @@ async def filter_partitions_based_on_params(
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType = Union[list[pypika.Criterion], list[pac.Expression]]
+ExpType: TypeAlias = "Union[list[ex.Binary], list[pac.Expression]]"
 
 
 async def concat_expr(
     exprs: ExpType,
-) -> Union[pypika.Criterion, pac.Expression]:
-    expr: Optional[pypika.Criterion] = None
+) -> "Union[ex.Binary, pac.Expression]":
+    expr: Optional[ex.Binary] = None
     for e in exprs:
         if expr is None:
             expr = e
         else:
             expr = expr.__and__(e)
-    return cast(pypika.Criterion, expr)
+    return expr
 
 
 async def _create_inner_expr(
@@ -306,7 +312,7 @@ async def _create_inner_expr(
     prmdef,
     e,
 ):
-    inner_expr: Optional[pypika.Criterion] = None
+    inner_expr: Optional[ex.Binary] = None
     for ck, cv in e.items():
         logger.debug(f"key = {ck}, value = {cv}, columns = {columns}")
         if (columns and ck not in columns) and ck not in prmdef.combi:
@@ -314,15 +320,15 @@ async def _create_inner_expr(
         else:
             if inner_expr is None:
                 inner_expr = (
-                    pypika.Field(ck) == cv
-                    if cv or cv == 0
-                    else pypika.Field(ck).isnull()
+                    ex.column(ck, quoted=True).eq(cv)
+                    if (cv or cv == 0)
+                    else ex.column(ck, quoted=True).is_(ex.Null())
                 )
             else:
                 inner_expr = inner_expr & (
-                    pypika.Field(ck) == cv
+                    ex.column(ck, quoted=True).eq(cv)
                     if cv or cv == 0
-                    else pypika.Field(ck).isnull()
+                    else ex.column(ck, quoted=True).is_(ex.Null())
                 )
     return inner_expr
 
@@ -330,12 +336,11 @@ async def _create_inner_expr(
 def _sql_value(value: str | datetime | date | None, engine: str):
     if engine != "polars":
         return value  # all other engines convert automatically
-    import pypika.functions as fnx
 
     if isinstance(value, datetime):
-        return fnx.Cast(value, "datetime")
+        return ex.cast(ex.convert(value), "datetime")
     if isinstance(value, date):
-        return fnx.Cast(value, "date")
+        return ex.cast(ex.convert(value), "date")
     return value
 
 
@@ -344,9 +349,9 @@ async def filter_df_based_on_params(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[list[str]],
-) -> Optional[pypika.Criterion]:
-    expr: Optional[pypika.Criterion] = None
-    exprs: list[pypika.Criterion] = []
+) -> Optional[ex.Condition]:
+    expr: Optional[ex.Condition] = None
+    exprs: list[ex.Condition] = []
 
     for key, value in params.items():
         if not key or not value or key in ("limit", "offset"):
@@ -358,7 +363,7 @@ async def filter_df_based_on_params(
         colname = prmdef.colname or prmdef.name
 
         if prmdef.combi:
-            outer_expr: Optional[pypika.Criterion] = None
+            outer_expr: Optional[ex.Condition] = None
             tasks = []
             for e in value:
                 task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
@@ -380,73 +385,86 @@ async def filter_df_based_on_params(
             match op:
                 case "<":
                     exprs.append(
-                        fn.Field(colname)
+                        ex.column(colname, quoted=True)
                         < _sql_value(value, engine=context.engine_name)
                     )
                 case ">":
                     exprs.append(
-                        fn.Field(colname)
+                        ex.column(colname, quoted=True)
                         > _sql_value(value, engine=context.engine_name)
                     )
                 case ">=":
                     exprs.append(
-                        fn.Field(colname)
+                        ex.column(colname, quoted=True)
                         >= _sql_value(value, engine=context.engine_name)
                     )
                 case "<=":
                     exprs.append(
-                        fn.Field(colname)
+                        ex.column(colname, quoted=True)
                         <= _sql_value(value, engine=context.engine_name)
                     )
                 case "<>":
                     exprs.append(
-                        fn.Field(colname)
-                        != _sql_value(value, engine=context.engine_name)
+                        ex.column(colname, quoted=True).neq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
-                        else fn.Field(colname).isnotnull()
+                        else ~ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "==":
                     exprs.append(
-                        fn.Field(colname)
-                        == _sql_value(value, engine=context.engine_name)
+                        ex.column(colname, quoted=True).eq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
-                        else fn.Field(colname).isnull()
+                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "=":
                     exprs.append(
-                        fn.Field(colname)
-                        == _sql_value(value, engine=context.engine_name)
+                        ex.column(colname, quoted=True).eq(
+                            _sql_value(value, engine=context.engine_name)
+                        )
                         if value is not None
-                        else fn.Field(colname).isnull()
+                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "not contains":
                     exprs.append(
-                        context.term_like(fn.Field(colname), value, "both", negate=True)
+                        context.term_like(
+                            ex.column(colname, quoted=True), value, "both", negate=True
+                        )
                     )
                 case "contains":
-                    exprs.append(context.term_like(fn.Field(colname), value, "both"))
+                    exprs.append(
+                        context.term_like(
+                            ex.column(colname, quoted=True), value, "both"
+                        )
+                    )
                 case "startswith":
-                    exprs.append(context.term_like(fn.Field(colname), value, "end"))
+                    exprs.append(
+                        context.term_like(ex.column(colname, quoted=True), value, "end")
+                    )
                 case "has":
                     exprs.append(
-                        fn.Function(
+                        ex.func(
                             context.array_contains_func,
-                            fn.Field(colname),
-                            pypika.terms.Term.wrap_constant(value),
+                            ex.column(colname, quoted=True),
+                            ex.convert(value),
                         )
                     )
                 case "in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(fn.Field(colname).isin(lsv))
+                        exprs.append(ex.column(colname, quoted=True).isin(*lsv))
                 case "not in":
                     lsv = cast(list[str], value)
                     if len(lsv) > 0:
-                        exprs.append(~fn.Field(colname).isin(lsv))
+                        exprs.append(~ex.column(colname, quoted=True).isin(*lsv))
                 case "between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
-                        exprs.append(fn.Field(colname).between(lsv[0], lsv[1]))
+                        exprs.append(
+                            ex.column(colname, quoted=True).between(lsv[0], lsv[1])
+                        )
                     else:
                         from fastapi import HTTPException
 
@@ -456,7 +474,9 @@ async def filter_df_based_on_params(
                 case "not between":
                     lsv = cast(list[str], value)
                     if len(lsv) == 2:
-                        exprs.append(~fn.Field(colname).between(lsv[0], lsv[1]))
+                        exprs.append(
+                            ~ex.column(colname, quoted=True).between(lsv[0], lsv[1])
+                        )
                     else:
                         from fastapi import HTTPException
 

@@ -1,27 +1,28 @@
 from abc import abstractmethod, ABC
 from datetime import datetime, timezone
+
+from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-import pypika.queries
+import sqlglot.expressions as ex
 import polars as pl
 
-from pypika.terms import Term, Criterion
+
 from .source_uri import SourceUri
 
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow.dataset as pas
-    import pyarrow as pa
     from bmsdna.lakeapi.core.config import SearchConfig
 
 FLAVORS = Literal["ansi", "tsql"]
 
 
 def is_complex_type(
-    schema: "pa.Schema",
+    schema: pa.Schema,
     col_name: str,
 ):
     import pyarrow.types as pat
@@ -31,10 +32,23 @@ def is_complex_type(
 
 
 def get_sql(
-    sql_or_pypika: str | pypika.queries.QueryBuilder,
+    sql_or_pypika: str | ex.Query,
     limit: int | None = None,
-    flavor: FLAVORS = "ansi",
+    *,
+    dialect: str | Dialect,
 ) -> str:
+    if not isinstance(sql_or_pypika, str) and dialect == "tsql":
+        from_ = sql_or_pypika.args.get(
+            "from"
+        )  # for sql server always add an alias for sub queries
+        if (
+            from_
+            and not from_.alias
+            and isinstance(from_.args.get("this"), ex.Subquery)
+            and not from_.args.get("this").alias
+        ):
+            sub_query = from_.args.get("this")
+            sub_query.as_("s", copy=False)
     if limit is not None:
         sql_or_pypika = (
             sql_or_pypika.limit(limit)
@@ -42,43 +56,16 @@ def get_sql(
             # why not just support limit/offset like everyone else, microsoft?
             else (
                 f"SELECT * FROM ({sql_or_pypika}) s LIMIT {limit} "
-                if flavor == "ansi"
+                if dialect != "tsql"
                 else f"SELECT top {limit} * FROM ({sql_or_pypika}) s "
             )
         )
     if isinstance(sql_or_pypika, str):
         return sql_or_pypika
-    if len(sql_or_pypika._selects) == 0:
+    if len(sql_or_pypika.expressions) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
-    if flavor == "tsql" and (
-        sql_or_pypika._limit is not None or sql_or_pypika._offset is not None
-    ):
-        old_limit = (
-            sql_or_pypika._limit
-        )  # why not just support limit/offset like everyone else, microsoft?
-        old_offset = sql_or_pypika._offset
-        no_limit = sql_or_pypika.limit(None).offset(None)
-        if old_offset is None or old_offset == 0:
-            sql_no_limit = no_limit.get_sql()
-            if sql_no_limit.upper().startswith("SELECT"):
-                return "SELECT TOP " + str(old_limit) + sql_no_limit[len("SELECT") :]
-            return f" SELECT TOP {old_limit} * from ({sql_no_limit}) s1"
-        else:
-            if len(no_limit._orderbys) == 0:
-                no_limit = no_limit.orderby(1)
-            sql_no_limit = no_limit.get_sql()
-            assert sql_no_limit.upper().startswith("SELECT")
-            return (
-                sql_no_limit
-                + " OFFSET "
-                + str(old_offset)
-                + " ROWS FETCH NEXT "
-                + str(old_limit or 100000)
-                + " ROWS ONLY"
-            )
-
-    return sql_or_pypika.get_sql()
+    return sql_or_pypika.sql(dialect=dialect)
 
 
 class ResultData(ABC):
@@ -101,7 +88,7 @@ class ResultData(ABC):
     ) -> "pa.RecordBatchReader": ...
 
     @abstractmethod
-    def query_builder(self) -> pypika.queries.QueryBuilder: ...
+    def query_builder(self) -> ex.Select: ...
 
     def write_json(self, file_name: str):
         import decimal
@@ -188,22 +175,24 @@ class ExecutionContext(ABC):
 
     def term_like(
         self,
-        a: Term,
+        a: ex.Expression,
         value: str,
         wildcard_loc: Literal["start", "end", "both"],
         *,
         negate=False,
-    ) -> Criterion:
+    ):
         if wildcard_loc == "start":
-            return a.like("%" + value) if not negate else a.not_like("%" + value)
+            return a.like("%" + value) if not negate else ~a.like("%" + value)
         elif wildcard_loc == "end":
-            return a.like(value + "%") if not negate else a.not_like(value + "%")
+            return a.like(value + "%") if not negate else ~a.like(value + "%")
         else:
             return (
-                a.like("%" + value + "%")
-                if not negate
-                else a.not_like("%" + value + "%")
+                a.like("%" + value + "%") if not negate else ~a.like("%" + value + "%")
             )
+
+    @property
+    @abstractmethod
+    def dialect(self) -> str | Dialect: ...
 
     @property
     @abstractmethod
@@ -302,40 +291,35 @@ class ExecutionContext(ABC):
     @abstractmethod
     def json_function(
         self,
-        term: Term,
+        term: ex.Expression,
         assure_string=False,
-    ) -> Term: ...
+    ) -> ex.Expression: ...
 
     def jsonify_complex(
-        self,
-        query: pypika.queries.QueryBuilder,
-        complex_cols: list[str],
-        columns: list[str],
-    ) -> pypika.queries.QueryBuilder:
+        self, query: ex.Query, complex_cols: list[str], columns: list[str]
+    ) -> ex.Query:
         return query.select(
             *[
-                pypika.Field(c)
+                ex.column(c, quoted=True)
                 if c not in complex_cols
-                else self.json_function(pypika.Field(c)).as_(c)
+                else self.json_function(ex.column(c, quoted=True)).as_(c)
                 for c in columns
             ]
         )
 
     def distance_m_function(
         self,
-        lat1: Term,
-        lon1: Term,
-        lat2: Term,
-        lon2: Term,
-    ) -> Term:
-        import pypika.terms
-
+        lat1: ex.Expression,
+        lon1: ex.Expression,
+        lat2: ex.Expression,
+        lon2: ex.Expression,
+    ) -> ex.Expression:
         # haversine which works for duckdb and polars and probably most sql systems
-        acos = lambda t: pypika.terms.Function("acos", t)
-        cos = lambda t: pypika.terms.Function("cos", t)
-        radians = lambda t: pypika.terms.Function("radians", t)
-        sin = lambda t: pypika.terms.Function("sin", t)
-        return Term.wrap_constant(6371000) * acos(
+        acos = lambda t: ex.func("acos", t)
+        cos = lambda t: ex.func("cos", t)
+        radians = lambda t: ex.func("radians", t)
+        sin = lambda t: ex.func("sin", t)
+        return ex.convert(6371000) * acos(
             cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1))
             + sin(radians(lat1)) * sin(radians(lat2))
         )
@@ -346,27 +330,24 @@ class ExecutionContext(ABC):
         search_text: str,
         search_config: "SearchConfig",
         alias: Optional[str],
-    ) -> Term:
-        import pypika.terms
-        import pypika.functions
-
+    ) -> ex.Expression:
         assert len(search_text) > 2
         parts = search_text.split(" ")
 
         cases = []
         summ = None
         for part in parts:
-            case = pypika.Case()
-            cond = pypika.functions.Concat(
-                *[pypika.Field(c) for c in search_config.columns]
+            case = ex.case()
+            cond = ex.Concat(
+                expressions=[ex.column(c) for c in search_config.columns]
             ).like("%" + part + "%")
-            case.when(cond, Term.wrap_constant(1))
-            case.else_(Term.wrap_constant(0))
+            case.when(cond, ex.convert(1), copy=False)
+            case.else_(ex.convert(0), copy=False)
             cases.append(case)
             summ = case if summ is None else summ + case
         assert summ is not None
-
-        return pypika.functions.NullIf(summ, Term.wrap_constant(0)).as_(alias)
+        ni = ex.Nullif(this=summ, expression=ex.convert(0))
+        return ni.as_(alias) if alias else ni
 
     def get_modified_date(
         self,
@@ -405,9 +386,7 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(
-        self, sql: Union[pypika.queries.QueryBuilder, str]
-    ) -> ResultData: ...
+    def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
 
     @abstractmethod
     def list_tables(self) -> ResultData: ...

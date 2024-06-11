@@ -17,9 +17,7 @@ def test_duckdb_file_type():
 
 def test_duckdb_file_type_limit_100():
     for _ in range(2):
-        response = client.get(
-            "/api/v1/test/fake_duck?limit=100&format=json", auth=auth
-        )
+        response = client.get("/api/v1/test/fake_duck?limit=100&format=json", auth=auth)
         assert response.status_code == 200
         assert len(response.json()) == 100
 

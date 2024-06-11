@@ -1,9 +1,7 @@
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter
-from bmsdna.lakeapi.context import (
-    ExecutionContextManager,
-)
+from bmsdna.lakeapi.context import ExecutionContextManager
 
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.log import get_logger

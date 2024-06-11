@@ -40,11 +40,7 @@ def init_duck_con(
                     df.config.file_type,
                     None,
                 )
-            except (
-                FileTypeNotSupportedError,
-                TableNotFoundError,
-                FileNotFoundError,
-            ):
+            except (FileTypeNotSupportedError, TableNotFoundError, FileNotFoundError):
                 logger.warning(f"Cannot query {df.tablename}")
 
 

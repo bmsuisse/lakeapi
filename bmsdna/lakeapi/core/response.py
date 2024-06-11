@@ -16,10 +16,9 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.types import OutputFileType
 import typing
 from urllib.parse import quote
-from pypika.queries import QueryBuilder
 from mimetypes import guess_type
 from starlette.concurrency import iterate_in_threadpool
-
+import sqlglot.expressions as ex
 import anyio
 
 from starlette._compat import md5_hexdigest
@@ -250,7 +249,7 @@ async def create_response(
     query_params: QueryParams,
     accept: str,
     context: ExecutionContext,
-    sql: QueryBuilder | str,
+    sql: ex.Query | str,
     basic_config: BasicConfig,
     close_context=False,
 ):
@@ -277,7 +276,7 @@ async def create_response(
         return Response(
             content=context.execute_sql(sql).to_ndjson(),
             headers=headers,
-            media_type=media_type,
+            media_type="application/json-nd",
         )
 
     if format in [

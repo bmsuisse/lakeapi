@@ -1,22 +1,19 @@
 from datetime import datetime
 
 import pyarrow as pa
-from typing import List, Optional, Tuple, Any, Union
+from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from deltalake2db import duckdb_create_view_for_delta
 import duckdb
 import pyarrow.dataset
-import pypika.queries
-import pypika.terms
-import pypika.functions
-import pypika.enums
-import pypika
+import sqlglot.expressions as ex
+from sqlglot import from_, parse_one
 import os
 from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
 from uuid import uuid4
-from pypika.terms import Term
+
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
 from .source_uri import SourceUri
@@ -38,7 +35,7 @@ def _get_temp_table_name():
 class DuckDBResultData(ResultData):
     def __init__(
         self,
-        original_sql: Union[pypika.queries.QueryBuilder, str],
+        original_sql: Union[ex.Query, str],
         con: duckdb.DuckDBPyConnection,
         chunk_size: int,
     ) -> None:
@@ -51,20 +48,27 @@ class DuckDBResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> pypika.queries.QueryBuilder:
-        return pypika.Query.from_(self.original_sql)
+    def query_builder(self) -> ex.Query:
+        if not isinstance(self.original_sql, str):
+            return from_(self.original_sql.subquery())
+        else:
+            return from_(
+                cast(
+                    ex.Select, parse_one(self.original_sql, dialect="duckdb")
+                ).subquery()
+            )
 
     def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
-        query = get_sql(self.original_sql, limit=0)
+        query = get_sql(self.original_sql, limit=0, dialect="duckdb")
         self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
     @property
     def df(self):
         if self._df is None:
-            query = get_sql(self.original_sql)
+            query = get_sql(self.original_sql, dialect="duckdb")
             self._df = self.con.execute(query)
         return self._df
 
@@ -80,7 +84,7 @@ class DuckDBResultData(ResultData):
     def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_parquet(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
@@ -92,7 +96,7 @@ class DuckDBResultData(ResultData):
     def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_nd_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})
@@ -103,7 +107,7 @@ class DuckDBResultData(ResultData):
     def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
             return super().write_csv(file_name, separator=separator)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr}) 
@@ -114,7 +118,7 @@ class DuckDBResultData(ResultData):
     def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
             return super().write_json(file_name)
-        query = get_sql(self.original_sql)
+        query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})  
@@ -123,35 +127,29 @@ class DuckDBResultData(ResultData):
         self.con.execute(full_query)
 
 
-class Match25Term(Term):
-    def __init__(
-        self,
-        source_view: str,
-        field: Term,
-        search_text: str,
-        fields: Optional[str],
-        alias: Optional[str] = None,
-    ):
-        super().__init__()
-        self.source_view = source_view
-        self.field = field
-        self.search_text = search_text
-        self.fields = fields
-        self.alias = alias
-
-    def get_sql(self, **kwargs):
-        search_text_const = Term.wrap_constant(self.search_text)
-        assert isinstance(search_text_const, Term)
-        search_txt = search_text_const.get_sql()
-        fields_const = Term.wrap_constant(self.fields or "")
-        assert isinstance(fields_const, Term)
-        field_or_not = (
-            ", fields := " + fields_const.get_sql() if self.fields is not None else ""
+def match_25(
+    table: str,
+    field: str,
+    search_text: str,
+    fields: Optional[str] = None,
+    alias: Optional[str] = None,
+):
+    f_args = [ex.column(field), ex.convert(search_text)]
+    if fields is not None:
+        f_args.append(
+            ex.PropertyEQ(
+                this=ex.Column(this=ex.Identifier(this="fields", quoted=False)),
+                expression=ex.convert(fields),
+            )
         )
-        sql = f"fts_main_{self.source_view}.match_bm25({self.field.get_sql()}, {search_txt}{field_or_not})"
-        if self.alias is not None:
-            sql += " AS " + self.alias
-        return sql
+
+    fn = ex.Dot(
+        this=ex.to_identifier("fts_main_" + table),
+        expression=ex.func("match_bm25", *f_args, dialect="duckdb"),
+    )
+    if alias:
+        return fn.as_(alias)
+    return fn
 
 
 class DuckDbExecutionContextBase(ExecutionContext):
@@ -167,6 +165,10 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.res_con = None
         self.persistance_file_name = None
         self.array_contains_func = "array_contains"
+
+    @property
+    def dialect(self):
+        return "duckdb"
 
     @property
     def supports_view_creation(self) -> bool:
@@ -186,7 +188,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def execute_sql(
         self,
         sql: Union[
-            pypika.queries.QueryBuilder,
+            ex.Query,
             str,
         ],
     ) -> DuckDBResultData:
@@ -214,20 +216,27 @@ class DuckDbExecutionContextBase(ExecutionContext):
         alias: Optional[str],
     ):
         fields = ",".join(search_config.columns)
-        return Match25Term(
+        return match_25(
             source_view,
-            pypika.queries.Field("__search_id"),
+            "__search_id",
             search_text,
-            fields,
+            fields=fields,
+            alias=alias,
         )
 
-    def distance_m_function(self, lat1: Term, lon1: Term, lat2: Term, lon2: Term):
-        return pypika.terms.Function("haversine", lat1, lon1, lat2, lon2)
+    def distance_m_function(
+        self,
+        lat1: ex.Expression,
+        lon1: ex.Expression,
+        lat2: ex.Expression,
+        lon2: ex.Expression,
+    ):
+        return ex.func("haversine", lat1, lon1, lat2, lon2)
 
-    def json_function(self, term: Term, assure_string=False):
-        fn = pypika.terms.Function("to_json", term)
+    def json_function(self, term: ex.Expression, assure_string=False):
+        fn = ex.func("to_json", term)
         if assure_string:
-            return pypika.functions.Cast(fn, pypika.enums.SqlTypes.VARCHAR)
+            return ex.cast(fn, ex.DataType.Type.VARCHAR)
         return fn
 
     def init_search(
@@ -286,6 +295,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             if os.path.exists(persistance_file_name):
                 os.remove(persistance_file_name)
             os.rename(persistance_file_name_temp, persistance_file_name)
+        if not self.persistance_file_name:
+            self.con.load_extension("fts")
         self.persistance_file_name = persistance_file_name
 
     def init_spatial(self):

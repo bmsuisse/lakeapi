@@ -2,8 +2,8 @@ from typing import List, TYPE_CHECKING
 from bmsdna.lakeapi.context.source_uri import SourceUri
 
 if TYPE_CHECKING:
-    from bmsdna.lakeapi.core.config import BasicConfig
     from bmsdna.lakeapi.core.types import Param
+    from bmsdna.lakeapi.core.config import BasicConfig
 
 
 def _with_implicit_parameters(

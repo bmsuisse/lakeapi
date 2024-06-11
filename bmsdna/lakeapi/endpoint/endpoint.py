@@ -1,19 +1,13 @@
-from typing import List, Literal, Optional, Type, Union
+from typing import List, Literal, Optional, Type, Union, cast
 
 import pyarrow as pa
-import pypika
-import pypika.queries
-import pypika.terms
+
+
+import sqlglot.expressions as ex
+
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
-from fastapi import (
-    APIRouter,
-    Depends,
-    Header,
-    HTTPException,
-    Query,
-    Request,
-)
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from bmsdna.lakeapi.context import get_context_by_engine
@@ -75,7 +69,7 @@ async def get_params_filter_expr(
     columns: List[str],
     config: Config,
     params: BaseModel,
-) -> Optional[pypika.Criterion]:
+) -> Optional[ex.Condition]:
     expr = await filter_df_based_on_params(
         context,
         remove_search_nearby(
@@ -264,11 +258,11 @@ def create_config_endpoint(
             columns = [c for c in columns if c not in config.datasource.exclude]
         if config.datasource.sortby:
             for s in config.datasource.sortby:
-                new_query = new_query.orderby(
-                    s.by,
-                    order=pypika.Order.desc
+                new_query = cast(ex.Select, new_query).order_by(
+                    ex.column(s.by, quoted=True).desc()
                     if s.direction and s.direction.lower() == "desc"
-                    else pypika.Order.asc,
+                    else ex.column(s.by, quoted=True),
+                    copy=False,
                 )
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
@@ -277,15 +271,19 @@ def create_config_endpoint(
 
             new_query = context.jsonify_complex(new_query, complex_cols, columns)
         else:
-            new_query = new_query.select(*columns)
+            new_query = new_query.select(
+                *[ex.column(c, quoted=True) for c in columns], append=False
+            )
 
         if distinct:
             assert len(columns) <= 3  # reduce complexity here
-            new_query = new_query.distinct()
+            new_query = cast(ex.Select, new_query).distinct()
 
         if not (limit == -1 and config.allow_get_all_pages):
-            limit = 1000 if limit == -1 else limit
-            new_query = new_query.offset(offset or 0).limit(limit)
+            limit = (1000 if limit == -1 else limit) or 1000
+            new_query = new_query.limit(limit)
+            if offset:
+                new_query.offset(offset, copy=False)
 
         new_query = handle_search_request(
             context,
@@ -303,7 +301,7 @@ def create_config_endpoint(
             source_view=realdataframe.tablename,
             query=new_query,
         )
-        logger.debug(f"Query: {get_sql(new_query)}")
+        logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
 
         try:
             return await create_response(

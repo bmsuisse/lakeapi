@@ -6,5 +6,6 @@
     "[python]": {
         "editor.defaultFormatter": "charliermarsh.ruff"
     },
-    "python.formatting.provider": "none"
+    "python.formatting.provider": "none",
+    "cSpell.words": ["deltalake", "duckdb", "lakeapi", "odbc", "pyarrow", "sqlglot"]
 }
