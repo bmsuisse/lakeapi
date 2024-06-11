@@ -136,14 +136,13 @@ def match_25(
 ):
     f_args = [ex.convert(field), ex.convert(search_text)]
     if fields is not None:
-        (
-            f_args.append(
-                ex.PropertyEQ(
-                    this=ex.Column(this=ex.Identifier(this="fields", quoted=False)),
-                    expression=ex.convert(fields),
-                )
-            ),
+        f_args.append(
+            ex.PropertyEQ(
+                this=ex.Column(this=ex.Identifier(this="fields", quoted=False)),
+                expression=ex.convert(fields),
+            )
         )
+
     fn = ex.Dot(
         this=ex.to_identifier(table),
         expression=ex.func("match_bm25", *f_args, dialect="duckdb"),

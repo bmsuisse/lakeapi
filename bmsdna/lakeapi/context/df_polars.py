@@ -210,11 +210,11 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        old_query = query.select(*columns)
+        old_query = query.select(*[ex.column(c, quoted=True) for c in columns])
         if len(complex_cols) == 0:
             return old_query
 
-        df = self.sql_context.execute(str(old_query))
+        df = self.sql_context.execute(old_query.sql(polars_dialect))
 
         def to_json(x):
             if isinstance(x, pl.Series):
