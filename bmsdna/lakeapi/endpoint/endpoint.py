@@ -312,6 +312,9 @@ def create_config_endpoint(
                 sql=new_query,
                 basic_config=basic_config,
                 close_context=True,
+                charset=request.query_params.get(
+                    "encoding", request.headers.get("Accept-Charset")
+                ),
             )
         except Exception as err:
             logger.error("Error in creating response", exc_info=err)

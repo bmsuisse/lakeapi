@@ -94,44 +94,48 @@ def _write_frame(
     out: str,
     basic_config: BasicConfig,
     csv_separator: str | None = None,
+    charset: str = "utf-8",
 ) -> list[str]:
     if csv_separator == "\\t":
         csv_separator = "\t"
+    is_utf_8 = charset.lower() == "utf-8"
     if format == OutputFormats.AVRO:
         import polars as pl
 
         ds = pl.from_arrow(content.to_arrow_recordbatch(content.chunk_size))
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
+        is_utf_8 = True
     elif format == OutputFormats.CSV:
-        content.write_csv(out, separator=csv_separator or ",")
+        content.write_csv(
+            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
+        )
     elif format == OutputFormats.SEMI_CSV:
-        content.write_csv(out, separator=csv_separator or ";")
+        content.write_csv(
+            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ";"
+        )
     elif format == OutputFormats.CSV4EXCEL:  # need to write sep=, on first line
-        content.write_csv(out + "_u8", separator=csv_separator or ",")  # type: ignore
-        with open(
-            out, mode="wb"
-        ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
-            f.write(b"sep=,\n")  # add utf-8 bom at beginning
-            with open(out + "_u8", mode="r", encoding="utf-8") as c8:
-                line = c8.readline()
-                while line != "":
-                    f.write(line.encode("utf-16le"))
-                    line = c8.readline()
-            return [out + "_u8"]
+        content.write_csv(
+            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
+        )  # type: ignore
+
     elif format == OutputFormats.XLSX:
         import polars as pl
 
         ds = pl.from_arrow(content.to_arrow_table())
         assert isinstance(ds, pl.DataFrame)
         ds.write_excel(out, autofit=True)
+        is_utf_8 = True
     elif format == OutputFormats.HTML:
-        content.to_pandas().to_html(out, index=False)
+        content.to_pandas().to_html(out + ("" if is_utf_8 else "_u8"), index=False)
 
     elif format == OutputFormats.XML:
-        content.to_pandas().to_xml(out, index=False, parser="etree")
+        content.to_pandas().to_xml(
+            out + ("" if is_utf_8 else "_u8"), index=False, parser="etree"
+        )
 
     elif format == OutputFormats.ARROW_IPC:
+        is_utf_8 = True
         with content.to_arrow_recordbatch(content.chunk_size) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_file(sink, batches.schema) as writer:
@@ -139,6 +143,7 @@ def _write_frame(
                         writer.write(batch)
 
     elif format == OutputFormats.ARROW_STREAM:
+        is_utf_8 = True
         with content.to_arrow_recordbatch(content.chunk_size) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_stream(sink, batches.schema) as writer:
@@ -146,11 +151,24 @@ def _write_frame(
                         writer.write_batch(batch)
 
     elif format == OutputFormats.ND_JSON:
-        content.write_nd_json(out)
+        content.write_nd_json(out + ("" if is_utf_8 else "_u8"))
     elif format == OutputFormats.PARQUET:
         content.write_parquet(out)
+        is_utf_8 = True
     else:
-        content.write_json(out)
+        content.write_json(out + ("" if is_utf_8 else "_u8"))
+    if not is_utf_8:
+        with open(
+            out, mode="wb"
+        ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
+            if format == OutputFormats.CSV4EXCEL:
+                f.write(b"sep=,\n")  # add utf-8 bom at beginning
+            with open(out + "_u8", mode="r", encoding="utf-8") as c8:
+                line = c8.readline()
+                while line != "":
+                    f.write(line.encode(charset))
+                    line = c8.readline()
+            return [out + "_u8"]
     return []
 
 
@@ -251,10 +269,11 @@ async def create_response(
     context: ExecutionContext,
     sql: ex.Query | str,
     basic_config: BasicConfig,
+    charset: str | None = None,
     close_context=False,
 ):
     headers = {}
-
+    charset = charset or ("utf16-le" if format == OutputFormats.CSV4EXCEL else "utf-8")
     format = await parse_format(accept)
 
     format, extension = await parse_format(accept)
@@ -302,6 +321,7 @@ async def create_response(
             temp_file.name,
             basic_config,
             query_params.get("$csv_separator", None),
+            charset,
         )
 
         async with await anyio.open_file(temp_file.name, mode="rb") as file:
@@ -326,5 +346,5 @@ async def create_response(
         content_disposition_type=content_dispositiont_type,
         filename=filename,
         background=BackgroundTask(clean_up),
-        charset="utf-16le" if format == OutputFormats.CSV4EXCEL else "utf-8",
+        charset=charset,
     )

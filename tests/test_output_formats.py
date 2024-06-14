@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from .utils import get_app, get_auth
 import sys
 import pyarrow as pa
+import pytest
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -26,6 +27,22 @@ def test_data_csv4excel():
         reader = csv.DictReader(rest.splitlines())
         line1 = reader.__next__()
         assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+
+
+@pytest.mark.parametrize("engine", engines)
+def test_data_csv_custom(engine):
+    response = client.get(
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&encoding=utf-16-be&csv_separator=|",
+        auth=auth,
+    )
+    assert response.status_code == 200
+
+    import csv
+
+    rest = response.content.decode("utf-16-be")
+    reader = csv.DictReader(rest.splitlines(), dialect={"delimiter": "|"})
+    line1 = reader.__next__()
+    assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
 def test_data_html():
