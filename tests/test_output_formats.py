@@ -40,7 +40,7 @@ def test_data_csv_custom(engine):
     import csv
 
     rest = response.content.decode("utf-16-be")
-    reader = csv.DictReader(rest.splitlines(), dialect={"delimiter": "|"})
+    reader = csv.DictReader(rest.splitlines(), dialect={"delimiter": "|"})  # type: ignore
     line1 = reader.__next__()
     assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
