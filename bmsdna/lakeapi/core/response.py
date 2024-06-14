@@ -273,8 +273,8 @@ async def create_response(
     close_context=False,
 ):
     headers = {}
-    charset = charset or ("utf16-le" if format == OutputFormats.CSV4EXCEL else "utf-8")
     format = await parse_format(accept)
+    charset = charset or ("utf16-le" if format == OutputFormats.CSV4EXCEL else "utf-8")
 
     format, extension = await parse_format(accept)
     content_dispositiont_type = "attachment"
