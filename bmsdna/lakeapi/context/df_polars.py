@@ -251,7 +251,9 @@ class PolarsExecutionContext(ExecutionContext):
                         else None
                     )
                     df = polars_scan_delta(
-                        db_uri, storage_options=db_opts, conditions=partition_filter
+                        db_uri,
+                        storage_options=db_opts,
+                        conditions=partition_filter if partition_filter else None,
                     )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(
