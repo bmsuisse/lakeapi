@@ -6,7 +6,10 @@ from bmsdna.lakeapi.context.df_base import (
 )
 
 import pyarrow as pa
-from typing import List, Optional, Tuple, Union, cast, Any
+from typing import List, Optional, Tuple, Union, cast, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import polars as pl
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -72,6 +75,13 @@ class PolarsResultData(ResultData):
             self._df = self.sql_context.execute(real_sql)
         return self._df
 
+    def get_df_collected(self) -> "pl.DataFrame":
+        _df = self.get_df()
+        if isinstance(_df, pl.LazyFrame):
+            _df = _df.collect()
+            self._df = _df
+        return _df
+
     def columns(self):
         if self._df is None:
             return self.sql_context.execute(
@@ -119,25 +129,25 @@ class PolarsResultData(ResultData):
         return self._df.limit(0).to_arrow().schema()
 
     def to_pandas(self):
-        return self.get_df().to_pandas()
+        return self.get_df_collected().to_pandas()
 
     def to_arrow_table(self):
-        return self.get_df().to_arrow()
+        return self.get_df_collected().to_arrow()
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        return self.get_df().to_arrow().to_reader(max_chunksize=chunk_size)
+        return self.get_df_collected().to_arrow().to_reader(max_chunksize=chunk_size)
 
     def write_parquet(self, file_name: str):
-        self.get_df().write_parquet(file_name, use_pyarrow=True)
+        self.get_df_collected().write_parquet(file_name, use_pyarrow=True)
 
     def write_json(self, file_name: str):
-        self.get_df().write_json(file_name, pretty=False, row_oriented=True)
+        self.get_df_collected().write_json(file_name, pretty=False, row_oriented=True)
 
     def write_csv(self, file_name: str, *, separator: str):
-        self.get_df().write_csv(file_name, separator=separator)
+        self.get_df_collected().write_csv(file_name, separator=separator)
 
     def write_nd_json(self, file_name: str):
-        self.get_df().write_ndjson(file_name)
+        self.get_df_collected().write_ndjson(file_name)
 
 
 class PolarsExecutionContext(ExecutionContext):
