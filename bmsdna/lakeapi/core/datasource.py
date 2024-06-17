@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import os
 from datetime import datetime, date
@@ -11,6 +12,7 @@ from typing import (
     Union,
     cast,
     get_args,
+    TYPE_CHECKING,
     TypeAlias,
 )
 from bmsdna.lakeapi.context.source_uri import SourceUri
@@ -20,7 +22,8 @@ import pyarrow.parquet
 import sqlglot.expressions as ex
 from sqlglot import select
 from deltalake.exceptions import TableNotFoundError
-from deltalake import Metadata as DeltaMetadata
+from deltalake import Metadata as DeltaMetadata, Schema as DeltaSchema
+from deltalake.schema import PrimitiveType
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import (
     BasicConfig,
@@ -204,6 +207,7 @@ class Datasource:
 def get_partition_filter(
     param: tuple[str, str],
     deltaMeta: DeltaMetadata,
+    deltaSchema: DeltaSchema,
     param_def: Iterable[Param | str],
 ):
     operators = ("<=", ">=", "=", "==", "in", "not in")
@@ -223,8 +227,13 @@ def get_partition_filter(
     col_for_partitioning: Optional[str] = None
     for partcol in deltaMeta.partition_columns:
         if partcol == colname:
+            d_type = next((f.type for f in deltaSchema.fields if f.name == partcol))
+            d_type_str = str(d_type.type).lower()
+
             col_for_partitioning = partcol
-            value_for_partitioning = value
+            value_for_partitioning = (
+                int(value) if d_type_str in ["int", "long", "integer"] else value
+            )
 
         elif partcol.startswith(colname + "_md5_prefix_"):
             col_for_partitioning = partcol
@@ -280,6 +289,7 @@ def get_partition_filter(
 
 def filter_partitions_based_on_params(
     deltaMeta: DeltaMetadata,
+    deltaSchema: DeltaSchema,
     params: dict,
     param_def: Iterable[Param | str],
 ):
@@ -288,7 +298,8 @@ def filter_partitions_based_on_params(
 
     partition_filters = []
     results = [
-        get_partition_filter(param, deltaMeta, param_def) for param in params.items()
+        get_partition_filter(param, deltaMeta, deltaSchema, param_def)
+        for param in params.items()
     ]
     partition_filters = [result for result in results if result is not None]
 

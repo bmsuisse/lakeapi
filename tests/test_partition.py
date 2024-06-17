@@ -30,7 +30,7 @@ def test_data_partition(engine):
             }
         ]
         response = client.get(
-            f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={e}",
+            f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={engine}",
             auth=auth,
         )
         assert response.status_code == 200
@@ -46,7 +46,7 @@ def test_data_partition(engine):
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_data_partition_mod():
+def test_data_partition_mod(engine):
     for _ in range(2):
         response = client.get(
             f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={engine}",
@@ -62,7 +62,7 @@ def test_data_partition_mod():
             }
         ]
         response = client.post(
-            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={e}",
+            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={engine}",
             auth=auth,
             json={"cars_in": ["audi"]},
         )
