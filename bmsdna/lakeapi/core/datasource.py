@@ -255,10 +255,10 @@ def get_partition_filter(
                     int(hashlib.md5(str(v).encode("utf8")).hexdigest(), 16)
                     for v in value
                 ]
-                value_for_partitioning = [hvl % modulo_len for hvl in hashvl]
+                value_for_partitioning = [str(hvl % modulo_len) for hvl in hashvl]
             else:
                 hashvl = int(hashlib.md5(str(value).encode("utf8")).hexdigest(), 16)
-                value_for_partitioning = hashvl % modulo_len
+                value_for_partitioning = str(hashvl % modulo_len)
             if op not in operators:
                 col_for_partitioning = None
                 continue
@@ -279,11 +279,7 @@ def get_partition_filter(
     return (
         col_for_partitioning,
         op,
-        (
-            [str(vp) for vp in value_for_partitioning]
-            if isinstance(value_for_partitioning, (Tuple, List))
-            else value_for_partitioning
-        ),
+        value_for_partitioning,
     )
 
 
