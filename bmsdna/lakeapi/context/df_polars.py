@@ -73,7 +73,11 @@ class PolarsResultData(ResultData):
         return self._df
 
     def columns(self):
-        return self.df.columns
+        if self._df is None:
+            return self.sql_context.execute(
+                get_sql(self.sql, limit=0, dialect=polars_dialect)
+            ).columns
+        return self._df.columns
 
     def query_builder(self) -> ex.Query:
         if not isinstance(self.sql, str):
@@ -104,66 +108,36 @@ class PolarsResultData(ResultData):
         return py_type_to_arrow_type(dtype_to_py_type(t))
 
     def arrow_schema(self) -> pa.Schema:
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            return pa.schema(
-                [(k, self._to_arrow_type(v)) for k, v in self.get_df().schema.items()]
+        if self._df is None:
+            return (
+                self.sql_context.execute(
+                    get_sql(self.sql, limit=0, dialect=polars_dialect)
+                )
+                .to_arrow()
+                .schema
             )
-        else:
-            return self.df.limit(0).to_arrow().schema
+        return self._df.limit(0).to_arrow().schema()
 
     def to_pandas(self):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        return self.df.to_pandas()
+        return self.get_df().to_pandas()
 
     def to_arrow_table(self):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        assert isinstance(self.df, pl.DataFrame)
-        return self.df.to_arrow()
+        return self.get_df().to_arrow()
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        assert isinstance(self.df, pl.DataFrame)
-        pat = self.df.to_arrow()
-        return pat.to_reader(max_chunksize=chunk_size)
+        return self.get_df().to_arrow().to_reader(max_chunksize=chunk_size)
 
     def write_parquet(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        self.df.write_parquet(file_name, use_pyarrow=True)
+        self.get_df().write_parquet(file_name, use_pyarrow=True)
 
     def write_json(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        self.df.write_json(file_name, pretty=False, row_oriented=True)
+        self.get_df().write_json(file_name, pretty=False, row_oriented=True)
 
     def write_csv(self, file_name: str, *, separator: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()  # sink_csv not supported in standard_engine
-        self.df.write_csv(file_name, separator=separator)
+        self.get_df().write_csv(file_name, separator=separator)
 
     def write_nd_json(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()  # sink_ndjson not supported in standard_engine
-        self.df.write_ndjson(file_name)
+        self.get_df().write_ndjson(file_name)
 
 
 class PolarsExecutionContext(ExecutionContext):
