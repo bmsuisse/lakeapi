@@ -90,14 +90,18 @@ class PolarsResultData(ResultData):
         return self._df.columns
 
     def query_builder(self) -> ex.Query:
-        if not isinstance(self.sql, str):
+        if not self.registred_df:
+            self.sql_context.register(self.random_name, self.get_df())
+            self.registred_df = True
+        return from_(ex.to_identifier(self.random_name))
+        """  if not isinstance(self.sql, str):
             return from_(self.sql.subquery(alias="s1"))
         else:
             return from_(
                 cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery(
                     alias="s1"
                 )
-            )
+            ) """
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
@@ -143,7 +147,7 @@ class PolarsResultData(ResultData):
         self.get_df_collected().write_parquet(file_name, use_pyarrow=True)
 
     def write_json(self, file_name: str):
-        self.get_df_collected().write_json(file_name, pretty=False, row_oriented=True)
+        self.get_df_collected().write_json(file_name)
 
     def write_csv(self, file_name: str, *, separator: str):
         self.get_df_collected().write_csv(file_name, separator=separator)
