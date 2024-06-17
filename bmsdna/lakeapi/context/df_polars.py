@@ -119,14 +119,14 @@ class PolarsResultData(ResultData):
 
     def arrow_schema(self) -> pa.Schema:
         if self._df is None:
-            return (
-                self.sql_context.execute(
-                    get_sql(self.sql, limit=0, dialect=polars_dialect)
-                )
-                .to_arrow()
-                .schema
+            _df = self.sql_context.execute(
+                get_sql(self.sql, limit=0, dialect=polars_dialect)
             )
-        return self._df.limit(0).to_arrow().schema()
+        else:
+            _df = self._df.limit(0)
+        if isinstance(_df, pl.LazyFrame):
+            _df = _df.collect()
+        return _df.to_arrow().schema
 
     def to_pandas(self):
         return self.get_df_collected().to_pandas()
