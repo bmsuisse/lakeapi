@@ -242,9 +242,12 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         )
-        parts = await get_partitions(
-            realdataframe, realdataframe.execution_uri, params, config
-        )
+        if config.datasource.file_type == "delta":
+            parts = await get_partitions(
+                realdataframe, realdataframe.execution_uri, params, config
+            )
+        else:
+            parts = None
         df = realdataframe.get_df(partitions=parts)
 
         expr = get_params_filter_expr(
