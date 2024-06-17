@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Union
 from uuid import uuid4
 import pyarrow as pa
-import starlette
 from starlette.background import BackgroundTask
 from starlette.datastructures import URL, QueryParams
 from starlette.responses import Response, StreamingResponse

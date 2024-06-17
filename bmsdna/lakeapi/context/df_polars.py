@@ -50,7 +50,7 @@ try:
         pl.Binary: pa.binary(),
         pl.Categorical: pa.large_string(),
     }
-except:
+except ImportError:
     PL_TO_ARROW = {}
     pass
 
@@ -88,44 +88,20 @@ class PolarsResultData(ResultData):
                 [],
                 schema=self.sql_context.execute(
                     get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).schema,
+                ).collect_schema(),
             )
             return _df.columns
         return self._df.columns
 
     def query_builder(self) -> ex.Query:
-        if not self.registred_df:
-            self.sql_context.register(self.random_name, self.get_df())
-            self.registred_df = True
-        return from_(ex.to_identifier(self.random_name))
-        """  if not isinstance(self.sql, str):
+        if not isinstance(self.sql, str):
             return from_(self.sql.subquery(alias="s1"))
         else:
             return from_(
                 cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery(
                     alias="s1"
                 )
-            ) """
-
-    def _to_arrow_type(self, t: "pl.PolarsDataType"):
-        import polars as pl
-        from polars.datatypes.convert import py_type_to_arrow_type, dtype_to_py_type
-
-        if isinstance(t, pl.Struct):
-            return pa.struct({f.name: self._to_arrow_type(f.dtype) for f in t.fields})
-        if isinstance(t, pl.List):
-            return pa.list_(self._to_arrow_type(t.inner) if t.inner else pa.string)
-        if isinstance(t, pl.Datetime):
-            return pa.timestamp(t.time_unit)
-        if isinstance(t, pl.Duration):
-            return pa.duration(t.time_unit)
-        if isinstance(t, pl.Time):
-            return pa.time64()
-        if isinstance(t, pl.Decimal):
-            return pa.decimal128(t.precision, t.scale)
-        if t in PL_TO_ARROW:
-            return PL_TO_ARROW[t]
-        return py_type_to_arrow_type(dtype_to_py_type(t))
+            )
 
     def arrow_schema(self) -> pa.Schema:
         if self._df is None:
@@ -133,10 +109,10 @@ class PolarsResultData(ResultData):
                 [],
                 schema=self.sql_context.execute(
                     get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).schema,
+                ).collect_schema(),
             )
         else:
-            _df = pl.DataFrame([], self._df.schema)
+            _df = pl.DataFrame([], self._df.collect_schema())
         return _df.to_arrow().schema
 
     def to_pandas(self):

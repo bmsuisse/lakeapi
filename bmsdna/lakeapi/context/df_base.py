@@ -315,10 +315,18 @@ class ExecutionContext(ABC):
         lon2: ex.Expression,
     ) -> ex.Expression:
         # haversine which works for duckdb and polars and probably most sql systems
-        acos = lambda t: ex.func("acos", t)
-        cos = lambda t: ex.func("cos", t)
-        radians = lambda t: ex.func("radians", t)
-        sin = lambda t: ex.func("sin", t)
+        def acos(t):
+            return ex.func("acos", t)
+
+        def cos(t):
+            return ex.func("cos", t)
+
+        def radians(t):
+            return ex.func("radians", t)
+
+        def sin(t):
+            return ex.func("sin", t)
+
         return ex.convert(6371000) * acos(
             cos(radians(lat1)) * cos(radians(lat2)) * cos(radians(lon2) - radians(lon1))
             + sin(radians(lat1)) * sin(radians(lat2))

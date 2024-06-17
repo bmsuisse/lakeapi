@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import os
 from datetime import datetime, date
@@ -12,7 +11,6 @@ from typing import (
     Union,
     cast,
     get_args,
-    TYPE_CHECKING,
     TypeAlias,
 )
 from bmsdna.lakeapi.context.source_uri import SourceUri
