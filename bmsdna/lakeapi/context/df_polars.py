@@ -91,10 +91,12 @@ class PolarsResultData(ResultData):
 
     def query_builder(self) -> ex.Query:
         if not isinstance(self.sql, str):
-            return from_(self.sql.subquery())
+            return from_(self.sql.subquery(alias="s1"))
         else:
             return from_(
-                cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery()
+                cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery(
+                    alias="s1"
+                )
             )
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
