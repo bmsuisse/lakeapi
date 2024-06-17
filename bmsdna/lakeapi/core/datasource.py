@@ -282,7 +282,7 @@ def get_partition_filter(
         (
             [str(vp) for vp in value_for_partitioning]
             if isinstance(value_for_partitioning, (Tuple, List))
-            else str(value_for_partitioning)
+            else value_for_partitioning
         ),
     )
 
