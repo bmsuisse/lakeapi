@@ -6,11 +6,14 @@ from bmsdna.lakeapi.context.df_base import (
 )
 
 import pyarrow as pa
-from typing import List, Optional, Tuple, Union, cast, Any
-from bmsdna.lakeapi.core.types import FileTypes
+from typing import List, Optional, Tuple, Union, cast, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import polars as pl
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_
+from sqlglot import from_, parse_one
 
 
 from uuid import uuid4
@@ -55,29 +58,54 @@ except:
 class PolarsResultData(ResultData):
     def __init__(
         self,
-        df: "Union[pl.DataFrame, pl.LazyFrame]",
+        sql: Union[ex.Query, str],
         sql_context: "pl.SQLContext",
         chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size)
-        self.df = df
+        self.sql = sql
+        self._df = None
         self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
         self.sql_context = sql_context
 
+    def get_df(self):
+        if self._df is None:
+            real_sql = get_sql(self.sql, dialect=polars_dialect)
+            self._df = self.sql_context.execute(real_sql)
+        return self._df
+
+    def get_df_collected(self) -> "pl.DataFrame":
+        _df = self.get_df()
+        if isinstance(_df, pl.LazyFrame):
+            _df = _df.collect()
+            self._df = _df
+        return _df
+
     def columns(self):
-        return self.df.columns
+        if self._df is None:
+            _df = pl.DataFrame(
+                [],
+                schema=self.sql_context.execute(
+                    get_sql(self.sql, limit=0, dialect=polars_dialect)
+                ).schema,
+            )
+            return _df.columns
+        return self._df.columns
 
     def query_builder(self) -> ex.Query:
-        import polars as pl
-
         if not self.registred_df:
-            if isinstance(self.df, pl.DataFrame):
-                self.df = self.df.lazy()
-
-            self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
+            self.sql_context.register(self.random_name, self.get_df())
             self.registred_df = True
         return from_(ex.to_identifier(self.random_name))
+        """  if not isinstance(self.sql, str):
+            return from_(self.sql.subquery(alias="s1"))
+        else:
+            return from_(
+                cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery(
+                    alias="s1"
+                )
+            ) """
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
@@ -100,66 +128,37 @@ class PolarsResultData(ResultData):
         return py_type_to_arrow_type(dtype_to_py_type(t))
 
     def arrow_schema(self) -> pa.Schema:
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            return pa.schema(
-                [(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()]
+        if self._df is None:
+            _df = pl.DataFrame(
+                [],
+                schema=self.sql_context.execute(
+                    get_sql(self.sql, limit=0, dialect=polars_dialect)
+                ).schema,
             )
         else:
-            return self.df.limit(0).to_arrow().schema
+            _df = pl.DataFrame([], self._df.schema)
+        return _df.to_arrow().schema
 
     def to_pandas(self):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        return self.df.to_pandas()
+        return self.get_df_collected().to_pandas()
 
     def to_arrow_table(self):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        assert isinstance(self.df, pl.DataFrame)
-        return self.df.to_arrow()
+        return self.get_df_collected().to_arrow()
 
     def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        assert isinstance(self.df, pl.DataFrame)
-        pat = self.df.to_arrow()
-        return pat.to_reader(max_chunksize=chunk_size)
+        return self.get_df_collected().to_arrow().to_reader(max_chunksize=chunk_size)
 
     def write_parquet(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        self.df.write_parquet(file_name, use_pyarrow=True)
+        self.get_df_collected().write_parquet(file_name, use_pyarrow=True)
 
     def write_json(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()
-        self.df.write_json(file_name, pretty=False, row_oriented=True)
+        self.get_df_collected().write_json(file_name)
 
     def write_csv(self, file_name: str, *, separator: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()  # sink_csv not supported in standard_engine
-        self.df.write_csv(file_name, separator=separator)
+        self.get_df_collected().write_csv(file_name, separator=separator)
 
     def write_nd_json(self, file_name: str):
-        import polars as pl
-
-        if isinstance(self.df, pl.LazyFrame):
-            self.df = self.df.collect()  # sink_ndjson not supported in standard_engine
-        self.df.write_ndjson(file_name)
+        self.get_df_collected().write_ndjson(file_name)
 
 
 class PolarsExecutionContext(ExecutionContext):
@@ -238,7 +237,7 @@ class PolarsExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, str, Any]]],
+        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
     ):
         import polars as pl
 
@@ -251,7 +250,16 @@ class PolarsExecutionContext(ExecutionContext):
                     db_uri, db_opts = uri.get_uri_options(flavor="deltalake2db")
                     from deltalake2db import polars_scan_delta
 
-                    df = polars_scan_delta(db_uri, storage_options=db_opts)
+                    partition_filter = (
+                        {p[0]: p[2] for p in partitions if p[1] == "="}
+                        if partitions
+                        else None
+                    )
+                    df = polars_scan_delta(
+                        db_uri,
+                        storage_options=db_opts,
+                        conditions=partition_filter if partition_filter else None,
+                    )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(
                         f"Delta table version {ab_uri} not supported"
@@ -297,8 +305,7 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        df = self.sql_context.execute(get_sql(sql, dialect=polars_dialect))
-        return PolarsResultData(df, self.sql_context, self.chunk_size)
+        return PolarsResultData(sql, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SHOW TABLES")

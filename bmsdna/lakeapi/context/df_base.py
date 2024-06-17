@@ -102,7 +102,7 @@ class ResultData(ABC):
         with open(file_name, mode="wb") as f:
             t = pl.from_arrow(arrow_table)
             assert isinstance(t, pl.DataFrame)
-            t.write_json(f, row_oriented=True)
+            t.write_json(f)
 
     def to_json(self):
         arrow_table = self.to_arrow_table()

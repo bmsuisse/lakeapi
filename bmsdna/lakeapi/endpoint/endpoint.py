@@ -25,6 +25,7 @@ from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
+from starlette.concurrency import run_in_threadpool
 
 logger = get_logger(__name__)
 
@@ -37,9 +38,12 @@ async def get_partitions(
 ) -> Optional[list]:
     try:
         df_uri, df_opts = uri.get_uri_options(flavor="object_store")
+        meta = await run_in_threadpool(
+            lambda: DeltaTable(df_uri, storage_options=df_opts).metadata()
+        )
         parts = (
-            await filter_partitions_based_on_params(
-                DeltaTable(df_uri, storage_options=df_opts).metadata(),
+            filter_partitions_based_on_params(
+                meta,
                 params.model_dump(exclude_unset=True) if params else {},
                 config.params or [],
             )
@@ -64,13 +68,13 @@ def remove_search_nearby(
     return {k: v for k, v in prm_dict.items() if k.lower() not in search_nearby_cols}
 
 
-async def get_params_filter_expr(
+def get_params_filter_expr(
     context: ExecutionContext,
     columns: List[str],
     config: Config,
     params: BaseModel,
 ) -> Optional[ex.Condition]:
-    expr = await filter_df_based_on_params(
+    expr = filter_df_based_on_params(
         context,
         remove_search_nearby(
             params.model_dump(exclude_unset=True) if params else {}, config
@@ -238,15 +242,20 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         )
-        df = realdataframe.get_df()
+        if config.datasource.file_type == "delta":
+            parts = await get_partitions(
+                realdataframe, realdataframe.execution_uri, params, config
+            )
+        else:
+            parts = None
+        df = realdataframe.get_df(partitions=parts)
 
-        expr = await get_params_filter_expr(
+        expr = get_params_filter_expr(
             context,
             df.columns(),
             config,
             params,
         )
-        base_schema = df.arrow_schema()
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
         columns = exclude_cols(df.columns(), basic_config)
@@ -267,6 +276,8 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
+            base_schema = df.arrow_schema()
+
             complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 
             new_query = context.jsonify_complex(new_query, complex_cols, columns)
