@@ -256,7 +256,6 @@ def create_config_endpoint(
             config,
             params,
         )
-        base_schema = df.arrow_schema()
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
         columns = exclude_cols(df.columns(), basic_config)
@@ -277,6 +276,8 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
+            base_schema = df.arrow_schema()
+
             complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 
             new_query = context.jsonify_complex(new_query, complex_cols, columns)
