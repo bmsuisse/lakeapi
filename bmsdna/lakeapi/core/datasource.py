@@ -4,6 +4,7 @@ import os
 from datetime import datetime, date
 from typing import (
     Any,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -21,9 +22,14 @@ import pyarrow.parquet
 import sqlglot.expressions as ex
 from sqlglot import select
 from deltalake.exceptions import TableNotFoundError
-
+from deltalake import Metadata as DeltaMetadata
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
-from bmsdna.lakeapi.core.config import BasicConfig, DatasourceConfig, Param
+from bmsdna.lakeapi.core.config import (
+    BasicConfig,
+    DatasourceConfig,
+    Param,
+    SelectColumn,
+)
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes
@@ -31,6 +37,20 @@ from bmsdna.lakeapi.core.types import DeltaOperatorTypes
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
+
+
+def select_df(
+    df: ex.Query, select_cols: Optional[List[SelectColumn]], exclude_cols: list[str]
+) -> ex.Query:
+    if select_cols:
+        select = [
+            ex.column(c.name, quoted=True).as_(c.alias or c.name, quoted=True)
+            for c in select_cols
+            if c not in (exclude_cols or [])
+        ]
+        return df.select(*select, append=False)
+    else:
+        return df.select(ex.Star(), append=False)
 
 
 class Datasource:
@@ -104,25 +124,6 @@ class Datasource:
                     return None
         return None
 
-    def select_df(self, df: ex.Query) -> ex.Query:
-        if self.config.select:
-            select = [
-                ex.column(c.name, quoted=True).as_(c.alias or c.name, quoted=True)
-                for c in self.config.select
-                if c not in (self.config.exclude or [])
-            ]
-            df = df.select(*select, append=False)
-        else:
-            df = df.select(ex.Star(), append=False)
-        return df
-
-    def _prep_df(self, df: ex.Query, endpoint: endpoints) -> ex.Query:
-        if endpoint == "query":
-            pass
-        else:
-            df = self.select_df(df)
-        return df
-
     @property
     def tablename(self):
         if self.config.table_name:
@@ -182,7 +183,12 @@ class Datasource:
                 endpoint == "meta" and self.sql_context.supports_view_creation
             )
             query = select("*").from_(self.get_table_name(unique_table_name))
-            self.query = self._prep_df(query, endpoint=endpoint)
+
+            self.query = (
+                select_df(query, self.config.select, self.config.exclude or [])
+                if endpoint != "query"
+                else query
+            )
 
             if self.df is None:
                 self.sql_context.register_datasource(
@@ -197,17 +203,17 @@ class Datasource:
         return self.df  # type: ignore
 
 
-async def get_partition_filter(
-    param,
-    deltaMeta,
-    param_def,
+def get_partition_filter(
+    param: tuple[str, str],
+    deltaMeta: DeltaMetadata,
+    param_def: Iterable[Param | str],
 ):
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
     if not key or not value or key in ("limit", "offset"):
         return None
 
-    prmdef_and_op = await get_param_def(key, param_def)
+    prmdef_and_op = get_param_def(key, param_def)
     if prmdef_and_op is None:
         raise ValueError(f"thats not parameter: {key}")
     prmdef, op = prmdef_and_op
@@ -274,19 +280,18 @@ async def get_partition_filter(
     )
 
 
-async def filter_partitions_based_on_params(
-    deltaMeta,
-    params,
-    param_def,
+def filter_partitions_based_on_params(
+    deltaMeta: DeltaMetadata,
+    params: dict,
+    param_def: Iterable[Param | str],
 ):
     if len(deltaMeta.partition_columns) == 0:
         return None
 
     partition_filters = []
-    tasks = [
+    results = [
         get_partition_filter(param, deltaMeta, param_def) for param in params.items()
     ]
-    results = await asyncio.gather(*tasks)
     partition_filters = [result for result in results if result is not None]
 
     return partition_filters if len(partition_filters) > 0 else None
@@ -295,7 +300,7 @@ async def filter_partitions_based_on_params(
 ExpType: TypeAlias = "Union[list[ex.Binary], list[pac.Expression]]"
 
 
-async def concat_expr(
+def concat_expr(
     exprs: ExpType,
 ) -> "Union[ex.Binary, pac.Expression]":
     expr: Optional[ex.Binary] = None
@@ -307,7 +312,7 @@ async def concat_expr(
     return expr
 
 
-async def _create_inner_expr(
+def _create_inner_expr(
     columns: Optional[List[str]],
     prmdef,
     e,
@@ -344,7 +349,7 @@ def _sql_value(value: str | datetime | date | None, engine: str):
     return value
 
 
-async def filter_df_based_on_params(
+def filter_df_based_on_params(
     context: ExecutionContext,
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
@@ -356,7 +361,7 @@ async def filter_df_based_on_params(
     for key, value in params.items():
         if not key or not value or key in ("limit", "offset"):
             continue  # can that happen? I don't know
-        prmdef_and_op = await get_param_def(key, param_def)
+        prmdef_and_op = get_param_def(key, param_def)
         if prmdef_and_op is None:
             raise ValueError(f"thats not parameter: {key}")
         prmdef, op = prmdef_and_op
@@ -364,11 +369,7 @@ async def filter_df_based_on_params(
 
         if prmdef.combi:
             outer_expr: Optional[ex.Condition] = None
-            tasks = []
-            for e in value:
-                task = asyncio.create_task(_create_inner_expr(columns, prmdef, e))
-                tasks.append(task)
-            results = await asyncio.gather(*tasks)
+            results = [_create_inner_expr(columns, prmdef, e) for e in value]
             for inner_expr in results:
                 if inner_expr is not None:
                     if outer_expr is None:
@@ -487,5 +488,5 @@ async def filter_df_based_on_params(
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")
 
-    expr = await concat_expr(exprs)
+    expr = concat_expr(exprs)
     return expr

@@ -114,7 +114,7 @@ class SortBy:
 
 
 @dataclass
-class Column:
+class SelectColumn:
     name: str
     alias: Optional[str] = None
 
@@ -132,7 +132,7 @@ class DatasourceConfig:
     copy_local: Optional[bool] = False
     account: Optional[str] = None
     file_type: FileTypes = "delta"
-    select: Optional[List[Column]] = None
+    select: Optional[List[SelectColumn]] = None
     exclude: Optional[List[str]] = None
     sortby: Optional[List[SortBy]] = None
     filters: Optional[List[Filter]] = None
@@ -279,7 +279,9 @@ class Config:
         select = columns if columns else select
 
         if select:
-            select = [Column(name=c.get("name"), alias=c.get("alias")) for c in select]
+            select = [
+                SelectColumn(name=c.get("name"), alias=c.get("alias")) for c in select
+            ]
 
         datasource_obj = DatasourceConfig(
             uri=uri,

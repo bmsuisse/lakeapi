@@ -7,10 +7,10 @@ from bmsdna.lakeapi.context.df_base import (
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Union, cast, Any
-from bmsdna.lakeapi.core.types import FileTypes
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_
+from sqlglot import from_, parse_one
 
 
 from uuid import uuid4
@@ -55,29 +55,33 @@ except:
 class PolarsResultData(ResultData):
     def __init__(
         self,
-        df: "Union[pl.DataFrame, pl.LazyFrame]",
+        sql: Union[ex.Query, str],
         sql_context: "pl.SQLContext",
         chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size)
-        self.df = df
+        self.sql = sql
+        self._df = None
         self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
         self.sql_context = sql_context
+
+    def get_df(self):
+        if self._df is None:
+            real_sql = get_sql(self.sql, dialect=polars_dialect)
+            self._df = self.sql_context.execute(real_sql)
+        return self._df
 
     def columns(self):
         return self.df.columns
 
     def query_builder(self) -> ex.Query:
-        import polars as pl
-
-        if not self.registred_df:
-            if isinstance(self.df, pl.DataFrame):
-                self.df = self.df.lazy()
-
-            self.sql_context.register(self.random_name, cast(pl.LazyFrame, self.df))
-            self.registred_df = True
-        return from_(ex.to_identifier(self.random_name))
+        if not isinstance(self.sql, str):
+            return from_(self.sql.subquery())
+        else:
+            return from_(
+                cast(ex.Select, parse_one(self.sql, dialect=polars_dialect)).subquery()
+            )
 
     def _to_arrow_type(self, t: "pl.PolarsDataType"):
         import polars as pl
@@ -104,7 +108,7 @@ class PolarsResultData(ResultData):
 
         if isinstance(self.df, pl.LazyFrame):
             return pa.schema(
-                [(k, self._to_arrow_type(v)) for k, v in self.df.schema.items()]
+                [(k, self._to_arrow_type(v)) for k, v in self.get_df().schema.items()]
             )
         else:
             return self.df.limit(0).to_arrow().schema
@@ -238,7 +242,7 @@ class PolarsExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, str, Any]]],
+        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
     ):
         import polars as pl
 
@@ -251,7 +255,14 @@ class PolarsExecutionContext(ExecutionContext):
                     db_uri, db_opts = uri.get_uri_options(flavor="deltalake2db")
                     from deltalake2db import polars_scan_delta
 
-                    df = polars_scan_delta(db_uri, storage_options=db_opts)
+                    partition_filter = (
+                        {p[0]: p[1] for p in partitions if p[1] == "="}
+                        if partitions
+                        else None
+                    )
+                    df = polars_scan_delta(
+                        db_uri, storage_options=db_opts, conditions=partition_filter
+                    )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(
                         f"Delta table version {ab_uri} not supported"
@@ -297,8 +308,9 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        df = self.sql_context.execute(get_sql(sql, dialect=polars_dialect))
-        return PolarsResultData(df, self.sql_context, self.chunk_size)
+        return PolarsResultData(
+            get_sql(sql, dialect=polars_dialect), self.sql_context, self.chunk_size
+        )
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SHOW TABLES")

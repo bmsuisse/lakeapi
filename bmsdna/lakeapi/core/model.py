@@ -9,6 +9,7 @@ from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig, BasicC
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
+from typing import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +59,8 @@ _operator_postfix_map: dict[OperatorType, str] = {
 }
 
 
-async def get_param_def(
-    queryname: str, paramdef: list[Union[Param, str]]
+def get_param_def(
+    queryname: str, paramdef: Iterable[Union[Param, str]]
 ) -> Optional[tuple[Param, OperatorType]]:
     casefoldqueryname = queryname.casefold().replace(" ", "_")
     for param in paramdef:
