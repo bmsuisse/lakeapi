@@ -219,6 +219,13 @@ if __name__ == "__main__":
     conn.commit()
     conn.close()
 
+    fruits_partition_int = df_fruits.copy()
+    store_df_as_delta(
+        fruits_partition_int,
+        "delta/fruits_partition_int",
+        partition_by=["A"],
+    )
+
     fruits_partition = df_fruits.copy()
     fruits_partition["my_empty_col"] = pd.Series(
         data=[None for _ in range(0, fruits_partition.shape[0])], dtype="string"

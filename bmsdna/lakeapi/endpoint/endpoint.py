@@ -38,12 +38,16 @@ async def get_partitions(
 ) -> Optional[list]:
     try:
         df_uri, df_opts = uri.get_uri_options(flavor="object_store")
-        meta = await run_in_threadpool(
-            lambda: DeltaTable(df_uri, storage_options=df_opts).metadata()
-        )
+
+        def _schema_meta():
+            dt = DeltaTable(df_uri, storage_options=df_opts)
+            return dt.metadata(), dt.schema()
+
+        meta, schema = await run_in_threadpool(_schema_meta)
         parts = (
             filter_partitions_based_on_params(
                 meta,
+                schema,
                 params.model_dump(exclude_unset=True) if params else {},
                 config.params or [],
             )

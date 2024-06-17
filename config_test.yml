@@ -185,6 +185,19 @@ tables:
           - "="
           - "in"
 
+  - name: fruits_partition_int
+    tag: test
+    version: 1
+    api_method:
+      - get
+      - post
+    datasource:
+      uri: delta/fruits_partition_int
+    params:
+      - name: A
+        operators:
+          - "="
+
   - name: fruits_nested
     tag: test
     version: 1
