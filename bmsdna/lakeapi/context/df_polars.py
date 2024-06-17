@@ -84,9 +84,13 @@ class PolarsResultData(ResultData):
 
     def columns(self):
         if self._df is None:
-            return self.sql_context.execute(
-                get_sql(self.sql, limit=0, dialect=polars_dialect)
-            ).columns
+            _df = pl.DataFrame(
+                [],
+                schema=self.sql_context.execute(
+                    get_sql(self.sql, limit=0, dialect=polars_dialect)
+                ).schema,
+            )
+            return _df.columns
         return self._df.columns
 
     def query_builder(self) -> ex.Query:
@@ -125,13 +129,14 @@ class PolarsResultData(ResultData):
 
     def arrow_schema(self) -> pa.Schema:
         if self._df is None:
-            _df = self.sql_context.execute(
-                get_sql(self.sql, limit=0, dialect=polars_dialect)
+            _df = pl.DataFrame(
+                [],
+                schema=self.sql_context.execute(
+                    get_sql(self.sql, limit=0, dialect=polars_dialect)
+                ).schema,
             )
         else:
-            _df = self._df.limit(0)
-        if isinstance(_df, pl.LazyFrame):
-            _df = _df.collect()
+            _df = pl.DataFrame([], self._df.schema)
         return _df.to_arrow().schema
 
     def to_pandas(self):
@@ -300,9 +305,7 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        return PolarsResultData(
-            get_sql(sql, dialect=polars_dialect), self.sql_context, self.chunk_size
-        )
+        return PolarsResultData(sql, self.sql_context, self.chunk_size)
 
     def list_tables(self) -> ResultData:
         return self.execute_sql("SHOW TABLES")
