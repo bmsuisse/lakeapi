@@ -232,7 +232,7 @@ def get_partition_filter(
 
             col_for_partitioning = partcol
             value_for_partitioning = (
-                int(value) if d_type_str in ["int", "long", "integer"] else value
+                int(value) if d_type_str in ["int", "long", "integer"] else str(value)
             )
 
         elif partcol.startswith(colname + "_md5_prefix_"):
