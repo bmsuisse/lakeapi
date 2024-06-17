@@ -1715,22 +1715,22 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "polars"
-version = "1.0.0a1"
+version = "1.0.0b1"
 description = "Blazingly fast DataFrame library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "polars-1.0.0a1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:757b41612d593dd2db80183f766f64e69191948931d38409880eb77a0b5f4734"},
-    {file = "polars-1.0.0a1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:7e991ff7383aa5bbd0fd1065c713f2fea8085518bf909b1d4e5d18d986408d46"},
-    {file = "polars-1.0.0a1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:26f359190fd9fc23f8e736c03778a84cccfcf82f23d4775a71bcb3a1789442cc"},
-    {file = "polars-1.0.0a1-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:baff45a6abc768159ac2e55fa9c9bc1159371b56721ea531b160729256fc4c35"},
-    {file = "polars-1.0.0a1-cp38-abi3-win_amd64.whl", hash = "sha256:34a31a3e44ebbf0f3f96e8cd1b404b5eaf2d526323e50d4f4d3c3f615def551a"},
-    {file = "polars-1.0.0a1.tar.gz", hash = "sha256:b39923ac211bc10be383d20625f71cff6db507e4280722f5249bad0079212eff"},
+    {file = "polars-1.0.0b1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f737432b000448469ba0153e7891f295b79302733fecbca4adf0411309ef50ca"},
+    {file = "polars-1.0.0b1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:1587509c9efe733970cace6111d7f075be5a4fa71e55f2e2fee986f8ab1a33a3"},
+    {file = "polars-1.0.0b1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:545c530e279affeef7ab4419f5109a5c8b17211e0307cd6d2635bfe43ff2c8e1"},
+    {file = "polars-1.0.0b1-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:b26fdf9fd738f6042cb50455bd58bdeb6bac76fc32d8202ed8957a9c15c8a331"},
+    {file = "polars-1.0.0b1-cp38-abi3-win_amd64.whl", hash = "sha256:70a540b7ee862be3381c411a62a4e5ef43f7752753849d003751a60b9a063c0f"},
+    {file = "polars-1.0.0b1.tar.gz", hash = "sha256:454b5dda863301f6c7d6ab59539a44cc67d0a3dfa3f2ad20ab46d1ef32f4137d"},
 ]
 
 [package.extras]
 adbc = ["adbc-driver-manager", "adbc-driver-sqlite"]
-all = ["polars[adbc,async,cloudpickle,connectorx,deltalake,fastexcel,fsspec,gevent,iceberg,numpy,pandas,plot,pyarrow,pydantic,sqlalchemy,timezone,xlsx2csv,xlsxwriter]"]
+all = ["polars[adbc,async,cloudpickle,connectorx,deltalake,fastexcel,fsspec,gevent,iceberg,numpy,pandas,plot,pyarrow,pydantic,sqlalchemy,style,timezone,xlsx2csv,xlsxwriter]"]
 async = ["nest-asyncio"]
 cloudpickle = ["cloudpickle"]
 connectorx = ["connectorx (>=0.3.2)"]
@@ -1747,6 +1747,7 @@ plot = ["hvplot (>=0.9.1)"]
 pyarrow = ["pyarrow (>=7.0.0)"]
 pydantic = ["pydantic"]
 sqlalchemy = ["pandas", "sqlalchemy"]
+style = ["great-tables (>=0.8.0)"]
 timezone = ["backports-zoneinfo", "tzdata"]
 xlsx2csv = ["xlsx2csv (>=0.8.0)"]
 xlsxwriter = ["xlsxwriter"]
@@ -2659,13 +2660,13 @@ files = [
 
 [[package]]
 name = "urllib3"
-version = "2.2.1"
+version = "2.2.2"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "urllib3-2.2.1-py3-none-any.whl", hash = "sha256:450b20ec296a467077128bff42b73080516e71b56ff59a60a02bef2232c4fa9d"},
-    {file = "urllib3-2.2.1.tar.gz", hash = "sha256:d0570876c61ab9e520d776c38acbbb5b05a776d3f9ff98a5c8fd5162a444cf19"},
+    {file = "urllib3-2.2.2-py3-none-any.whl", hash = "sha256:a448b2f64d686155468037e1ace9f2d2199776e17f0a46610480d311f73e3472"},
+    {file = "urllib3-2.2.2.tar.gz", hash = "sha256:dd505485549a7a552833da5e6063639d0d177c04f23bc3864e41e5dc5f612168"},
 ]
 
 [package.extras]
@@ -3060,4 +3061,4 @@ useradd = ["ruamel.yaml"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "47abc2bcfc89c652bbb6604b5b0e9c4c0c611a8d27c4ffc005b1226a5947bd46"
+content-hash = "7e1287d24eede7570082dcff5a9fdb61a3f8f95b13119dfa734dbb3efbbb7aaf"

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_, parse_one
+from sqlglot import from_
 
 
 from uuid import uuid4
@@ -50,7 +50,7 @@ try:
         pl.Binary: pa.binary(),
         pl.Categorical: pa.large_string(),
     }
-except:
+except ImportError:
     PL_TO_ARROW = {}
     pass
 

@@ -9,7 +9,6 @@ from bmsdna.lakeapi.core.config import Param, SearchConfig, NearbyConfig, BasicC
 from bmsdna.lakeapi.core.types import OperatorType
 import pyarrow as pa
 import logging
-from typing import Sequence
 
 logger = logging.getLogger(__name__)
 

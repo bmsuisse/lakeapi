@@ -34,7 +34,6 @@ while i < 100:
     print(f"{i} run")
     i += 1
 
-
     dt = deltalake.DeltaTable(
         "tests/data/delta/fake",
     )

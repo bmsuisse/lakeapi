@@ -11,7 +11,7 @@ packages = [{ include = "bmsdna" }]
 python = "^3.10"
 pyyaml = "^6.0"
 duckdb = "^1.0.0"
-polars = { version = ">=1.0.0-alpha.1", allow-prereleases = true }
+polars = { version = ">=1.0.0-beta.1", allow-prereleases = true }
 sqlglot = ">=24.0.0"
 
 

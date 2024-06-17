@@ -9,7 +9,6 @@ import pandas as pd
 from hashlib import md5
 import pyarrow as pa
 import json
-import pyarrow.dataset as ds
 import duckdb
 import sqlite3
 from datetime import date
