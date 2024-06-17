@@ -246,7 +246,7 @@ class PolarsExecutionContext(ExecutionContext):
                     from deltalake2db import polars_scan_delta
 
                     partition_filter = (
-                        {p[0]: p[1] for p in partitions if p[1] == "="}
+                        {p[0]: p[2] for p in partitions if p[1] == "="}
                         if partitions
                         else None
                     )
