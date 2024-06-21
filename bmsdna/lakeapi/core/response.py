@@ -207,9 +207,16 @@ class StreamingResponseWCharset(StreamingResponse):
         self.status_code = status_code
         self.filename = filename
         self.send_header_only = method is not None and method.upper() == "HEAD"
+        if "charset" in kwargs:
+            self.charset = kwargs.pop("charset")
         if media_type is None:
             media_type = guess_type(filename or "text/pain")[0] or "text/plain"
-        self.media_type = media_type
+
+        self.media_type = media_type + (
+            "; charset=" + self.charset
+            if self.charset and "charset" not in media_type
+            else ""
+        )
         self.background = background
         self.init_headers(headers)
         if self.filename is not None:
@@ -226,9 +233,6 @@ class StreamingResponseWCharset(StreamingResponse):
         self.stat_result = stat_result
         if stat_result is not None:
             self.set_stat_headers(stat_result)
-
-        if "charset" in kwargs:
-            self.charset = kwargs.pop("charset")
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(stat_result.st_size)
@@ -288,13 +292,13 @@ async def create_response(
         return Response(
             content=context.execute_sql(sql).to_json(),
             headers=headers,
-            media_type=media_type,
+            media_type=(media_type or "application/json") + "; charset=" + charset,
         )
     if format == OutputFormats.ND_JSON:
         return Response(
             content=context.execute_sql(sql).to_ndjson(),
             headers=headers,
-            media_type="application/json-nd",
+            media_type="application/json-nd; charset=" + charset,
         )
 
     if format in [

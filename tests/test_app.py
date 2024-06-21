@@ -3,6 +3,8 @@ from .utils import get_app, get_auth
 import sys
 import polars as pl
 import pandas as pd
+import pytest
+
 
 sys.path.append(".")
 client = TestClient(get_app())
@@ -23,21 +25,25 @@ def test_authentication():
     assert response.status_code == 200
 
 
-def test_fruits_limit_1():
+@pytest.mark.parametrize("engine", engines)
+def test_fruits_limit_1(engine):
     for _ in range(2):
-        for e in engines:
-            response = client.get(
-                f"/api/v1/test/fruits?limit=1&format=json&%24engine={e}", auth=auth
-            )
-            assert response.status_code == 200
-            assert response.json() == [
-                {
-                    "A": 1,
-                    "fruits": "banana",
-                    "B": 5,
-                    "cars": "beetle",
-                }
-            ]
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&format=json&%24engine={engine}", auth=auth
+        )
+        assert (
+            response.headers["Content-Type"].replace(" ", "")
+            == "application/json;charset=utf-8"
+        )
+        assert response.status_code == 200
+        assert response.json() == [
+            {
+                "A": 1,
+                "fruits": "banana",
+                "B": 5,
+                "cars": "beetle",
+            }
+        ]
 
 
 def test_fruits_sort_asc():
