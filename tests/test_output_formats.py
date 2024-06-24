@@ -40,9 +40,26 @@ def test_data_csv_custom(engine):
     import csv
 
     rest = response.content.decode("utf-16-be")
+    assert "|" in rest
     reader = csv.DictReader(rest.splitlines(), dialect={"delimiter": "|"})  # type: ignore
     line1 = reader.__next__()
     assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+
+    response = client.get(
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=cp850&csv_separator=\\t",
+        auth=auth,
+    )
+    assert response.status_code == 200
+
+    import csv
+
+    rest = response.content.decode("cp850")
+    assert "|" in rest
+    lines = rest.split("\n")
+    header = lines[0].split("\t")
+    line1 = lines[1].split("\t")
+    line1_dict = dict(zip(header, line1))
+    assert line1_dict == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
 def test_data_html():
