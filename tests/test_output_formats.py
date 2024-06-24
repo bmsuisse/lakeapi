@@ -32,17 +32,34 @@ def test_data_csv4excel(engine):
 @pytest.mark.parametrize("engine", engines)
 def test_data_csv_custom(engine):
     response = client.get(
-        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=utf-16-be&csv_separator=|",
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=utf-16-be&$csv_separator=|",
         auth=auth,
     )
     assert response.status_code == 200
 
-    import csv
-
     rest = response.content.decode("utf-16-be")
-    reader = csv.DictReader(rest.splitlines(), dialect={"delimiter": "|"})  # type: ignore
-    line1 = reader.__next__()
-    assert line1 == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+    assert "|" in rest
+
+    lines = rest.replace("\r\n", "\n").split("\n")
+    header = lines[0].replace('"', "").split("|")
+    line1 = lines[1].replace('"', "").split("|")
+    line1_dict = dict(zip(header, line1))
+
+    assert line1_dict == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
+
+    response = client.get(
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=cp850&$csv_separator=\\t",
+        auth=auth,
+    )
+    assert response.status_code == 200
+
+    rest = response.content.decode("cp850")
+    assert "\t" in rest
+    lines = rest.replace("\r\n", "\n").split("\n")
+    header = lines[0].replace('"', "").split("\t")
+    line1 = lines[1].replace('"', "").split("\t")
+    line1_dict = dict(zip(header, line1))
+    assert line1_dict == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
 def test_data_html():
