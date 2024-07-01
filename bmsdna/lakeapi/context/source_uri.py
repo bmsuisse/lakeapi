@@ -48,16 +48,17 @@ def _get_default_token(**kwargs) -> str:
 
 
 def _convert_options(
+    uri: str,
     options: dict | None,
     flavor: Literal["fsspec", "object_store", "deltalake2db"],
     token_retrieval_func: Callable[[], str] | None = None,
 ):
     if options is None:
-        return None
+        return uri, None
     use_emulator: bool = options.get("use_emulator", "0").lower() in ["1", "true"]
     if flavor == "fsspec" and "connection_string" not in options and use_emulator:
         constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-        return {"connection_string": constr}
+        return uri, {"connection_string": constr}
     elif (
         flavor == "fsspec"
         and "account_key" not in options
@@ -66,7 +67,7 @@ def _convert_options(
         and "account_name" in options
         and "chain" not in options
     ):  # anon is true by default in fsspec which makes no sense mostly
-        return {"anon": False} | options
+        return uri, ({"anon": False} | options)
 
     new_opts = options.copy()
     anon_value = False
@@ -85,10 +86,12 @@ def _convert_options(
         token_kwargs = {k: new_opts.pop(k) for k in default_azure_args if k in new_opts}
         new_opts["token"] = (token_retrieval_func or _get_default_token)(**token_kwargs)
     if "chain" in options and flavor != "deltalake2db":
-        from deltalake2db.azure_helper import apply_azure_chain
+        from deltalake2db.azure_helper import get_storage_options_object_store
 
-        return apply_azure_chain(new_opts)
-    return new_opts
+        nr, no = get_storage_options_object_store(uri, new_opts, None)
+        assert isinstance(nr, str)
+        return nr, no
+    return uri, new_opts
 
 
 local_versions = dict()
@@ -131,16 +134,19 @@ class SourceUri:
     def get_fs_spec(self) -> tuple[fsspec.AbstractFileSystem, str]:
         if self.account is None:
             return fsspec.filesystem("file"), self.real_uri
-        opts = _convert_options(
+        real_uri = self.real_uri
+        real_uri, opts = _convert_options(
+            real_uri,
             self.accounts.get(self.account, {}),
             "fsspec",
             token_retrieval_func=self.retrieve_token,
         )
         assert opts is not None
         if self.is_azure():
-            return adlfs.AzureBlobFileSystem(**opts), self.real_uri  # type: ignore
+            return adlfs.AzureBlobFileSystem(**opts), real_uri  # type: ignore
         else:
-            raise ValueError("Not supported FS")
+            pr = urllib.parse.urlparse(self.uri)
+            return fsspec.filesystem(pr, **opts), real_uri
 
     def get_uri_options(
         self,
@@ -150,15 +156,15 @@ class SourceUri:
     ) -> tuple[str, dict | None]:
         if self.is_azure() and azure_protocol != "original":
             pr = urllib.parse.urlparse(self.uri)
-            return (
+            return _convert_options(
                 f"{azure_protocol}://{pr.netloc}{pr.path}",
-                _convert_options(
-                    self.accounts.get(self.account) if self.account else None,
-                    flavor,
-                    token_retrieval_func=self.retrieve_token,
-                ),
+                self.accounts.get(self.account) if self.account else None,
+                flavor,
+                token_retrieval_func=self.retrieve_token,
             )
-        return self.real_uri, _convert_options(
+
+        return _convert_options(
+            self.real_uri,
             self.accounts.get(self.account) if self.account else None,
             flavor,
             token_retrieval_func=self.retrieve_token,
