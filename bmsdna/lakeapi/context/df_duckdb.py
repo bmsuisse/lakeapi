@@ -4,7 +4,7 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from deltalake2db import duckdb_create_view_for_delta
+from deltalake2db import duckdb_create_view_for_delta, duckdb_apply_storage_options
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -318,60 +318,14 @@ class DuckDbExecutionContextBase(ExecutionContext):
         partitions: List[Tuple[str, str, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
-        remote_uri, remote_opts = uri.get_uri_options(
-            azure_protocol="azure", flavor="fsspec"
-        )
 
-        if uri.account and remote_opts:
-            with self.con.cursor() as cur:
-                cur.execute("FROM duckdb_secrets();")
-                secrets = cur.fetchall()
-                se_names = [s[0] for s in secrets]
-            if "sec_" + uri.account not in se_names:
-                AZURE_EXT_LOC = os.getenv("AZURE_EXT_LOC")
-                assert " " not in uri.account
-                assert "'" not in uri.account
-                assert "-" not in uri.account
-                assert "/" not in uri.account
-                try:
-                    if AZURE_EXT_LOC:
-                        self.con.execute(
-                            f"INSTALL '{AZURE_EXT_LOC}'; LOAD '{AZURE_EXT_LOC}'"
-                        )
-                    else:
-                        self.con.install_extension("azure")
-                except Exception as e:
-                    logger.error(f"Error installing azure extension: {e}")
-                self.con.load_extension("azure")
-                for ins in AZURE_LOADED_SCRIPTS:
-                    self.con.execute(ins)
-                if "connection_string" in remote_opts:
-                    cr = remote_opts["connection_string"]
-                    self.con.execute(
-                        f"""CREATE SECRET sec_{uri.account} (
-        TYPE AZURE,
-        CONNECTION_STRING '{cr}'
-    );"""
-                    )
-                elif "account_name" in remote_opts and "account_key" in remote_opts:
-                    an = remote_opts["account_name"]
-                    ak = remote_opts["account_key"]
-                    conn_str = f"AccountName={an};AccountKey={ak};BlobEndpoint=https://{an}.blob.core.windows.net;"
-                    self.con.execute(
-                        f"""CREATE SECRET sec_{uri.account} (
-        TYPE AZURE,
-        CONNECTION_STRING '{conn_str}'
-    );"""
-                    )
-                elif "account_name" in remote_opts:
-                    an = remote_opts["account_name"]
-                    self.con.execute(
-                        f"""CREATE SECRET sec_{uri.account} (
-        TYPE AZURE,
-        PROVIDER CREDENTIAL_CHAIN,
-        ACCOUNT_NAME '{an}'
-    );"""
-                    )
+        remote_uri, remote_opts = uri.get_uri_options(flavor="original")
+        duckdb_apply_storage_options(
+            self.con,
+            remote_uri,
+            remote_opts,
+            use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+        )
 
         if file_type == "json":
             self.con.execute(
@@ -401,9 +355,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
             )
             return
         if file_type == "delta" and uri.exists():
-            ab_uri, uri_opts = uri.get_uri_options(flavor="deltalake2db")
+            ab_uri, uri_opts = uri.get_uri_options(flavor="original")
             duckdb_create_view_for_delta(
-                self.con, ab_uri, target_name, storage_options=uri_opts
+                self.con,
+                ab_uri,
+                target_name,
+                storage_options=uri_opts,
+                use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
             )
             return
         if file_type == "duckdb":

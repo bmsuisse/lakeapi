@@ -5,93 +5,29 @@ import os
 import urllib.parse
 
 if TYPE_CHECKING:
-    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
-_credential: "DefaultAzureCredential | None | ManagedIdentityCredential" = None
-
-default_azure_args = [
-    "authority",
-    "exclude_workload_identity_credential",
-    "exclude_developer_cli_credential",
-    "exclude_cli_credential",
-    "exclude_environment_credential",
-    "exclude_managed_identity_credential",
-    "exclude_powershell_credential",
-    "exclude_visual_studio_code_credential",
-    "exclude_shared_token_cache_credential",
-    "exclude_interactive_browser_credential",
-    "interactive_browser_tenant_id",
-    "managed_identity_client_id",
-    "workload_identity_client_id",
-    "workload_identity_tenant_id",
-    "interactive_browser_client_id",
-    "shared_cache_username",
-    "shared_cache_tenant_id",
-    "visual_studio_code_tenant_id",
-    "process_timeout",
-]
-
-
-def _get_default_token(**kwargs) -> str:
-    global _credential
-    if _credential is None:
-        if os.getenv("LAKE_MANAGED_IDENTITY_ID") is not None:
-            from azure.identity import ManagedIdentityCredential
-
-            mid = os.environ["LAKE_MANAGED_IDENTITY_ID"]
-            mid = None if mid == "default" else mid
-            _credential = ManagedIdentityCredential(client_id=mid)
-        else:
-            from azure.identity import DefaultAzureCredential
-
-            _credential = DefaultAzureCredential(**kwargs)
-    return _credential.get_token("https://storage.azure.com/.default").token
+    from azure.core.credentials import TokenCredential
 
 
 def _convert_options(
     uri: str,
     options: dict | None,
-    flavor: Literal["fsspec", "object_store", "deltalake2db"],
-    token_retrieval_func: Callable[[], str] | None = None,
+    flavor: Literal["fsspec", "object_store", "original"],
+    token_retrieval_func: "Callable[[str], TokenCredential] | None" = None,
 ):
     if options is None:
         return uri, None
-    use_emulator: bool = options.get("use_emulator", "0").lower() in ["1", "true"]
-    if flavor == "fsspec" and "connection_string" not in options and use_emulator:
-        constr = "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;QueueEndpoint=http://127.0.0.1:10001/devstoreaccount1;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;"
-        return uri, {"connection_string": constr}
-    elif (
-        flavor == "fsspec"
-        and "account_key" not in options
-        and "anon" not in options
-        and "sas_token" not in options
-        and "account_name" in options
-        and "chain" not in options
-    ):  # anon is true by default in fsspec which makes no sense mostly
-        return uri, ({"anon": False} | options)
+    if flavor == "fsspec":
+        from deltalake2db.azure_helper import get_storage_options_fsspec
 
-    new_opts = options.copy()
-    anon_value = False
-    if flavor in ["deltalake2db", "object_store"] and "anon" in options:
-        anon_value = new_opts.pop("anon")
-
-    if (
-        flavor in ["deltalake2db", "object_store"]
-        and "account_key" not in options
-        and "sas_token" not in options
-        and "token" not in options
-        and "chain" not in options
-        and not use_emulator
-        and not anon_value
-    ):
-        token_kwargs = {k: new_opts.pop(k) for k in default_azure_args if k in new_opts}
-        new_opts["token"] = (token_retrieval_func or _get_default_token)(**token_kwargs)
-    if "chain" in options and flavor != "deltalake2db":
+        return uri, get_storage_options_fsspec(options)
+    elif flavor == "original":
+        return uri, options
+    else:
         from deltalake2db.azure_helper import get_storage_options_object_store
 
-        nr, no = get_storage_options_object_store(uri, new_opts, None)
+        nr, no = get_storage_options_object_store(uri, options, token_retrieval_func)
         assert isinstance(nr, str)
         return nr, no
-    return uri, new_opts
 
 
 local_versions = dict()
@@ -107,7 +43,7 @@ class SourceUri:
         account: str | None,
         accounts: dict,
         data_path: str | None,
-        token_retrieval_func: "Callable[[SourceUri], str] | None" = None,
+        token_retrieval_func: "Callable[[SourceUri, str], TokenCredential] | None" = None,
     ):
         self.uri = uri
         self.account = account
@@ -115,7 +51,7 @@ class SourceUri:
         self.data_path = data_path
         self.token_retrieval_func = token_retrieval_func
         self.retrieve_token = (
-            (lambda: token_retrieval_func(self)) if token_retrieval_func else None
+            (lambda v: token_retrieval_func(self, v)) if token_retrieval_func else None
         )
         self.real_uri = (
             uri
@@ -149,20 +85,8 @@ class SourceUri:
             return fsspec.filesystem(pr, **opts), real_uri
 
     def get_uri_options(
-        self,
-        *,
-        flavor: Literal["fsspec", "object_store", "deltalake2db"],
-        azure_protocol="original",
+        self, *, flavor: Literal["fsspec", "object_store", "original"]
     ) -> tuple[str, dict | None]:
-        if self.is_azure() and azure_protocol != "original":
-            pr = urllib.parse.urlparse(self.uri)
-            return _convert_options(
-                f"{azure_protocol}://{pr.netloc}{pr.path}",
-                self.accounts.get(self.account) if self.account else None,
-                flavor,
-                token_retrieval_func=self.retrieve_token,
-            )
-
         return _convert_options(
             self.real_uri,
             self.accounts.get(self.account) if self.account else None,

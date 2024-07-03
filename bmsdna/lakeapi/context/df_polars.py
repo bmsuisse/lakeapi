@@ -223,7 +223,7 @@ class PolarsExecutionContext(ExecutionContext):
         match file_type:
             case "delta":
                 try:
-                    db_uri, db_opts = uri.get_uri_options(flavor="deltalake2db")
+                    db_uri, db_opts = uri.get_uri_options(flavor="original")
                     from deltalake2db import polars_scan_delta
 
                     partition_filter = (

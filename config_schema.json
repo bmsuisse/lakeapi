@@ -26,31 +26,6 @@
             "title": "AppConfig",
             "type": "object"
         },
-        "Column": {
-            "properties": {
-                "name": {
-                    "title": "Name",
-                    "type": "string"
-                },
-                "alias": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ],
-                    "default": null,
-                    "title": "Alias"
-                }
-            },
-            "required": [
-                "name"
-            ],
-            "title": "Column",
-            "type": "object"
-        },
         "Config": {
             "properties": {
                 "name": {
@@ -296,7 +271,7 @@
                     "anyOf": [
                         {
                             "items": {
-                                "$ref": "#/$defs/Column"
+                                "$ref": "#/$defs/SelectColumn"
                             },
                             "type": "array"
                         },
@@ -603,6 +578,31 @@
                 "columns"
             ],
             "title": "SearchConfig",
+            "type": "object"
+        },
+        "SelectColumn": {
+            "properties": {
+                "name": {
+                    "title": "Name",
+                    "type": "string"
+                },
+                "alias": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "default": null,
+                    "title": "Alias"
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "SelectColumn",
             "type": "object"
         },
         "SortBy": {
