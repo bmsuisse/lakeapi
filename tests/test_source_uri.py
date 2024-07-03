@@ -57,5 +57,4 @@ def test_account_key():
 
 if __name__ == "__main__":
     test_fsspec()
-    test_object_store()
     test_account_key()
