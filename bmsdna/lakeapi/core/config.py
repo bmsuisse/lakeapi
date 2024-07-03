@@ -35,6 +35,7 @@ from hashlib import md5
 
 if TYPE_CHECKING:
     from bmsdna.lakeapi.context.df_base import ExecutionContext
+    from azure.core.credentials import TokenCredential
 logger = get_logger(__name__)
 
 
@@ -49,7 +50,7 @@ class BasicConfig:
     schema_cache_ttl: int | None
     prepare_sql_db_hook: "Callable[[ExecutionContext], Any] | None"
     local_data_cache_path: str
-    token_retrieval_func: Optional[Callable[[SourceUri], str]]
+    token_retrieval_func: "Optional[Callable[[SourceUri, str], TokenCredential]]"
     should_hide_col_name: Callable[[str], bool]
 
 
