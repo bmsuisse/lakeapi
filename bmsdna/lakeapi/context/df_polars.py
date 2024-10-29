@@ -93,7 +93,7 @@ class PolarsResultData(ResultData):
             return _df.columns
         return self._df.columns
 
-    def query_builder(self) -> ex.Query:
+    def query_builder(self) -> ex.Select:
         if not isinstance(self.sql, str):
             return from_(self.sql.subquery(alias="s1"))
         else:

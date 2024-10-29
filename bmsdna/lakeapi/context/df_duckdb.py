@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
-from bmsdna.lakeapi.core.types import FileTypes
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
 from deltalake2db import duckdb_create_view_for_delta, duckdb_apply_storage_options
 import duckdb
@@ -48,7 +48,7 @@ class DuckDBResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> ex.Query:
+    def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
             return from_(self.original_sql.subquery())
         else:
@@ -315,7 +315,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: List[Tuple[str, str, Any]] | None,
+        partitions: List[Tuple[str, OperatorType, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 

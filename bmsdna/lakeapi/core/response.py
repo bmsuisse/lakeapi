@@ -199,9 +199,9 @@ class StreamingResponseWCharset(StreamingResponse):
         **kwargs,
     ):
         if isinstance(content, typing.AsyncIterable):
-            self.body_iterator = content
+            self.body_iterator = content  # type: ignore
         else:
-            self.body_iterator = iterate_in_threadpool(content)
+            self.body_iterator = iterate_in_threadpool(content)  # type: ignore
 
         # taking over from FileResponse
         self.status_code = status_code
