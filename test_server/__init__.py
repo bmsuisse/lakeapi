@@ -45,7 +45,7 @@ def start_mssql_server() -> Container:
             environment=envs,
             detach=True,
             name="test4sql",
-            ports={"1433/tcp": "1439"},
+            ports={"1433/tcp": 1439},
         )  # type: ignore
     assert sql_server is not None
     sql_server.start()
@@ -126,7 +126,7 @@ def start_azurite() -> Container:
             "mcr.microsoft.com/azure-storage/azurite:latest",
             detach=True,
             name="test4azurite",
-            ports={"10000/tcp": "10000", "10001/tcp": "10001", "10002/tcp": "10002"},
+            ports={"10000/tcp": 10000, "10001/tcp": 10001, "10002/tcp": 10002},
         )  # type: ignore
     assert azurite_server is not None
     azurite_server.start()

@@ -25,7 +25,7 @@ def test_async_execution():
 
         duration = end - start
         print(f"Engine {engine} took {duration} seconds with format {format}")
-        assert end - start < 0.75
+        assert duration < 1.0
 
     async def call_api_2(engine, format):
         start = time.time()

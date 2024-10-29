@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 
 from sqlglot import Dialect
-from bmsdna.lakeapi.core.types import FileTypes
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
@@ -211,7 +211,7 @@ class ExecutionContext(ABC):
         self,
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, str, Any]]],
+        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
     ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
@@ -260,7 +260,7 @@ class ExecutionContext(ABC):
                         "Delta table protocol version not supported, use DuckDB or Polars"
                     )
                 return dt.to_pyarrow_dataset(
-                    partitions=partitions,
+                    partitions=partitions,  # type: ignore
                     parquet_read_options={"coerce_int96_timestamp_unit": "us"},
                 )
             case _:
@@ -387,7 +387,7 @@ class ExecutionContext(ABC):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, str, Any]]],
+        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)

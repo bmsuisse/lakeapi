@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
-from bmsdna.lakeapi.core.types import FileTypes
+from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from bmsdna.lakeapi.context.df_base import (
     FLAVORS,
     ExecutionContext,
@@ -70,7 +70,7 @@ class ODBCResultData(ResultData):
     def columns(self):
         return self.arrow_schema().names
 
-    def query_builder(self) -> ex.Query:
+    def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
             return from_(self.original_sql.subquery().as_("t"))
         else:
@@ -182,7 +182,7 @@ class ODBCExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: List[Tuple[str, str, Any]] | None,
+        partitions: List[Tuple[str, OperatorType, Any]] | None,
     ):
         assert file_type == "odbc"
         assert uri.account is None

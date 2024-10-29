@@ -33,7 +33,7 @@ from bmsdna.lakeapi.core.config import (
 )
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes
+from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
 
 logger = get_logger(__name__)
 
@@ -176,7 +176,7 @@ class Datasource:
 
     def get_df(
         self,
-        partitions: Optional[List[Tuple[str, str, Any]]] = None,
+        partitions: Optional[List[Tuple[str, OperatorType, Any]]] = None,
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
