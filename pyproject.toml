@@ -1,66 +1,56 @@
-[tool.poetry]
+[project]
 name = "bmsdna-lakeapi"
 version = "0.22.0"
 description = ""
-authors = ["DWH Team <you@example.com>"]
-license = "MIT"
-readme = "README.md"
-packages = [{ include = "bmsdna" }]
+authors = [
+    { name = "DWH Team", email = "you@example.com" },
+]
+dependencies = [
+    "pyyaml ~=6.0",
+    "duckdb >=1.1.0,<2",
+    "polars >=1.12.0,<2",
+    "sqlglot >=24.0.0",
+    "fastexcel >=0.10.4",
+    "argon2-cffi >=23.1.0,<24",
+    "xlsxwriter >=3.1.0,<4",
+    "pyjwt >=2.6.0,<3",
+    "ruamel.yaml >=0.18.5",
+    "deltalake >=0.16.1",
+    "fastapi >=0.110.0",
+    "arrow-odbc >=5.0.0",
+    "expandvars >=0.12.0",
+    "pandas >=2.1.0,<3",
+    "fsspec >=2024.2.0,<2025",
+    "adlfs >=2024.2.0,<2025",
+    "deltalake2db >=0.7.0",
+    "numpy >=1.26.0,<2",
+]
+requires-python = "~=3.10"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pyyaml = "^6.0"
-duckdb = "^1.1.0"
-polars = "^1.12.0"
-sqlglot = ">=24.0.0"
-fastexcel = { version = ">=0.10.4", optional = true }
-argon2-cffi = { version = "^23.1.0", optional = true }
+[project.scripts]
+validate_lakeapi_schema = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli"
+add_lakeapi_user = "bmsdna.lakeapi.tools.useradd:useradd_cli"
 
-xlsxwriter = "^3.1.0"
-pyjwt = { version = "^2.6.0", optional = true }
-"ruamel.yaml" = { version = "^0.18.5", optional = true }
-deltalake = ">=0.16.1"
-fastapi = ">=0.110.0"
-arrow-odbc = { version = ">=5.0.0", optional = true }
-expandvars = "^0.12.0"
-pandas = "^2.1.0"
-fsspec = "^2024.2.0"
-adlfs = "^2024.2.0"
-deltalake2db = ">=0.7.0"
-numpy = { version = "^1.26.0", optional = true }
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-pyright = "^1.1.308"
-uvicorn = ">=0.29.0"
-psutil = "^5.9.5"
-ruff = ">=0.4.7"
-
-[tool.poetry.group.test]
-optional = true
-
-
-[tool.poetry.group.test.dependencies]
-faker = "^22.2.0"
-pytest = "^7.3.1"
-httpx = "^0.26.0"
-pytest-env = "^1.1.3"
-pytest-cov = "^4.0.0"
-pytest-benchmark = "^4.0.0"
-pytest-monitor = "^1.6.5"
-coverage = { extras = ["toml"], version = "^7.2.7" }
-docker = "^7.0.0"
-pyodbc = "^5.0.1"
-azure-storage-blob = "^12.12.0"
-adbc-driver-sqlite = "^0.10.0"
-python-dotenv = "^1.0.1"
-
+[project.optional-dependencies]
+polars = [
+    "fastexcel",
+]
+auth = [
+    "argon2-cffi",
+    "pyjwt",
+]
+useradd = [
+    "ruamel.yaml",
+]
+odbc = [
+    "arrow-odbc",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = [
+    "hatchling",
+]
+build-backend = "hatchling.build"
 
 [tool.pyright]
 venv = ".venv"
@@ -71,19 +61,6 @@ typeCheckingMode = "basic"
 [tool.black]
 line-length = 119
 
-[tool.poetry.extras]
-polars = ["fastexcel"]
-auth = ["argon2-cffi", "pyjwt"]
-useradd = ["ruamel.yaml"]
-odbc = ["arrow-odbc"]
-
-
-[tool.poetry.scripts]
-validate_lakeapi_schema = { callable = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli" }
-add_lakeapi_user = { callable = "bmsdna.lakeapi.tools.useradd:useradd_cli", extras = [
-    "useradd",
-] }
-
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
@@ -92,4 +69,42 @@ exclude_lines = [
     "@(abc.)?abstractmethod",
     "raise AssertionError",
     "raise NotImplementedError",
+]
+
+[tool.uv]
+native-tls = true
+keyring-provider = "subprocess"
+
+[[tool.uv.index]]
+name = "BMSAzureDevOps"
+url = "https://VssSessionToken@pkgs.dev.azure.com/bmeurope/_packaging/BMS/pypi/simple/"
+explicit = true
+publish-url = "https://pkgs.dev.azure.com/bmeurope/_packaging/BMS/pypi/upload/"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "bmsdna",
+]
+
+[dependency-groups]
+dev = [
+    "pyright >=1.1.308,<2",
+    "uvicorn >=0.29.0",
+    "psutil >=5.9.5,<6",
+    "ruff >=0.4.7",
+]
+test = [
+    "faker >=22.2.0,<23",
+    "pytest >=7.3.1,<8",
+    "httpx >=0.26.0",
+    "pytest-env >=1.1.3,<2",
+    "pytest-cov >=4.0.0,<5",
+    "pytest-benchmark >=4.0.0,<5",
+    "pytest-monitor >=1.6.5,<2",
+    "coverage [toml]>=7.2.7,<8",
+    "docker >=7.0.0,<8",
+    "pyodbc >=5.0.1,<6",
+    "azure-storage-blob >=12.12.0,<13",
+    "adbc-driver-sqlite >=0.10.0",
+    "python-dotenv >=1.0.1,<2",
 ]
