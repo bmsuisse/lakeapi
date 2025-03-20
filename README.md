@@ -223,7 +223,7 @@ tables:
     api_method: get
     engine: odbc #requires the odbc extra
     datasource:
-      uri: DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=${MY_SQL_PWD};Database=AdventureWorks
+      uri: DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD=${MY_SQL_PWD};Database=AdventureWorks
       table_name: "HumanResources.Department"
     params:
       - GroupName
