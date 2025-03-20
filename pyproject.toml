@@ -1,10 +1,8 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.22.0"
+version = "0.22.1"
 description = ""
-authors = [
-    { name = "DWH Team", email = "you@example.com" },
-]
+authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
     "pyyaml ~=6.0",
     "duckdb >=1.1.0,<2",
@@ -32,24 +30,13 @@ validate_lakeapi_schema = "bmsdna.lakeapi.tools.validateschema:validate_schema_c
 add_lakeapi_user = "bmsdna.lakeapi.tools.useradd:useradd_cli"
 
 [project.optional-dependencies]
-polars = [
-    "fastexcel",
-]
-auth = [
-    "argon2-cffi",
-    "pyjwt",
-]
-useradd = [
-    "ruamel.yaml",
-]
-odbc = [
-    "arrow-odbc",
-]
+polars = ["fastexcel"]
+auth = ["argon2-cffi", "pyjwt"]
+useradd = ["ruamel.yaml"]
+odbc = ["arrow-odbc"]
 
 [build-system]
-requires = [
-    "hatchling",
-]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.pyright]
@@ -82,9 +69,7 @@ explicit = true
 publish-url = "https://pkgs.dev.azure.com/bmeurope/_packaging/BMS/pypi/upload/"
 
 [tool.hatch.build.targets.wheel]
-packages = [
-    "bmsdna",
-]
+packages = ["bmsdna"]
 
 [dependency-groups]
 dev = [
