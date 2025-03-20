@@ -56,7 +56,7 @@ def start_mssql_server() -> Container:
     import pyodbc
 
     with pyodbc.connect(
-        "DRIVER={ODBC Driver 17 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD="
+        "DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1,1439;ENCRYPT=yes;TrustServerCertificate=Yes;UID=sa;PWD="
         + envs["MSSQL_SA_PASSWORD"]
         + ";DATABASE=master"
     ) as con:
