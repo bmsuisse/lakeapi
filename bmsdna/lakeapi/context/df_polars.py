@@ -82,7 +82,7 @@ class PolarsResultData(ResultData):
             self._df = _df
         return _df
 
-    def columns(self):
+    async def columns(self):
         if self._df is None:
             _df = pl.DataFrame(
                 [],
@@ -161,7 +161,7 @@ class PolarsExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return True
 
-    def create_view(self, name: str, sql: str):
+    async def create_view(self, name: str, sql: str):
         self.sql_context.register(name, self.sql_context.execute(sql))
 
     def register_arrow(
@@ -278,7 +278,7 @@ class PolarsExecutionContext(ExecutionContext):
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
         self.sql_context.register(target_name, df)
 
-    def execute_sql(
+    async def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -287,8 +287,8 @@ class PolarsExecutionContext(ExecutionContext):
     ) -> PolarsResultData:
         return PolarsResultData(sql, self.sql_context, self.chunk_size)
 
-    def list_tables(self) -> ResultData:
-        return self.execute_sql("SHOW TABLES")
+    async def list_tables(self) -> ResultData:
+        return await self.execute_sql("SHOW TABLES")
 
     def __enter__(self):
         return self

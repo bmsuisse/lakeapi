@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from fastapi.concurrency import run_in_threadpool
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
@@ -91,11 +92,11 @@ class ODBCResultData(ResultData):
         self._arrow_schema = batches.schema
         return self._arrow_schema
 
-    @property
-    def df(self):
+    async def get_df(self):
         if self._df is None:
             query = get_sql(self.original_sql, dialect=self.dialect)
-            batch_reader = arrow_odbc.read_arrow_batches_from_odbc(
+            batch_reader = await run_in_threadpool(
+                arrow_odbc.read_arrow_batches_from_odbc,
                 query,
                 connection_string=self.connection_string,
                 batch_size=self.chunk_size,
@@ -104,16 +105,19 @@ class ODBCResultData(ResultData):
             self._df = pa.Table.from_batches(batch_reader, batch_reader.schema)
         return self._df
 
-    def to_pandas(self):
-        return self.df.to_pandas()
+    async def to_pandas(self):
+        return (await self.get_df()).to_pandas()
 
-    def to_arrow_table(self):
-        return self.df
+    async def to_arrow_table(self):
+        return await self.get_df()
 
-    def to_arrow_recordbatch(self, chunk_size: int = 10000):
+    async def to_arrow_recordbatch(self, chunk_size: int = 10000):
         query = get_sql(self.original_sql, dialect=self.dialect)
-        res = arrow_odbc.read_arrow_batches_from_odbc(
-            query, connection_string=self.connection_string, batch_size=self.chunk_size
+        res = await run_in_threadpool(
+            arrow_odbc.read_arrow_batches_from_odbc,
+            query,
+            connection_string=self.connection_string,
+            batch_size=self.chunk_size,
         )
         assert res is not None
         return BatchReaderWrap(res)
@@ -149,7 +153,7 @@ class ODBCExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return False
 
-    def execute_sql(
+    async def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -188,8 +192,8 @@ class ODBCExecutionContext(ExecutionContext):
         assert uri.account is None
         self.datasources[target_name] = uri.uri
 
-    def list_tables(self) -> ResultData:
-        return self.execute_sql(
+    async def list_tables(self) -> ResultData:
+        return await self.execute_sql(
             "SELECT table_schema, table_name as name, table_type from information_schema.tables"
         )
 

@@ -1,6 +1,6 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.22.1"
+version = "0.23.0"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
@@ -43,7 +43,7 @@ build-backend = "hatchling.build"
 venv = ".venv"
 venvPath = "."
 pythonVersion = "3.10"
-typeCheckingMode = "basic"
+typeCheckingMode = "standard"
 
 [tool.black]
 line-length = 119

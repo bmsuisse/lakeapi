@@ -86,7 +86,7 @@ class DuckDBResultData(ResultData):
 
     async def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_parquet(file_name)
+            return await super().write_parquet(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
@@ -99,7 +99,7 @@ class DuckDBResultData(ResultData):
 
     async def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_nd_json(file_name)
+            return await super().write_nd_json(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
@@ -111,7 +111,7 @@ class DuckDBResultData(ResultData):
 
     async def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
-            return super().write_csv(file_name, separator=separator)
+            return await super().write_csv(file_name, separator=separator)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
@@ -123,7 +123,7 @@ class DuckDBResultData(ResultData):
 
     async def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_json(file_name)
+            return await super().write_json(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};

@@ -134,10 +134,12 @@ async def _write_frame(
         ds.write_excel(out, autofit=True)
         is_utf_8 = True
     elif format == OutputFormats.HTML:
-        content.to_pandas().to_html(out + ("" if is_utf_8 else "_u8"), index=False)
+        (await _async(content.to_pandas())).to_html(
+            out + ("" if is_utf_8 else "_u8"), index=False
+        )
 
     elif format == OutputFormats.XML:
-        content.to_pandas().to_xml(
+        (await _async(content.to_pandas())).to_xml(
             out + ("" if is_utf_8 else "_u8"), index=False, parser="etree"
         )
 

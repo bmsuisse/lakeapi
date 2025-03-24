@@ -130,7 +130,7 @@ class ResultData(ABC):
                 t.write_ndjson(f)
 
     @abstractmethod
-    def to_pandas(self) -> "pd.DataFrame": ...
+    async def to_pandas(self) -> "pd.DataFrame": ...
 
     async def write_parquet(self, file_name: str):
         import pyarrow.parquet as paparquet
