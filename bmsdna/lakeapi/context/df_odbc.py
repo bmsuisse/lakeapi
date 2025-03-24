@@ -67,7 +67,7 @@ class ODBCResultData(ResultData):
             else "duckdb"
         )
 
-    def columns(self):
+    async def columns(self):
         return self.arrow_schema().names
 
     def query_builder(self) -> ex.Select:

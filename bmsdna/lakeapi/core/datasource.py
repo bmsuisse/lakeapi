@@ -35,6 +35,8 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
 
+from bmsdna.lakeapi.utils.async_utils import _async
+
 logger = get_logger(__name__)
 
 endpoints = Literal["query", "meta", "request", "sql"]
@@ -92,9 +94,9 @@ class Datasource:
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert (
-            self.config.file_type == "delta"
-        ), "only delta is supported for copy_local"
+        assert self.config.file_type == "delta", (
+            "only delta is supported for copy_local"
+        )
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
@@ -156,7 +158,7 @@ class Datasource:
             )
         return ex.table_(tname)
 
-    def get_schema(self) -> pa.Schema:
+    async def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table(schema_only=True)
@@ -172,9 +174,9 @@ class Datasource:
                 ]
                 return pyarrow.schema(fields)
             return schema
-        return self.get_df(endpoint="meta").arrow_schema()
+        return (await self.get_df(endpoint="meta")).arrow_schema()
 
-    def get_df(
+    async def get_df(
         self,
         partitions: Optional[List[Tuple[str, OperatorType, Any]]] = None,
         endpoint: endpoints = "request",
@@ -199,7 +201,7 @@ class Datasource:
                     self.config.file_type,
                     partitions=partitions,
                 )
-                self.df = self.sql_context.execute_sql(self.query)
+                self.df = await _async(self.sql_context.execute_sql(self.query))
 
         return self.df  # type: ignore
 

@@ -92,7 +92,7 @@ def create_sql_endpoint(
         ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
-        return con.list_tables().to_arrow_table().to_pylist()
+        return (await (await con.list_tables()).to_arrow_table()).to_pylist()
 
     @router.post(
         "/api/sql",

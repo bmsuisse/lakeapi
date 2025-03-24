@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, Request, status
 import dataclasses
 from faker import Faker
@@ -20,7 +21,11 @@ def get_app(default_engine="duckdb"):
         data_path="tests/data",
         default_engine=default_engine,
     )
-    sti = bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
+
+    async def _init():
+        await bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
+
+    sti = asyncio.run(_init())
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(

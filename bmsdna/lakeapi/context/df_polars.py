@@ -75,10 +75,10 @@ class PolarsResultData(ResultData):
             self._df = self.sql_context.execute(real_sql)
         return self._df
 
-    def get_df_collected(self) -> "pl.DataFrame":
+    async def get_df_collected(self) -> "pl.DataFrame":
         _df = self.get_df()
         if isinstance(_df, pl.LazyFrame):
-            _df = _df.collect()
+            _df = await _df.collect_async()
             self._df = _df
         return _df
 
@@ -115,26 +115,30 @@ class PolarsResultData(ResultData):
             _df = pl.DataFrame([], self._df.collect_schema())
         return _df.to_arrow().schema
 
-    def to_pandas(self):
-        return self.get_df_collected().to_pandas()
+    async def to_pandas(self):
+        return (await self.get_df_collected()).to_pandas()
 
-    def to_arrow_table(self):
-        return self.get_df_collected().to_arrow()
+    async def to_arrow_table(self):
+        return (await self.get_df_collected()).to_arrow()
 
-    def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        return self.get_df_collected().to_arrow().to_reader(max_chunksize=chunk_size)
+    async def to_arrow_recordbatch(self, chunk_size: int = 10000):
+        return (
+            (await self.get_df_collected())
+            .to_arrow()
+            .to_reader(max_chunksize=chunk_size)
+        )
 
-    def write_parquet(self, file_name: str):
-        self.get_df_collected().write_parquet(file_name, use_pyarrow=True)
+    async def write_parquet(self, file_name: str):
+        (await self.get_df_collected()).write_parquet(file_name, use_pyarrow=True)
 
-    def write_json(self, file_name: str):
-        self.get_df_collected().write_json(file_name)
+    async def write_json(self, file_name: str):
+        (await self.get_df_collected()).write_json(file_name)
 
-    def write_csv(self, file_name: str, *, separator: str):
-        self.get_df_collected().write_csv(file_name, separator=separator)
+    async def write_csv(self, file_name: str, *, separator: str):
+        (await self.get_df_collected()).write_csv(file_name, separator=separator)
 
-    def write_nd_json(self, file_name: str):
-        self.get_df_collected().write_ndjson(file_name)
+    async def write_nd_json(self, file_name: str):
+        (await self.get_df_collected()).write_ndjson(file_name)
 
 
 class PolarsExecutionContext(ExecutionContext):
