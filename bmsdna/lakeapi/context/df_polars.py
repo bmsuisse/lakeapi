@@ -193,7 +193,7 @@ class PolarsExecutionContext(ExecutionContext):
         if len(complex_cols) == 0:
             return old_query
 
-        rd = PolarsResultData(old_query, self.chunk_size)
+        rd = PolarsResultData(old_query, self.chunk_size, self._to_register.copy())
         df = rd.get_sql_context().execute(old_query.sql(polars_dialect))
 
         def to_json(x):
