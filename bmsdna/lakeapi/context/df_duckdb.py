@@ -63,18 +63,21 @@ class DuckDBResultData(ResultData):
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
-        with self.con.cursor() as cur:
-            await run_in_threadpool(cur.execute, query)
-            self._arrow_schema = self.con.execute(query).arrow().schema
+
+        def _get_schema():
+            self.con.execute(query)
+            return self.con.arrow().schema
+
+        self._arrow_schema = await run_in_threadpool(_get_schema)
+
         return self._arrow_schema
 
     async def to_pandas(self):
         query = get_sql(self.original_sql, dialect="duckdb")
 
         def _to_df():
-            with self.con.cursor() as cur:
-                cur.execute(query)
-                return cur.df()
+            self.con.execute(query)
+            return self.con.df()
 
         return await run_in_threadpool(_to_df)
 
@@ -82,9 +85,8 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, dialect="duckdb")
 
         def _to_df():
-            with self.con.cursor() as cur:
-                cur.execute(query)
-                return cur.arrow()
+            self.con.execute(query)
+            return self.con.arrow()
 
         return await run_in_threadpool(_to_df)
 
@@ -92,9 +94,8 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, dialect="duckdb")
 
         def _to_df():
-            with self.con.cursor() as cur:
-                cur.execute(query)
-                return cur.fetch_record_batch(chunk_size)
+            self.con.execute(query)
+            return self.con.fetch_record_batch(chunk_size)
 
         return await run_in_threadpool(_to_df)
 
@@ -108,8 +109,8 @@ class DuckDBResultData(ResultData):
                          COPY (SELECT *FROM {uuidstr})
                          TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000);
                          DROP VIEW {uuidstr}"""
-        with self.con.cursor() as cur:
-            await run_in_threadpool(cur.execute, full_query)
+
+        await run_in_threadpool(self.con.execute, full_query)
 
     async def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
@@ -120,8 +121,8 @@ class DuckDBResultData(ResultData):
                          COPY (SELECT *FROM {uuidstr})
                          TO '{file_name}' (FORMAT JSON);
                          DROP VIEW {uuidstr}"""
-        with self.con.cursor() as cur:
-            await run_in_threadpool(cur.execute, full_query)
+
+        await run_in_threadpool(self.con.execute, full_query)
 
     async def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
@@ -132,8 +133,7 @@ class DuckDBResultData(ResultData):
                          COPY (SELECT *FROM {uuidstr}) 
                          TO '{file_name}' (FORMAT CSV, delim '{separator}', header True);
                          DROP VIEW {uuidstr};"""
-        with self.con.cursor() as cur:
-            await run_in_threadpool(cur.execute, full_query)
+        await run_in_threadpool(self.con.execute, full_query)
 
     async def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
@@ -144,8 +144,7 @@ class DuckDBResultData(ResultData):
                          COPY (SELECT *FROM {uuidstr})  
                          TO '{file_name}' (FORMAT JSON, Array True); 
                          DROP VIEW {uuidstr};"""
-        with self.con.cursor() as cur:
-            await run_in_threadpool(cur.execute, full_query)
+        await run_in_threadpool(self.con.execute, full_query)
 
 
 def match_25(
@@ -180,7 +179,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size, engine_name="duckdb")
-        self.con = con
+        self.con = con.cursor()
         for ins in DUCK_INIT_SCRIPTS:
             self.con.execute(ins)
         self.res_con = None
@@ -204,7 +203,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         self.con.register(name, ds)
 
     def close(self):
-        pass
+        self.con.close()
 
     async def execute_sql(
         self,
