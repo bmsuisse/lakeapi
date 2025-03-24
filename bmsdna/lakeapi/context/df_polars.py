@@ -269,9 +269,10 @@ class PolarsExecutionContext(ExecutionContext):
                 query = "SELECT * FROM " + (source_table_name or target_name)
                 import duckdb
 
-                t = duckdb.connect(ab_uri).execute(query).fetch_arrow_table()
+                with duckdb.connect(ab_uri, read_only=True) as con:
+                    t = con.execute(query).fetch_arrow_table()
 
-                df = cast(pl.LazyFrame, pl.from_arrow(t))
+                    df = cast(pl.LazyFrame, pl.from_arrow(t))
             # case "odbc": to be tested, attention on security!
             #             #    query = "SELECT * FROM " + (source_table_name or target_name)
             #    df = pl.read_database(query=query, connection=uri.uri)
