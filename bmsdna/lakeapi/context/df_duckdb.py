@@ -68,21 +68,35 @@ class DuckDBResultData(ResultData):
             self._arrow_schema = self.con.execute(query).arrow().schema
         return self._arrow_schema
 
-    async def get_df(self):
-        if self._df is None:
-            query = get_sql(self.original_sql, dialect="duckdb")
-            with self.con.cursor() as cur:
-                self._df = await run_in_threadpool(cur.execute, query)
-        return self._df
-
     async def to_pandas(self):
-        return (await self.get_df()).df()
+        query = get_sql(self.original_sql, dialect="duckdb")
+
+        def _to_df():
+            with self.con.cursor() as cur:
+                cur.execute(query)
+                return cur.df()
+
+        return await run_in_threadpool(_to_df)
 
     async def to_arrow_table(self):
-        return (await self.get_df()).arrow()
+        query = get_sql(self.original_sql, dialect="duckdb")
+
+        def _to_df():
+            with self.con.cursor() as cur:
+                cur.execute(query)
+                return cur.arrow()
+
+        return await run_in_threadpool(_to_df)
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        return (await self.get_df()).fetch_record_batch(chunk_size)
+        query = get_sql(self.original_sql, dialect="duckdb")
+
+        def _to_df():
+            with self.con.cursor() as cur:
+                cur.execute(query)
+                return cur.fetch_record_batch(chunk_size)
+
+        return await run_in_threadpool(_to_df)
 
     async def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
