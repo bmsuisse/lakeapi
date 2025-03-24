@@ -199,7 +199,6 @@ class DuckDbExecutionContextBase(ExecutionContext):
         name: str,
         ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
     ):
-        # self.con.from_arrow(ds).create_view(name, replace=True)
         self.con.register(name, ds)
 
     def close(self):

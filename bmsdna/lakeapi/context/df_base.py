@@ -200,9 +200,6 @@ class ExecutionContext(ABC):
     @abstractmethod
     def supports_view_creation(self) -> bool: ...
 
-    async def create_view(self, name: str, sql: str):
-        await self.execute_sql(f"CREATE VIEW {name} as sql")
-
     @abstractmethod
     def __enter__(self) -> "ExecutionContext": ...
 

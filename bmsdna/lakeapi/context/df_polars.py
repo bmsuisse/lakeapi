@@ -59,20 +59,28 @@ class PolarsResultData(ResultData):
     def __init__(
         self,
         sql: Union[ex.Query, str],
-        sql_context: "pl.SQLContext",
         chunk_size: int,
+        to_register: dict[str, pl.LazyFrame | pl.DataFrame] = {},
     ):
         super().__init__(chunk_size=chunk_size)
         self.sql = sql
         self._df = None
         self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
-        self.sql_context = sql_context
+        self.to_register = to_register
+
+    def get_sql_context(self):
+        import polars as pl
+
+        ctx = pl.SQLContext()
+        for k, v in self.to_register.items():
+            ctx.register(k, v)
+        return ctx
 
     def get_df(self):
         if self._df is None:
             real_sql = get_sql(self.sql, dialect=polars_dialect)
-            self._df = self.sql_context.execute(real_sql)
+            self._df = self.get_sql_context().execute(real_sql)
         return self._df
 
     async def get_df_collected(self) -> "pl.DataFrame":
@@ -86,9 +94,9 @@ class PolarsResultData(ResultData):
         if self._df is None:
             _df = pl.DataFrame(
                 [],
-                schema=self.sql_context.execute(
-                    get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).collect_schema(),
+                schema=self.get_sql_context()
+                .execute(get_sql(self.sql, limit=0, dialect=polars_dialect))
+                .collect_schema(),
             )
             return _df.columns
         return self._df.columns
@@ -107,9 +115,9 @@ class PolarsResultData(ResultData):
         if self._df is None:
             _df = pl.DataFrame(
                 [],
-                schema=self.sql_context.execute(
-                    get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).collect_schema(),
+                schema=self.get_sql_context()
+                .execute(get_sql(self.sql, limit=0, dialect=polars_dialect))
+                .collect_schema(),
             )
         else:
             _df = pl.DataFrame([], self._df.collect_schema())
@@ -142,16 +150,13 @@ class PolarsResultData(ResultData):
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(
-        self,
-        chunk_size: int,
-        sql_context: "Optional[pl.SQLContext]" = None,
-    ):
+    def __init__(self, chunk_size: int):
         super().__init__(chunk_size=chunk_size, engine_name="polars")
         import polars as pl
 
         self.len_func = "length"
-        self.sql_context = sql_context or pl.SQLContext()
+        # self.sql_context = sql_context or pl.SQLContext()
+        self._to_register: dict[str, pl.LazyFrame | pl.DataFrame] = {}
 
     @property
     def dialect(self):
@@ -161,9 +166,6 @@ class PolarsExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return True
 
-    async def create_view(self, name: str, sql: str):
-        self.sql_context.register(name, self.sql_context.execute(sql))
-
     def register_arrow(
         self,
         name: str,
@@ -172,9 +174,9 @@ class PolarsExecutionContext(ExecutionContext):
         import polars as pl
 
         if isinstance(ds, pyarrow.dataset.Dataset):
-            self.sql_context.register(name, pl.scan_pyarrow_dataset(ds))
+            self._to_register[name] = pl.scan_pyarrow_dataset(ds)
         else:
-            self.sql_context.register(name, pl.from_arrow(ds))
+            self._to_register[name] = pl.from_arrow(ds)  # type: ignore
 
     def close(self):
         pass
@@ -191,7 +193,8 @@ class PolarsExecutionContext(ExecutionContext):
         if len(complex_cols) == 0:
             return old_query
 
-        df = self.sql_context.execute(old_query.sql(polars_dialect))
+        rd = PolarsResultData(old_query, self.chunk_size)
+        df = rd.get_sql_context().execute(old_query.sql(polars_dialect))
 
         def to_json(x):
             if isinstance(x, pl.Series):
@@ -204,7 +207,7 @@ class PolarsExecutionContext(ExecutionContext):
         ]
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
-        self.sql_context.register(nt_id, df)
+        self._to_register[nt_id] = df
         return from_(ex.to_identifier(nt_id)).select(
             *[ex.column(c, quoted=True) for c in columns]
         )
@@ -274,7 +277,8 @@ class PolarsExecutionContext(ExecutionContext):
             #    df = pl.read_database(query=query, connection=uri.uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
-        self.sql_context.register(target_name, df)
+
+        self._to_register[target_name] = df
 
     async def execute_sql(
         self,
@@ -283,7 +287,7 @@ class PolarsExecutionContext(ExecutionContext):
             str,
         ],
     ) -> PolarsResultData:
-        return PolarsResultData(sql, self.sql_context, self.chunk_size)
+        return PolarsResultData(sql, self.chunk_size, self._to_register.copy())
 
     async def list_tables(self) -> ResultData:
         return await self.execute_sql("SHOW TABLES")
