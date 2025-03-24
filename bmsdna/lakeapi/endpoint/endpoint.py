@@ -79,7 +79,7 @@ def get_params_filter_expr(
     columns: List[str],
     config: Config,
     params: BaseModel,
-) -> Optional[ex.Condition]:
+) -> Optional[ex.Condition | ex.Binary]:
     expr = filter_df_based_on_params(
         context,
         remove_search_nearby(
@@ -282,7 +282,7 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
-            base_schema = df.arrow_schema()
+            base_schema = await df.arrow_schema()
 
             complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 

@@ -68,9 +68,6 @@ class ODBCResultData(ResultData):
             else "duckdb"
         )
 
-    async def columns(self):
-        return self.arrow_schema().names
-
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
             return from_(self.original_sql.subquery().as_("t"))
@@ -81,7 +78,7 @@ class ODBCResultData(ResultData):
                 .as_("t")
             )
 
-    def arrow_schema(self) -> pa.Schema:
+    async def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect=self.dialect)
@@ -111,7 +108,7 @@ class ODBCResultData(ResultData):
     async def to_arrow_table(self):
         return await self.get_df()
 
-    async def to_arrow_recordbatch(self, chunk_size: int = 10000):
+    async def to_arrow_recordbatch(self, chunk_size: int = 10000):  # type: ignore
         query = get_sql(self.original_sql, dialect=self.dialect)
         res = await run_in_threadpool(
             arrow_odbc.read_arrow_batches_from_odbc,

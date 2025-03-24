@@ -10,6 +10,8 @@ from deltalake.exceptions import TableNotFoundError
 import sqlglot.expressions as ex
 import polars as pl
 
+from bmsdna.lakeapi.utils.async_utils import _async
+
 
 from .source_uri import SourceUri
 
@@ -98,7 +100,7 @@ class ResultData(ABC):
                 return str(obj)
             raise TypeError
 
-        arrow_table = self.to_arrow_table()
+        arrow_table = await _async(self.to_arrow_table())
         with open(file_name, mode="wb") as f:
             t = pl.from_arrow(arrow_table)
             assert isinstance(t, pl.DataFrame)
@@ -223,8 +225,8 @@ class ExecutionContext(ABC):
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
                         read_options={"coerce_int96_timestamp_unit": "us"},
-                    ),
-                )
+                    ),  # type: ignore
+                )  # type: ignore
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 import pyarrow.dataset as ds
 
@@ -261,7 +263,7 @@ class ExecutionContext(ABC):
                     )
                 return dt.to_pyarrow_dataset(
                     partitions=partitions,  # type: ignore
-                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},  # type: ignore
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -391,6 +393,7 @@ class ExecutionContext(ABC):
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
+        assert ds is not None
         self.register_arrow(target_name, ds)
 
     @abstractmethod

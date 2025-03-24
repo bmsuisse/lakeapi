@@ -103,7 +103,7 @@ class PolarsResultData(ResultData):
                 )
             )
 
-    def arrow_schema(self) -> pa.Schema:
+    async def arrow_schema(self) -> pa.Schema:
         if self._df is None:
             _df = pl.DataFrame(
                 [],
@@ -171,12 +171,10 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        ds = (
-            pl.scan_pyarrow_dataset(ds)
-            if isinstance(ds, pyarrow.dataset.Dataset)
-            else pl.from_arrow(ds)
-        )
-        self.sql_context.register(name, ds)
+        if isinstance(ds, pyarrow.dataset.Dataset):
+            self.sql_context.register(name, pl.scan_pyarrow_dataset(ds))
+        else:
+            self.sql_context.register(name, pl.from_arrow(ds))
 
     def close(self):
         pass

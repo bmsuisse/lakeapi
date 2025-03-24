@@ -190,11 +190,11 @@ def create_detailed_meta_endpoint(
                         else None
                     ),
                     inner=(
-                        _recursive_get_type(t.value_type)
+                        _recursive_get_type(cast(pa.ListType, t).value_type)
                         if pa.types.is_list(t)
                         or pa.types.is_large_list(t)
                         or pa.types.is_fixed_size_list(t)
-                        and t.value_type is not None
+                        and cast(pa.ListType, t).value_type is not None
                         and not jsonify_complex
                         else None
                     ),

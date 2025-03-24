@@ -106,11 +106,14 @@ def get_schema_for(
             None,
         )
     if pa.types.is_list(field_type) or pa.types.is_large_list(field_type):
-        if field_type.value_type is None:
+        if cast(pa.ListType, field_type).value_type is None:
             return (Union[List[Any], None], [])
 
         itemtype = cast(
-            Any, get_schema_for(model_ns, field_name, field_type.value_type)[0]
+            Any,
+            get_schema_for(
+                model_ns, field_name, cast(pa.ListType, field_type).value_type
+            )[0],
         )
         return (Union[List[itemtype], None], [])
     if pa.types.is_integer(field_type):

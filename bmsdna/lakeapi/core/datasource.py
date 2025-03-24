@@ -8,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     Union,
     cast,
@@ -169,12 +170,12 @@ class Datasource:
         if schema is not None:
             if self.config.select:
                 fields = [
-                    schema.field(item.name).with_name(item.alias)
+                    schema.field(item.name).with_name(item.alias or item.name)
                     for item in self.config.select
                 ]
                 return pyarrow.schema(fields)
             return schema
-        return (await self.get_df(endpoint="meta")).arrow_schema()
+        return await (await self.get_df(endpoint="meta")).arrow_schema()
 
     async def get_df(
         self,
@@ -304,18 +305,19 @@ def filter_partitions_based_on_params(
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType: TypeAlias = "Union[list[ex.Binary], list[pac.Expression]]"
+ExpType: TypeAlias = "Sequence[Union[ex.Binary, ex.Condition]]"
 
 
 def concat_expr(
     exprs: ExpType,
-) -> "Union[ex.Binary, pac.Expression]":
-    expr: Optional[ex.Binary] = None
+) -> "Union[ex.Binary,  ex.Condition]":
+    expr: Optional[ex.Binary | ex.Condition] = None
     for e in exprs:
         if expr is None:
             expr = e
         else:
             expr = expr.__and__(e)
+    assert expr is not None
     return expr
 
 
@@ -361,7 +363,7 @@ def filter_df_based_on_params(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[list[str]],
-) -> Optional[ex.Condition]:
+) -> Optional[ex.Condition | ex.Binary]:
     expr: Optional[ex.Condition] = None
     exprs: list[ex.Condition] = []
 
@@ -494,6 +496,6 @@ def filter_df_based_on_params(
 
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")
-
-    expr = concat_expr(exprs)
-    return expr
+    if len(exprs) == 0:
+        return None
+    return concat_expr(exprs)

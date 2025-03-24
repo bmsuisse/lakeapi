@@ -103,7 +103,9 @@ async def _write_frame(
     if format == OutputFormats.AVRO:
         import polars as pl
 
-        ds = pl.from_arrow(content.to_arrow_recordbatch(content.chunk_size))
+        ds = pl.from_arrow(
+            await _async(content.to_arrow_recordbatch(content.chunk_size))
+        )
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
         is_utf_8 = True
@@ -129,7 +131,7 @@ async def _write_frame(
     elif format == OutputFormats.XLSX:
         import polars as pl
 
-        ds = pl.from_arrow(content.to_arrow_table())
+        ds = pl.from_arrow(await _async(content.to_arrow_table()))
         assert isinstance(ds, pl.DataFrame)
         ds.write_excel(out, autofit=True)
         is_utf_8 = True
