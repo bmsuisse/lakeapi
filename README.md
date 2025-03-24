@@ -17,7 +17,11 @@ To run the application with the default config, just do it:
 
 ```python
 app = FastAPI()
-bmsdna.lakeapi.init_lakeapi(app)
+async def _init():
+  await bmsdna.lakeapi.init_lakeapi(app)
+if __name__ == "__main__":
+  import asyncio
+  asyncio.run(_init())
 ```
 
 To adjust the config, you can do like this:
@@ -28,7 +32,7 @@ import bmsdna.lakeapi
 
 def_cfg = bmsdna.lakeapi.get_default_config() # Get default startup config
 cfg = dataclasses.replace(def_cfg, enable_sql_endpoint=True, data_path="tests/data") # Use dataclasses.replace to set the properties you want
-sti = bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
+sti = await bmsdna.lakeapi.init_lakeapi(app, cfg, "config_test.yml") # Enable it. The first parameter is the FastAPI instance, the 2nd one is the basic config and the third one the config of the tables
 ```
 
 ## Installation

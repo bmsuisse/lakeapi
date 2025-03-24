@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 all_lake_api_routers: list[Tuple[BasicConfig, Configs]] = []
 
 
-def init_routes(configs: Configs, basic_config: BasicConfig):
+async def init_routes(configs: Configs, basic_config: BasicConfig):
     from bmsdna.lakeapi.endpoint.endpoint import (
         get_response_model,
         create_config_endpoint,
@@ -47,7 +47,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     basic_config=basic_config,
                     accounts=configs.accounts,
                 )
-                schema = get_schema_cached(
+                schema = await get_schema_cached(
                     basic_config, realdataframe, config.datasource.get_unique_hash()
                 )
                 if schema is None:

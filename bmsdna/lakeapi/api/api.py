@@ -11,7 +11,7 @@ class LakeApiStartInfo:
     config: Configs
 
 
-def init_lakeapi(
+async def init_lakeapi(
     app: FastAPI,
     use_basic_auth: bool,
     start_config: BasicConfig | None = None,
@@ -27,7 +27,7 @@ def init_lakeapi(
         real_config = Configs.from_yamls(start_config, config)
     else:
         real_config = config
-    router = init_routes(real_config, start_config)
+    router = await init_routes(real_config, start_config)
     if use_basic_auth:
         from bmsdna.lakeapi.core.uservalidation import add_user_middlware
 

@@ -8,6 +8,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Sequence,
     Tuple,
     Union,
     cast,
@@ -34,6 +35,8 @@ from bmsdna.lakeapi.core.config import (
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
+
+from bmsdna.lakeapi.utils.async_utils import _async
 
 logger = get_logger(__name__)
 
@@ -92,9 +95,9 @@ class Datasource:
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert (
-            self.config.file_type == "delta"
-        ), "only delta is supported for copy_local"
+        assert self.config.file_type == "delta", (
+            "only delta is supported for copy_local"
+        )
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
@@ -156,7 +159,7 @@ class Datasource:
             )
         return ex.table_(tname)
 
-    def get_schema(self) -> pa.Schema:
+    async def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table(schema_only=True)
@@ -167,14 +170,14 @@ class Datasource:
         if schema is not None:
             if self.config.select:
                 fields = [
-                    schema.field(item.name).with_name(item.alias)
+                    schema.field(item.name).with_name(item.alias or item.name)
                     for item in self.config.select
                 ]
                 return pyarrow.schema(fields)
             return schema
-        return self.get_df(endpoint="meta").arrow_schema()
+        return await (await self.get_df(endpoint="meta")).arrow_schema()
 
-    def get_df(
+    async def get_df(
         self,
         partitions: Optional[List[Tuple[str, OperatorType, Any]]] = None,
         endpoint: endpoints = "request",
@@ -199,7 +202,7 @@ class Datasource:
                     self.config.file_type,
                     partitions=partitions,
                 )
-                self.df = self.sql_context.execute_sql(self.query)
+                self.df = await _async(self.sql_context.execute_sql(self.query))
 
         return self.df  # type: ignore
 
@@ -302,18 +305,19 @@ def filter_partitions_based_on_params(
     return partition_filters if len(partition_filters) > 0 else None
 
 
-ExpType: TypeAlias = "Union[list[ex.Binary], list[pac.Expression]]"
+ExpType: TypeAlias = "Sequence[Union[ex.Binary, ex.Condition]]"
 
 
 def concat_expr(
     exprs: ExpType,
-) -> "Union[ex.Binary, pac.Expression]":
-    expr: Optional[ex.Binary] = None
+) -> "Union[ex.Binary,  ex.Condition]":
+    expr: Optional[ex.Binary | ex.Condition] = None
     for e in exprs:
         if expr is None:
             expr = e
         else:
             expr = expr.__and__(e)
+    assert expr is not None
     return expr
 
 
@@ -359,7 +363,7 @@ def filter_df_based_on_params(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[list[str]],
-) -> Optional[ex.Condition]:
+) -> Optional[ex.Condition | ex.Binary]:
     expr: Optional[ex.Condition] = None
     exprs: list[ex.Condition] = []
 
@@ -492,6 +496,6 @@ def filter_df_based_on_params(
 
                 case operator:
                     logger.error(f"wrong parameter for filter {operator}")
-
-    expr = concat_expr(exprs)
-    return expr
+    if len(exprs) == 0:
+        return None
+    return concat_expr(exprs)

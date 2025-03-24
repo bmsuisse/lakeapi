@@ -20,7 +20,9 @@ from mimetypes import guess_type
 from starlette.concurrency import iterate_in_threadpool
 import sqlglot.expressions as ex
 import anyio
+import inspect
 
+from bmsdna.lakeapi.utils.async_utils import _async
 
 logger = get_logger(__name__)
 
@@ -86,7 +88,7 @@ async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormat
         return (OutputFormats.JSON, ".json")
 
 
-def _write_frame(
+async def _write_frame(
     url: URL,
     content: ResultData,
     format: OutputFormats,
@@ -101,41 +103,51 @@ def _write_frame(
     if format == OutputFormats.AVRO:
         import polars as pl
 
-        ds = pl.from_arrow(content.to_arrow_recordbatch(content.chunk_size))
+        ds = pl.from_arrow(
+            await _async(content.to_arrow_recordbatch(content.chunk_size))
+        )
         assert isinstance(ds, pl.DataFrame)
         ds.write_avro(out)
         is_utf_8 = True
     elif format == OutputFormats.CSV:
-        content.write_csv(
-            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
+        await _async(
+            content.write_csv(
+                out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
+            )
         )
     elif format == OutputFormats.SEMI_CSV:
-        content.write_csv(
-            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ";"
+        await _async(
+            content.write_csv(
+                out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ";"
+            )
         )
     elif format == OutputFormats.CSV4EXCEL:  # need to write sep=, on first line
-        content.write_csv(
-            out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
-        )  # type: ignore
+        await _async(
+            content.write_csv(
+                out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","
+            )
+        )
 
     elif format == OutputFormats.XLSX:
         import polars as pl
 
-        ds = pl.from_arrow(content.to_arrow_table())
+        ds = pl.from_arrow(await _async(content.to_arrow_table()))
         assert isinstance(ds, pl.DataFrame)
         ds.write_excel(out, autofit=True)
         is_utf_8 = True
     elif format == OutputFormats.HTML:
-        content.to_pandas().to_html(out + ("" if is_utf_8 else "_u8"), index=False)
+        (await _async(content.to_pandas())).to_html(
+            out + ("" if is_utf_8 else "_u8"), index=False
+        )
 
     elif format == OutputFormats.XML:
-        content.to_pandas().to_xml(
+        (await _async(content.to_pandas())).to_xml(
             out + ("" if is_utf_8 else "_u8"), index=False, parser="etree"
         )
 
     elif format == OutputFormats.ARROW_IPC:
         is_utf_8 = True
-        with content.to_arrow_recordbatch(content.chunk_size) as batches:
+        with await _async(content.to_arrow_recordbatch(content.chunk_size)) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_file(sink, batches.schema) as writer:
                     for batch in batches:
@@ -143,23 +155,23 @@ def _write_frame(
 
     elif format == OutputFormats.ARROW_STREAM:
         is_utf_8 = True
-        with content.to_arrow_recordbatch(content.chunk_size) as batches:
+        with await _async(content.to_arrow_recordbatch(content.chunk_size)) as batches:
             with pa.OSFile(out, "wb") as sink:
                 with pa.ipc.new_stream(sink, batches.schema) as writer:
                     for batch in batches:
                         writer.write_batch(batch)
 
     elif format == OutputFormats.ND_JSON:
-        content.write_nd_json(out + ("" if is_utf_8 else "_u8"))
+        await _async(content.write_nd_json(out + ("" if is_utf_8 else "_u8")))
     elif format == OutputFormats.PARQUET:
-        content.write_parquet(out)
+        await _async(content.write_parquet(out))
         is_utf_8 = True
     else:
-        content.write_json(out + ("" if is_utf_8 else "_u8"))
+        await content.write_json(out + ("" if is_utf_8 else "_u8"))
     if not is_utf_8:
-        with open(
-            out, mode="wb"
-        ) as f:  # excel wants utf-16le which polars does not support. therefore we need reencoding
+        with (
+            open(out, mode="wb") as f
+        ):  # excel wants utf-16le which polars does not support. therefore we need reencoding
             if format == OutputFormats.CSV4EXCEL:
                 f.write(b"sep=,\n")  # add utf-8 bom at beginning
             with open(out + "_u8", mode="r", encoding="utf-8") as c8:
@@ -290,13 +302,13 @@ async def create_response(
 
     if format == OutputFormats.JSON:
         return Response(
-            content=context.execute_sql(sql).to_json(),
+            content=await _async((await _async(context.execute_sql(sql))).to_json()),
             headers=headers,
             media_type=(media_type or "application/json") + "; charset=" + charset,
         )
     if format == OutputFormats.ND_JSON:
         return Response(
-            content=context.execute_sql(sql).to_ndjson(),
+            content=await _async((await _async(context.execute_sql(sql))).to_ndjson()),
             headers=headers,
             media_type="application/json-nd; charset=" + charset,
         )
@@ -313,11 +325,10 @@ async def create_response(
 
     temp_file = get_temp_file(extension)
 
-    async def response_stream(context, sql, url, format):
+    async def response_stream(context: ExecutionContext, sql, url, format):
         chunk_size = 64 * 1024
-        content = await anyio.to_thread.run_sync(context.execute_sql, sql)  # type: ignore
-        additional_files = await anyio.to_thread.run_sync(  # type: ignore
-            _write_frame,
+        content = await _async(context.execute_sql(sql))
+        additional_files = await _write_frame(
             url,
             content,
             format,

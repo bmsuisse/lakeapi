@@ -327,7 +327,7 @@ wheels = [
 
 [[package]]
 name = "bmsdna-lakeapi"
-version = "0.22.0"
+version = "0.23.0"
 source = { editable = "." }
 dependencies = [
     { name = "adlfs" },
@@ -368,6 +368,7 @@ useradd = [
 [package.dev-dependencies]
 dev = [
     { name = "psutil" },
+    { name = "pyarrow-stubs" },
     { name = "pyright" },
     { name = "ruff" },
     { name = "uvicorn" },
@@ -418,6 +419,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "psutil", specifier = ">=5.9.5,<6" },
+    { name = "pyarrow-stubs", specifier = ">=17.19" },
     { name = "pyright", specifier = ">=1.1.308,<2" },
     { name = "ruff", specifier = ">=0.4.7" },
     { name = "uvicorn", specifier = ">=0.29.0" },
@@ -1399,6 +1401,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/70/0a/71da7b0db0c7078d4cf34ecf0c70ded5ed29decc06612097474e0114f4cc/pyarrow_hotfix-0.6.tar.gz", hash = "sha256:79d3e030f7ff890d408a100ac16d6f00b14d44a502d7897cd9fc3e3a534e9945", size = 9754 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e4/f4/9ec2222f5f5f8ea04f66f184caafd991a39c8782e31f5b0266f101cb68ca/pyarrow_hotfix-0.6-py3-none-any.whl", hash = "sha256:dcc9ae2d220dff0083be6a9aa8e0cdee5182ad358d4931fce825c545e5c89178", size = 7888 },
+]
+
+[[package]]
+name = "pyarrow-stubs"
+version = "17.19"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyarrow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7b/a7/fc696ec6905698853821ea20b9b46fc1b0a8ddee7a17cda2638c03ac9d8d/pyarrow_stubs-17.19.tar.gz", hash = "sha256:45af6b05ebb2c84352a111c54063db1be8bf54274b8af709c7f1c034e8d84527", size = 83675 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/06/46/985eae0eb798a749ed774f4211dfa3d06fd29d297a68e247000b33f504fc/pyarrow_stubs-17.19-py3-none-any.whl", hash = "sha256:9909adfbcb1356e859d5e57967d60a13e59030ea223acbcc8693ec4683982403", size = 80170 },
 ]
 
 [[package]]

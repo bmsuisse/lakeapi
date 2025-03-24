@@ -26,6 +26,8 @@ from bmsdna.lakeapi.core.types import Engines, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.concurrency import run_in_threadpool
+from bmsdna.lakeapi.utils.async_utils import _async
+
 
 logger = get_logger(__name__)
 
@@ -77,7 +79,7 @@ def get_params_filter_expr(
     columns: List[str],
     config: Config,
     params: BaseModel,
-) -> Optional[ex.Condition]:
+) -> Optional[ex.Condition | ex.Binary]:
     expr = filter_df_based_on_params(
         context,
         remove_search_nearby(
@@ -252,17 +254,17 @@ def create_config_endpoint(
             )
         else:
             parts = None
-        df = realdataframe.get_df(partitions=parts)
-
+        df = await realdataframe.get_df(partitions=parts)
+        df_cols = await _async(df.columns())
         expr = get_params_filter_expr(
             context,
-            df.columns(),
+            df_cols,
             config,
             params,
         )
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query
-        columns = exclude_cols(df.columns(), basic_config)
+        columns = exclude_cols(df_cols, basic_config)
         if select:
             columns = [
                 c for c in columns if c in split_csv(select)
@@ -280,7 +282,7 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
-            base_schema = df.arrow_schema()
+            base_schema = await df.arrow_schema()
 
             complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 

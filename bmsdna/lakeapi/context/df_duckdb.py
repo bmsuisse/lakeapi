@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from fastapi.concurrency import run_in_threadpool
 import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
@@ -45,8 +46,8 @@ class DuckDBResultData(ResultData):
         self._arrow_schema = None
         self._df = None
 
-    def columns(self):
-        return self.arrow_schema().names
+    async def columns(self):
+        return (await self.arrow_schema()).names
 
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
@@ -58,32 +59,49 @@ class DuckDBResultData(ResultData):
                 ).subquery()
             )
 
-    def arrow_schema(self) -> pa.Schema:
+    async def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
-        self._arrow_schema = self.con.execute(query).arrow().schema
+
+        def _get_schema():
+            self.con.execute(query)
+            return self.con.arrow().schema
+
+        self._arrow_schema = await run_in_threadpool(_get_schema)
+
         return self._arrow_schema
 
-    @property
-    def df(self):
-        if self._df is None:
-            query = get_sql(self.original_sql, dialect="duckdb")
-            self._df = self.con.execute(query)
-        return self._df
+    async def to_pandas(self):
+        query = get_sql(self.original_sql, dialect="duckdb")
 
-    def to_pandas(self):
-        return self.df.df()
+        def _to_df():
+            self.con.execute(query)
+            return self.con.df()
 
-    def to_arrow_table(self):
-        return self.df.arrow()
+        return await run_in_threadpool(_to_df)
 
-    def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        return self.df.fetch_record_batch(chunk_size)
+    async def to_arrow_table(self):
+        query = get_sql(self.original_sql, dialect="duckdb")
 
-    def write_parquet(self, file_name: str):
+        def _to_df():
+            self.con.execute(query)
+            return self.con.arrow()
+
+        return await run_in_threadpool(_to_df)
+
+    async def to_arrow_recordbatch(self, chunk_size: int = 10000):
+        query = get_sql(self.original_sql, dialect="duckdb")
+
+        def _to_df():
+            self.con.execute(query)
+            return self.con.fetch_record_batch(chunk_size)
+
+        return await run_in_threadpool(_to_df)
+
+    async def write_parquet(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_parquet(file_name)
+            return await super().write_parquet(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         # temp table required because of https://github.com/duckdb/duckdb/issues/7616
@@ -91,40 +109,42 @@ class DuckDBResultData(ResultData):
                          COPY (SELECT *FROM {uuidstr})
                          TO '{file_name}' (FORMAT PARQUET,use_tmp_file False, ROW_GROUP_SIZE 10000);
                          DROP VIEW {uuidstr}"""
-        self.con.execute(full_query)
 
-    def write_nd_json(self, file_name: str):
+        await run_in_threadpool(self.con.execute, full_query)
+
+    async def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_nd_json(file_name)
+            return await super().write_nd_json(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})
                          TO '{file_name}' (FORMAT JSON);
                          DROP VIEW {uuidstr}"""
-        self.con.execute(full_query)
 
-    def write_csv(self, file_name: str, *, separator: str):
+        await run_in_threadpool(self.con.execute, full_query)
+
+    async def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
-            return super().write_csv(file_name, separator=separator)
+            return await super().write_csv(file_name, separator=separator)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr}) 
                          TO '{file_name}' (FORMAT CSV, delim '{separator}', header True);
                          DROP VIEW {uuidstr};"""
-        self.con.execute(full_query)
+        await run_in_threadpool(self.con.execute, full_query)
 
-    def write_json(self, file_name: str):
+    async def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return super().write_json(file_name)
+            return await super().write_json(file_name)
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})  
                          TO '{file_name}' (FORMAT JSON, Array True); 
                          DROP VIEW {uuidstr};"""
-        self.con.execute(full_query)
+        await run_in_threadpool(self.con.execute, full_query)
 
 
 def match_25(
@@ -159,7 +179,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         chunk_size: int,
     ):
         super().__init__(chunk_size=chunk_size, engine_name="duckdb")
-        self.con = con
+        self.con = con.cursor()
         for ins in DUCK_INIT_SCRIPTS:
             self.con.execute(ins)
         self.res_con = None
@@ -179,13 +199,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
         name: str,
         ds: Union[pyarrow.dataset.Dataset, pyarrow.Table],
     ):
-        # self.con.from_arrow(ds).create_view(name, replace=True)
         self.con.register(name, ds)
 
     def close(self):
-        pass
+        self.con.close()
 
-    def execute_sql(
+    async def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -385,8 +404,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             target_name, source_table_name, uri, file_type, partitions
         )
 
-    def list_tables(self) -> ResultData:
-        return self.execute_sql(
+    async def list_tables(self) -> ResultData:
+        return await self.execute_sql(
             """SELECT table_name as name, table_type 
                from information_schema.tables where table_schema='main'
             """

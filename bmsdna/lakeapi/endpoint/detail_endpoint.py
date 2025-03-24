@@ -51,7 +51,7 @@ def create_detailed_meta_endpoint(
         operation_id=config.tag + "_" + config.name,
         name=config.name + "_metadata",
     )
-    def get_detailed_metadata(
+    async def get_detailed_metadata(
         req: Request,
         jsonify_complex: bool = Query(
             title="jsonify_complex", include_in_schema=has_complex, default=False
@@ -88,7 +88,7 @@ def create_detailed_meta_endpoint(
             partition_columns = []
             partition_values = None
             delta_tbl = None
-            df = realdataframe.get_df(None)
+            df = await realdataframe.get_df(None)
             if config.datasource.file_type == "delta":
                 delta_tbl = realdataframe.get_delta_table(schema_only=True)
                 assert delta_tbl is not None
@@ -107,9 +107,9 @@ def create_detailed_meta_endpoint(
                         ),
                     ).distinct()
                     partition_values = (
-                        context.execute_sql(qb).to_arrow_table().to_pylist()
-                    )
-            schema = df.arrow_schema()
+                        await (await context.execute_sql(qb)).to_arrow_table()
+                    ).to_pylist()
+            schema = await df.arrow_schema()
             str_cols = [
                 name
                 for name in schema.names
@@ -155,9 +155,11 @@ def create_detailed_meta_endpoint(
                 )
                 str_lengths_df = (
                     (
-                        context.execute_sql(str_lengths_query)
-                        .to_arrow_table()
-                        .to_pylist()
+                        (
+                            await (
+                                await context.execute_sql(str_lengths_query)
+                            ).to_arrow_table()
+                        ).to_pylist()
                     )
                     if len(str_cols) > 0 or len(complex_str_cols) > 0
                     else [{}]
@@ -188,17 +190,17 @@ def create_detailed_meta_endpoint(
                         else None
                     ),
                     inner=(
-                        _recursive_get_type(t.value_type)
+                        _recursive_get_type(cast(pa.ListType, t).value_type)
                         if pa.types.is_list(t)
                         or pa.types.is_large_list(t)
                         or pa.types.is_fixed_size_list(t)
-                        and t.value_type is not None
+                        and cast(pa.ListType, t).value_type is not None
                         and not jsonify_complex
                         else None
                     ),
                 )
 
-            schema = df.arrow_schema()
+            schema = await df.arrow_schema()
             mdt = realdataframe.sql_context.get_modified_date(
                 realdataframe.source_uri, realdataframe.config.file_type
             )

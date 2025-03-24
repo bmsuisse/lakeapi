@@ -1,8 +1,9 @@
 from bmsdna.lakeapi.core.datasource import Datasource
 from bmsdna.lakeapi.core.config import BasicConfig
+from bmsdna.lakeapi.utils.async_utils import _async
 
 
-def get_schema_cached(cfg: BasicConfig, datasource: Datasource, key: str):
+async def get_schema_cached(cfg: BasicConfig, datasource: Datasource, key: str):
     if cfg.schema_cache_ttl is not None:
         import os
         import time
@@ -20,7 +21,7 @@ def get_schema_cached(cfg: BasicConfig, datasource: Datasource, key: str):
             if not datasource.file_exists():
                 schema = None
             else:
-                schema = datasource.get_schema()
+                schema = await datasource.get_schema()
                 pq.write_metadata(schema, schema_cache_file)
         else:
             schema = pq.read_schema(schema_cache_file)
@@ -28,4 +29,4 @@ def get_schema_cached(cfg: BasicConfig, datasource: Datasource, key: str):
     else:
         if not datasource.file_exists():
             return None
-        return datasource.get_schema()
+        return await _async(datasource.get_schema())

@@ -59,36 +59,44 @@ class PolarsResultData(ResultData):
     def __init__(
         self,
         sql: Union[ex.Query, str],
-        sql_context: "pl.SQLContext",
         chunk_size: int,
+        to_register: dict[str, pl.LazyFrame | pl.DataFrame] = {},
     ):
         super().__init__(chunk_size=chunk_size)
         self.sql = sql
         self._df = None
         self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
-        self.sql_context = sql_context
+        self.to_register = to_register
+
+    def get_sql_context(self):
+        import polars as pl
+
+        ctx = pl.SQLContext()
+        for k, v in self.to_register.items():
+            ctx.register(k, v)
+        return ctx
 
     def get_df(self):
         if self._df is None:
             real_sql = get_sql(self.sql, dialect=polars_dialect)
-            self._df = self.sql_context.execute(real_sql)
+            self._df = self.get_sql_context().execute(real_sql)
         return self._df
 
-    def get_df_collected(self) -> "pl.DataFrame":
+    async def get_df_collected(self) -> "pl.DataFrame":
         _df = self.get_df()
         if isinstance(_df, pl.LazyFrame):
-            _df = _df.collect()
+            _df = await _df.collect_async()
             self._df = _df
         return _df
 
-    def columns(self):
+    async def columns(self):
         if self._df is None:
             _df = pl.DataFrame(
                 [],
-                schema=self.sql_context.execute(
-                    get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).collect_schema(),
+                schema=self.get_sql_context()
+                .execute(get_sql(self.sql, limit=0, dialect=polars_dialect))
+                .collect_schema(),
             )
             return _df.columns
         return self._df.columns
@@ -103,51 +111,52 @@ class PolarsResultData(ResultData):
                 )
             )
 
-    def arrow_schema(self) -> pa.Schema:
+    async def arrow_schema(self) -> pa.Schema:
         if self._df is None:
             _df = pl.DataFrame(
                 [],
-                schema=self.sql_context.execute(
-                    get_sql(self.sql, limit=0, dialect=polars_dialect)
-                ).collect_schema(),
+                schema=self.get_sql_context()
+                .execute(get_sql(self.sql, limit=0, dialect=polars_dialect))
+                .collect_schema(),
             )
         else:
             _df = pl.DataFrame([], self._df.collect_schema())
         return _df.to_arrow().schema
 
-    def to_pandas(self):
-        return self.get_df_collected().to_pandas()
+    async def to_pandas(self):
+        return (await self.get_df_collected()).to_pandas()
 
-    def to_arrow_table(self):
-        return self.get_df_collected().to_arrow()
+    async def to_arrow_table(self):
+        return (await self.get_df_collected()).to_arrow()
 
-    def to_arrow_recordbatch(self, chunk_size: int = 10000):
-        return self.get_df_collected().to_arrow().to_reader(max_chunksize=chunk_size)
+    async def to_arrow_recordbatch(self, chunk_size: int = 10000):
+        return (
+            (await self.get_df_collected())
+            .to_arrow()
+            .to_reader(max_chunksize=chunk_size)
+        )
 
-    def write_parquet(self, file_name: str):
-        self.get_df_collected().write_parquet(file_name, use_pyarrow=True)
+    async def write_parquet(self, file_name: str):
+        (await self.get_df_collected()).write_parquet(file_name, use_pyarrow=True)
 
-    def write_json(self, file_name: str):
-        self.get_df_collected().write_json(file_name)
+    async def write_json(self, file_name: str):
+        (await self.get_df_collected()).write_json(file_name)
 
-    def write_csv(self, file_name: str, *, separator: str):
-        self.get_df_collected().write_csv(file_name, separator=separator)
+    async def write_csv(self, file_name: str, *, separator: str):
+        (await self.get_df_collected()).write_csv(file_name, separator=separator)
 
-    def write_nd_json(self, file_name: str):
-        self.get_df_collected().write_ndjson(file_name)
+    async def write_nd_json(self, file_name: str):
+        (await self.get_df_collected()).write_ndjson(file_name)
 
 
 class PolarsExecutionContext(ExecutionContext):
-    def __init__(
-        self,
-        chunk_size: int,
-        sql_context: "Optional[pl.SQLContext]" = None,
-    ):
+    def __init__(self, chunk_size: int):
         super().__init__(chunk_size=chunk_size, engine_name="polars")
         import polars as pl
 
         self.len_func = "length"
-        self.sql_context = sql_context or pl.SQLContext()
+        # self.sql_context = sql_context or pl.SQLContext()
+        self._to_register: dict[str, pl.LazyFrame | pl.DataFrame] = {}
 
     @property
     def dialect(self):
@@ -157,9 +166,6 @@ class PolarsExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return True
 
-    def create_view(self, name: str, sql: str):
-        self.sql_context.register(name, self.sql_context.execute(sql))
-
     def register_arrow(
         self,
         name: str,
@@ -167,12 +173,10 @@ class PolarsExecutionContext(ExecutionContext):
     ):
         import polars as pl
 
-        ds = (
-            pl.scan_pyarrow_dataset(ds)
-            if isinstance(ds, pyarrow.dataset.Dataset)
-            else pl.from_arrow(ds)
-        )
-        self.sql_context.register(name, ds)
+        if isinstance(ds, pyarrow.dataset.Dataset):
+            self._to_register[name] = pl.scan_pyarrow_dataset(ds)
+        else:
+            self._to_register[name] = pl.from_arrow(ds)  # type: ignore
 
     def close(self):
         pass
@@ -189,7 +193,8 @@ class PolarsExecutionContext(ExecutionContext):
         if len(complex_cols) == 0:
             return old_query
 
-        df = self.sql_context.execute(old_query.sql(polars_dialect))
+        rd = PolarsResultData(old_query, self.chunk_size, self._to_register.copy())
+        df = rd.get_sql_context().execute(old_query.sql(polars_dialect))
 
         def to_json(x):
             if isinstance(x, pl.Series):
@@ -202,7 +207,7 @@ class PolarsExecutionContext(ExecutionContext):
         ]
         df = df.with_columns(map_cols)
         nt_id = "tmp_" + str(uuid4())
-        self.sql_context.register(nt_id, df)
+        self._to_register[nt_id] = df
         return from_(ex.to_identifier(nt_id)).select(
             *[ex.column(c, quoted=True) for c in columns]
         )
@@ -264,27 +269,29 @@ class PolarsExecutionContext(ExecutionContext):
                 query = "SELECT * FROM " + (source_table_name or target_name)
                 import duckdb
 
-                t = duckdb.connect(ab_uri).execute(query).fetch_arrow_table()
+                with duckdb.connect(ab_uri, read_only=True) as con:
+                    t = con.execute(query).fetch_arrow_table()
 
-                df = cast(pl.LazyFrame, pl.from_arrow(t))
+                    df = cast(pl.LazyFrame, pl.from_arrow(t))
             # case "odbc": to be tested, attention on security!
             #             #    query = "SELECT * FROM " + (source_table_name or target_name)
             #    df = pl.read_database(query=query, connection=uri.uri)
             case _:
                 raise FileTypeNotSupportedError(f"Not supported file type {file_type}")
-        self.sql_context.register(target_name, df)
 
-    def execute_sql(
+        self._to_register[target_name] = df
+
+    async def execute_sql(
         self,
         sql: Union[
             ex.Query,
             str,
         ],
     ) -> PolarsResultData:
-        return PolarsResultData(sql, self.sql_context, self.chunk_size)
+        return PolarsResultData(sql, self.chunk_size, self._to_register.copy())
 
-    def list_tables(self) -> ResultData:
-        return self.execute_sql("SHOW TABLES")
+    async def list_tables(self) -> ResultData:
+        return await self.execute_sql("SHOW TABLES")
 
     def __enter__(self):
         return self

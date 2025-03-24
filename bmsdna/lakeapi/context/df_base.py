@@ -3,12 +3,14 @@ from datetime import datetime, timezone
 
 from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
-from typing import Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
+from typing import Awaitable, Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 from deltalake import DeltaTable
 from deltalake.exceptions import TableNotFoundError
 import sqlglot.expressions as ex
 import polars as pl
+
+from bmsdna.lakeapi.utils.async_utils import _async
 
 
 from .source_uri import SourceUri
@@ -73,24 +75,24 @@ class ResultData(ABC):
         super().__init__()
         self.chunk_size = chunk_size
 
-    @abstractmethod
-    def columns(self) -> List[str]: ...
+    async def columns(self):
+        return (await self.arrow_schema()).names
 
     @abstractmethod
-    def arrow_schema(self) -> "pa.Schema": ...
+    async def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
-    def to_arrow_table(self) -> "pa.Table": ...
+    async def to_arrow_table(self) -> "pa.Table": ...
 
     @abstractmethod
-    def to_arrow_recordbatch(
+    async def to_arrow_recordbatch(
         self, chunk_size: int = 10000
     ) -> "pa.RecordBatchReader": ...
 
     @abstractmethod
     def query_builder(self) -> ex.Select: ...
 
-    def write_json(self, file_name: str):
+    async def write_json(self, file_name: str):
         import decimal
 
         def default(obj):
@@ -98,14 +100,14 @@ class ResultData(ABC):
                 return str(obj)
             raise TypeError
 
-        arrow_table = self.to_arrow_table()
+        arrow_table = await _async(self.to_arrow_table())
         with open(file_name, mode="wb") as f:
             t = pl.from_arrow(arrow_table)
             assert isinstance(t, pl.DataFrame)
             t.write_json(f)
 
-    def to_json(self):
-        arrow_table = self.to_arrow_table()
+    async def to_json(self):
+        arrow_table = await self.to_arrow_table()
         import pydantic
 
         return pydantic.TypeAdapter(list[dict]).dump_json(arrow_table.to_pylist())
@@ -113,16 +115,16 @@ class ResultData(ABC):
         # assert isinstance(t, pl.DataFrame)
         # return t.write_json(row_oriented=True)
 
-    def to_ndjson(self):
-        arrow_table = self.to_arrow_table()
+    async def to_ndjson(self):
+        arrow_table = await self.to_arrow_table()
         t = pl.from_arrow(arrow_table)
         assert isinstance(t, pl.DataFrame)
         return t.write_ndjson()
 
-    def write_nd_json(self, file_name: str):
+    async def write_nd_json(self, file_name: str):
         import polars as pl
 
-        batches = self.to_arrow_recordbatch(self.chunk_size)
+        batches = await self.to_arrow_recordbatch(self.chunk_size)
         with open(file_name, mode="wb") as f:
             for batch in batches:
                 t = pl.from_arrow(batch)
@@ -130,12 +132,12 @@ class ResultData(ABC):
                 t.write_ndjson(f)
 
     @abstractmethod
-    def to_pandas(self) -> "pd.DataFrame": ...
+    async def to_pandas(self) -> "pd.DataFrame": ...
 
-    def write_parquet(self, file_name: str):
+    async def write_parquet(self, file_name: str):
         import pyarrow.parquet as paparquet
 
-        batches = self.to_arrow_recordbatch(self.chunk_size)
+        batches = await self.to_arrow_recordbatch(self.chunk_size)
 
         with paparquet.ParquetWriter(
             file_name,
@@ -144,10 +146,10 @@ class ResultData(ABC):
             for batch in batches:
                 writer.write_batch(batch)
 
-    def write_csv(self, file_name: str, *, separator: str):
+    async def write_csv(self, file_name: str, *, separator: str):
         import pyarrow.csv as pacsv
 
-        batches = self.to_arrow_recordbatch(self.chunk_size)
+        batches = await self.to_arrow_recordbatch(self.chunk_size)
         with pacsv.CSVWriter(
             file_name,
             batches.schema,
@@ -198,9 +200,6 @@ class ExecutionContext(ABC):
     @abstractmethod
     def supports_view_creation(self) -> bool: ...
 
-    def create_view(self, name: str, sql: str):
-        self.execute_sql(f"CREATE VIEW {name} as sql")
-
     @abstractmethod
     def __enter__(self) -> "ExecutionContext": ...
 
@@ -223,8 +222,8 @@ class ExecutionContext(ABC):
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
                         read_options={"coerce_int96_timestamp_unit": "us"},
-                    ),
-                )
+                    ),  # type: ignore
+                )  # type: ignore
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
                 import pyarrow.dataset as ds
 
@@ -261,7 +260,7 @@ class ExecutionContext(ABC):
                     )
                 return dt.to_pyarrow_dataset(
                     partitions=partitions,  # type: ignore
-                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},
+                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},  # type: ignore
                 )
             case _:
                 raise FileTypeNotSupportedError(
@@ -391,10 +390,11 @@ class ExecutionContext(ABC):
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, partitions)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
+        assert ds is not None
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
+    async def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
 
     @abstractmethod
-    def list_tables(self) -> ResultData: ...
+    async def list_tables(self) -> ResultData: ...

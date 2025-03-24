@@ -9,6 +9,7 @@ from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 from deltalake.exceptions import TableNotFoundError
 
+
 sql_contexts: dict[str, ExecutionContext] = {}
 
 logger = get_logger(__name__)
@@ -92,7 +93,7 @@ def create_sql_endpoint(
         ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
-        return con.list_tables().to_arrow_table().to_pylist()
+        return (await (await con.list_tables()).to_arrow_table()).to_pylist()
 
     @router.post(
         "/api/sql",
@@ -147,7 +148,6 @@ def create_sql_endpoint(
     ):
         con = _get_sql_context(engine, basic_config, configs)
 
-        df = con.execute_sql(sql)
         return await create_response(
             request.url,
             request.query_params,
