@@ -65,8 +65,9 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
 
         def _get_schema():
-            self.con.execute(query)
-            return self.con.arrow().schema
+            with self.con.cursor() as cur:
+                cur.execute(query)
+                return cur.arrow().schema
 
         self._arrow_schema = await run_in_threadpool(_get_schema)
 
@@ -85,7 +86,8 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, dialect="duckdb")
 
         def _to_list():
-            with self.con.execute(query) as cur:
+            with self.con.cursor() as cur:
+                cur.execute(query)
                 assert cur.description is not None
                 col_names = [d[0] for d in cur.description]
                 res = cur.fetchall()
