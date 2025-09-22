@@ -86,7 +86,7 @@ class DuckDBResultData(ResultData):
 
         def _to_df():
             self.con.execute(query)
-            return self.con.arrow()
+            return pa.Table.from_batches(self.con.arrow())
 
         return await run_in_threadpool(_to_df)
 

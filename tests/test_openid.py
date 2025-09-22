@@ -20,8 +20,8 @@ def test_openid():
         paths = jsd["paths"]
         schema = jsd["components"]["schemas"]
         ## TODO : Add more tests for different endpoints
-        assert "test_fake_delta_partition" in schema
-        assert "test_fake_polars_postParameter" in schema
+        assert "test_fake_delta_partition" in schema.keys()
+        assert "test_fake_polars_postParameter" in schema.keys()
         assert "abc" in schema["test_fake_polars_postParameter"]["properties"]
         assert "/api/v1/startest/fruits" in paths
         assert isinstance(paths["/api/v1/startest/fruits"], dict)

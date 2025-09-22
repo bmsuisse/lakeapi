@@ -1,6 +1,6 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.23.0"
+version = "0.24.0"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
@@ -13,15 +13,13 @@ dependencies = [
     "xlsxwriter >=3.1.0,<4",
     "pyjwt >=2.6.0,<3",
     "ruamel.yaml >=0.18.5",
-    "deltalake >=0.16.1",
     "fastapi >=0.110.0",
     "arrow-odbc >=5.0.0",
     "expandvars >=0.12.0",
     "pandas >=2.1.0,<3",
     "fsspec >=2024.2.0,<2025",
     "adlfs >=2024.2.0,<2025",
-    "deltalake2db >=0.7.0",
-    "numpy >=1.26.0,<2",
+    "deltalake2db >=1.0.2",
 ]
 requires-python = "~=3.10"
 
@@ -93,4 +91,5 @@ test = [
     "azure-storage-blob >=12.12.0,<13",
     "adbc-driver-sqlite >=0.10.0",
     "python-dotenv >=1.0.1,<2",
+    "deltalake>=1.1.4",
 ]

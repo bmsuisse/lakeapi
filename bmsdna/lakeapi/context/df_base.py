@@ -5,8 +5,6 @@ from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from typing import Awaitable, Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
-from deltalake import DeltaTable
-from deltalake.exceptions import TableNotFoundError
 import sqlglot.expressions as ex
 import polars as pl
 
@@ -221,7 +219,9 @@ class ExecutionContext(ABC):
                     spec_uri,
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
-                        read_options={"coerce_int96_timestamp_unit": "us"},
+                        read_options=ds.ParquetReadOptions(
+                            coerce_int96_timestamp_unit="us", dictionary_columns=None
+                        ),
                     ),  # type: ignore
                 )  # type: ignore
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
@@ -252,16 +252,20 @@ class ExecutionContext(ABC):
                     pd = pl.read_avro(f).to_arrow()  # type: ignore
                 return pd
             case "delta":
+                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
-                dt = DeltaTable(ab_uri, storage_options=ab_opts)
-                if dt.protocol().min_reader_version > 1:
+                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                assert meta.protocol is not None
+                if meta.protocol["minReaderVersion"] > 1:
                     raise ValueError(
                         "Delta table protocol version not supported, use DuckDB or Polars"
                     )
-                return dt.to_pyarrow_dataset(
-                    partitions=partitions,  # type: ignore
-                    parquet_read_options={"coerce_int96_timestamp_unit": "us"},  # type: ignore
-                )
+                files = meta.add_actions.keys()
+                import pyarrow.dataset as ds
+
+                return ds.dataset(files, filesystem=spec_fs, format="parquet")  # type: ignore
+
             case _:
                 raise FileTypeNotSupportedError(
                     f"Not supported file type {file_type}",
@@ -368,13 +372,12 @@ class ExecutionContext(ABC):
             return None
         if file_type == "delta":
             try:
+                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+
                 ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
-                dt = DeltaTable(ab_uri, storage_options=ab_opts)
-                return datetime.fromtimestamp(
-                    dt.history(1)[-1]["timestamp"] / 1000.0,
-                    tz=timezone.utc,
-                )
-            except (TableNotFoundError, FileNotFoundError):
+                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                return meta.last_write_time
+            except FileNotFoundError:
                 return None
 
         fs, fs_uri = uri.get_fs_spec()

@@ -5,8 +5,6 @@ import pyarrow as pa
 
 import sqlglot.expressions as ex
 
-from deltalake import DeltaTable
-from deltalake.exceptions import TableNotFoundError
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from pydantic import BaseModel
 
@@ -27,6 +25,11 @@ from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.concurrency import run_in_threadpool
 from bmsdna.lakeapi.utils.async_utils import _async
+from deltalake2db.delta_meta_retrieval import (
+    MetaState as DeltaMetadata,
+    PolarsEngine,
+    get_meta,
+)
 
 
 logger = get_logger(__name__)
@@ -42,21 +45,21 @@ async def get_partitions(
         df_uri, df_opts = uri.get_uri_options(flavor="object_store")
 
         def _schema_meta():
-            dt = DeltaTable(df_uri, storage_options=df_opts)
-            return dt.metadata(), dt.schema()
+            meta = get_meta(PolarsEngine(df_opts), df_uri)
+            assert meta.last_metadata is not None
+            return meta
 
-        meta, schema = await run_in_threadpool(_schema_meta)
+        meta = await run_in_threadpool(_schema_meta)
         parts = (
             filter_partitions_based_on_params(
                 meta,
-                schema,
                 params.model_dump(exclude_unset=True) if params else {},
                 config.params or [],
             )
             if not config.datasource or config.datasource.file_type == "delta"
             else None
         )
-    except (TableNotFoundError, FileNotFoundError) as err:
+    except Exception as err:
         logger.warning(f"Could not get partitions for {uri}", exc_info=err)
         parts = None
     return parts

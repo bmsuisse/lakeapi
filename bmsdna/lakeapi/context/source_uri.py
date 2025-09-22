@@ -103,12 +103,11 @@ class SourceUri:
     def copy_to_local(self, local_path: str):
         if self.account is None:
             raise ValueError("Cannot copy local files")
-
-        from deltalake import DeltaTable
+        from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
 
         df_uri, df_opts = self.get_uri_options(flavor="object_store")
-        dt = DeltaTable(df_uri, storage_options=df_opts)
-        vnr = dt.version()
+        meta = get_meta(PolarsEngine(df_opts), df_uri)
+        vnr = meta.version
         if local_versions.get(self.uri) == vnr:
             return SourceUri(
                 uri=local_path,

@@ -19,7 +19,6 @@ from sqlglot import from_, parse_one
 from uuid import uuid4
 import json
 from .source_uri import SourceUri
-from deltalake.exceptions import DeltaProtocolError
 from sqlglot.dialects.postgres import Postgres
 
 
@@ -227,6 +226,8 @@ class PolarsExecutionContext(ExecutionContext):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         match file_type:
             case "delta":
+                from deltalake2db.protocol_check import DeltaProtocolError
+
                 try:
                     db_uri, db_opts = uri.get_uri_options(flavor="original")
                     from deltalake2db import polars_scan_delta

@@ -2,7 +2,6 @@ from typing import Optional, cast
 import pyarrow as pa
 
 import sqlglot.expressions as ex
-from deltalake import Metadata
 from fastapi import (
     APIRouter,
     HTTPException,
@@ -20,17 +19,6 @@ from bmsdna.lakeapi.core.types import (
     MetadataSchemaField,
     MetadataSchemaFieldType,
 )
-
-
-def _to_dict(tblmeta: Optional[Metadata]):
-    if not tblmeta:
-        return None
-    return {
-        "name": tblmeta.name,
-        "description": tblmeta.description,
-        "partition_columns": tblmeta.partition_columns,
-        "configuration": tblmeta.configuration,
-    }
 
 
 def create_detailed_meta_endpoint(
@@ -92,7 +80,8 @@ def create_detailed_meta_endpoint(
             if config.datasource.file_type == "delta":
                 delta_tbl = realdataframe.get_delta_table(schema_only=True)
                 assert delta_tbl is not None
-                partition_columns = delta_tbl.metadata().partition_columns
+                assert delta_tbl.last_metadata is not None
+                partition_columns = delta_tbl.last_metadata.get("partitionColumns", [])
                 partition_columns = [
                     c
                     for c in partition_columns
@@ -217,10 +206,8 @@ def create_detailed_meta_endpoint(
                     for n in schema.names
                     if not basic_config.should_hide_col_name(n)
                 ],
-                delta_meta=_to_dict(delta_tbl.metadata() if delta_tbl else None),
-                delta_schema=json.loads(delta_tbl.schema().to_json())
-                if delta_tbl
-                else None,
+                delta_meta=delta_tbl.last_metadata if delta_tbl else None,
+                delta_schema=delta_tbl.schema if delta_tbl else None,
                 parameters=config.params,  # type: ignore
                 search=config.search,
                 modified_date=mdt,

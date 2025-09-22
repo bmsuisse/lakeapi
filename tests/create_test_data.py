@@ -60,7 +60,6 @@ def store_df_as_delta(
         mode="overwrite",
         partition_by=partition_by,
         writer_properties=WriterProperties(compression=compression or "SNAPPY"),
-        engine="rust",
     )
     if table_properties is not None:
         DeltaTable(delta_path).alter.set_table_properties(
