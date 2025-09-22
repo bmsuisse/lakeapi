@@ -105,8 +105,9 @@ class ODBCResultData(ResultData):
     async def to_pandas(self):
         return (await self.get_df()).to_pandas()
 
-    async def to_arrow_table(self):
-        return await self.get_df()
+    async def to_pylist(self):
+        df = await self.get_df()
+        return df.to_pylist()
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):  # type: ignore
         query = get_sql(self.original_sql, dialect=self.dialect)

@@ -95,9 +95,7 @@ def create_detailed_meta_endpoint(
                             append=False,
                         ),
                     ).distinct()
-                    partition_values = (
-                        await (await context.execute_sql(qb)).to_arrow_table()
-                    ).to_pylist()
+                    partition_values = await (await context.execute_sql(qb)).to_pylist()
             schema = await df.arrow_schema()
             str_cols = [
                 name
@@ -143,13 +141,7 @@ def create_detailed_meta_endpoint(
                     )
                 )
                 str_lengths_df = (
-                    (
-                        (
-                            await (
-                                await context.execute_sql(str_lengths_query)
-                            ).to_arrow_table()
-                        ).to_pylist()
-                    )
+                    (await (await context.execute_sql(str_lengths_query)).to_pylist())
                     if len(str_cols) > 0 or len(complex_str_cols) > 0
                     else [{}]
                 )

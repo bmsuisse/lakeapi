@@ -125,8 +125,8 @@ class PolarsResultData(ResultData):
     async def to_pandas(self):
         return (await self.get_df_collected()).to_pandas()
 
-    async def to_arrow_table(self):
-        return (await self.get_df_collected()).to_arrow()
+    async def to_pylist(self):
+        return (await self.get_df_collected()).to_dicts()
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):
         return (

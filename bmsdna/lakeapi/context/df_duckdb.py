@@ -81,14 +81,17 @@ class DuckDBResultData(ResultData):
 
         return await run_in_threadpool(_to_df)
 
-    async def to_arrow_table(self):
+    async def to_pylist(self):
         query = get_sql(self.original_sql, dialect="duckdb")
 
-        def _to_df():
-            self.con.execute(query)
-            return pa.Table.from_batches(self.con.arrow())
+        def _to_list():
+            with self.con.execute(query) as cur:
+                assert cur.description is not None
+                col_names = [d[0] for d in cur.description]
+                res = cur.fetchall()
+                return [dict(zip(col_names, r)) for r in res]
 
-        return await run_in_threadpool(_to_df)
+        return await run_in_threadpool(_to_list)
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):
         query = get_sql(self.original_sql, dialect="duckdb")

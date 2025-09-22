@@ -3,10 +3,9 @@ from datetime import datetime, timezone
 
 from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
-from typing import Awaitable, Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
+from typing import Sequence, Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
 import pyarrow as pa
 import sqlglot.expressions as ex
-import polars as pl
 
 from bmsdna.lakeapi.utils.async_utils import _async
 
@@ -80,7 +79,7 @@ class ResultData(ABC):
     async def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
-    async def to_arrow_table(self) -> "pa.Table": ...
+    async def to_pylist(self) -> Sequence[dict]: ...
 
     @abstractmethod
     async def to_arrow_recordbatch(
@@ -91,33 +90,28 @@ class ResultData(ABC):
     def query_builder(self) -> ex.Select: ...
 
     async def write_json(self, file_name: str):
-        import decimal
+        import polars as pl
 
-        def default(obj):
-            if isinstance(obj, decimal.Decimal):
-                return str(obj)
-            raise TypeError
-
-        arrow_table = await _async(self.to_arrow_table())
         with open(file_name, mode="wb") as f:
-            t = pl.from_arrow(arrow_table)
-            assert isinstance(t, pl.DataFrame)
-            t.write_json(f)
+            pld = pl.from_arrow(await _async(self.to_arrow_recordbatch()))
+            assert not isinstance(pld, pl.Series)
+            pld.write_json(f)
 
     async def to_json(self):
-        arrow_table = await self.to_arrow_table()
+        full_list = []
+        for item in await _async(self.to_arrow_recordbatch()):
+            full_list.extend(item.to_pylist())
         import pydantic
 
-        return pydantic.TypeAdapter(list[dict]).dump_json(arrow_table.to_pylist())
-        # t = pl.from_arrow(arrow_table)
-        # assert isinstance(t, pl.DataFrame)
-        # return t.write_json(row_oriented=True)
+        return pydantic.TypeAdapter(list[dict]).dump_json(full_list)
 
     async def to_ndjson(self):
-        arrow_table = await self.to_arrow_table()
-        t = pl.from_arrow(arrow_table)
-        assert isinstance(t, pl.DataFrame)
-        return t.write_ndjson()
+        import polars as pl
+
+        result_strings = []
+        for item in await _async(self.to_arrow_recordbatch()):
+            result_strings.append(pl.from_arrow(item).write_ndjson())
+        return "\n".join(result_strings)
 
     async def write_nd_json(self, file_name: str):
         import polars as pl
