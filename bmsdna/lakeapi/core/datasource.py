@@ -75,6 +75,7 @@ def to_pyarrow_schema(schema: DataType) -> pa.DataType:
             "binary": pa.binary(),
             "date": pa.date32(),
             "timestamp": pa.timestamp("ns"),
+            "timestamp_ntz": pa.timestamp("ns", tz=None),  # type: ignore
             "decimal": pa.decimal128(38, 10),
         }
         if schema in type_map:
