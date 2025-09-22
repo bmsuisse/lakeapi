@@ -432,7 +432,7 @@ wheels = [
 
 [[package]]
 name = "bmsdna-lakeapi"
-version = "0.24.0"
+version = "0.24.1"
 source = { editable = "." }
 dependencies = [
     { name = "adlfs" },
@@ -1028,15 +1028,15 @@ wheels = [
 
 [[package]]
 name = "fastexcel"
-version = "0.15.1"
+version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/40/2b/78e3dc13d71a532935662a8d531fe7aa9a2b6bdbd5eec4f1dce01904e6a7/fastexcel-0.15.1.tar.gz", hash = "sha256:bce738c82c4d043704fbcff802823c51f830ed75e8da64962859d2060d6c743b", size = 58890, upload-time = "2025-09-02T09:33:53.537Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/7c/77fe2f25c4ff1c798b021cad7cddf00ff2a42118b9b59eec8ef5f0d5b5cf/fastexcel-0.16.0.tar.gz", hash = "sha256:7f6597ee86e0cda296bcc620d20fcf2de9903f8d3b99b365b7f45248d535556d", size = 59038, upload-time = "2025-09-22T12:34:40.041Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/4f/a39a0093cd7480e63ae88b7c3e310ddc3e3a59c6360191583ccedf305979/fastexcel-0.15.1-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:d839bbb8326b37e6d167ecef522a1f20b14e0a7f18f9d1bba9530e12decf8628", size = 3040037, upload-time = "2025-09-02T09:33:48.86Z" },
-    { url = "https://files.pythonhosted.org/packages/4d/bb/3690a11d077e101c6b2e2fb76d90464fa0af4ccdac04ce8638ab433f0a7d/fastexcel-0.15.1-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:f94bc44026f261c0b1d212dcdfc315838b2943ea8176c5fdac389f30201eb7b6", size = 2795224, upload-time = "2025-09-02T09:33:50.344Z" },
-    { url = "https://files.pythonhosted.org/packages/90/bd/736fce45b9dc58d3e3ffb9c27dca55e44f500491e4c73da7b4cf3c51995e/fastexcel-0.15.1-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7707bee43eb2e9f01cd051e613748505a893d866c95505eb036d920f3dc93f21", size = 3132791, upload-time = "2025-09-02T09:33:44.988Z" },
-    { url = "https://files.pythonhosted.org/packages/61/4b/9be7f0cf1be1436506a7e9389b4e0bdaec6348d6e3cc597f1387ccc94303/fastexcel-0.15.1-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b6e598848e98408800574a120dd5b7f02ecbf3490b430829161240202f923140", size = 3317592, upload-time = "2025-09-02T09:33:47.469Z" },
-    { url = "https://files.pythonhosted.org/packages/30/4b/423fdbcd7475f373fad5f002acaf1bddf3fb8e915675e23cb58807ac11a1/fastexcel-0.15.1-cp39-abi3-win_amd64.whl", hash = "sha256:e002ad806cb07867a28787db2c0b4f62c91826219edf92a68b86cb7b177badef", size = 2805715, upload-time = "2025-09-02T09:33:52.016Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/44/2dc31ec48d8f63f1d93e11ef19636a442c39775d49f1472f4123a6b38c34/fastexcel-0.16.0-cp39-abi3-macosx_10_12_x86_64.whl", hash = "sha256:48c56a501abc1cf0890294527dc924cb0d919fd5095f684ebcf52806135e9df8", size = 3061679, upload-time = "2025-09-22T12:34:35.542Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/d8/ef4489cd00fe9fe52bef176ed32a8bb5837dd97518bb950bbd68f546ed1c/fastexcel-0.16.0-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:bae61533745fae226ea19f6d198570d5c76a8de816e222ff717aff82d8d6e473", size = 2803453, upload-time = "2025-09-22T12:34:37.168Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/cc/95cf27168d4b4fec3d2e404d70a0fb5d5b7a18872192c8cd8b3a272d31dc/fastexcel-0.16.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ec1c56b9b3b7b7ff2bde64dbe0e378a707287aff9deeb71ff6d0f8c3b7d24e34", size = 3130831, upload-time = "2025-09-22T12:34:32.22Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/23/02012e9c7e584e6f85e1e7078beff3dc56aaad2e51b0a33bbcaa1dc2aa6e/fastexcel-0.16.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e1059eac593f4b92843ac9d10901677cccc2a8152c67e315c9dfbd7ce7c722e7", size = 3331124, upload-time = "2025-09-22T12:34:33.974Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/2e/805c2d0e799710e4937d084d9c37821bafa129eda1de62c3279a042ca56d/fastexcel-0.16.0-cp39-abi3-win_amd64.whl", hash = "sha256:04c2b6fea7292e26d76a458f9095f4ec260c864c90be7a7161d20ca81cf77fd8", size = 2819876, upload-time = "2025-09-22T12:34:38.716Z" },
 ]
 
 [[package]]

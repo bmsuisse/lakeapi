@@ -110,7 +110,9 @@ class ResultData(ABC):
 
         result_strings = []
         for item in await _async(self.to_arrow_recordbatch()):
-            result_strings.append(pl.from_arrow(item).write_ndjson())
+            res = pl.from_arrow(item)
+            assert not isinstance(res, pl.Series)
+            result_strings.append(res.write_ndjson())
         return "\n".join(result_strings)
 
     async def write_nd_json(self, file_name: str):

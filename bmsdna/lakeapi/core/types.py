@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Literal, cast
+from typing import Any, List, Literal, cast, Sequence
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 from typing import Type, Optional
@@ -146,7 +146,7 @@ class Param:
 
 
 class MetadataDetailResult(BaseModel):
-    partition_values: Optional[list[dict[str, Any]]] = None
+    partition_values: Optional[Sequence[dict[str, Any]]] = None
     partition_columns: List[str]
     max_string_lengths: dict[str, Optional[int]]
     data_schema: list[MetadataSchemaField]
