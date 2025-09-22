@@ -216,16 +216,19 @@ class Config:
             data_path=basic_config.data_path if file_type not in ["odbc"] else None,
         )
         if config.get("config_from_delta"):
-            import deltalake
-            import deltalake.exceptions
             import json
 
             real_path = str(uri_obj)
             try:
                 ab_uri, ab_opts = uri_obj.get_uri_options(flavor="object_store")
-                dt = deltalake.DeltaTable(ab_uri, storage_options=ab_opts)
+                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+
+                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                assert meta.last_metadata is not None
                 cfg = json.loads(
-                    dt.metadata().configuration.get("lakeapi.config", "{}")
+                    meta.last_metadata.get("configuration", {}).get(
+                        "lakeapi.config", "{}"
+                    )
                 )
                 config = (
                     config | cfg
@@ -235,7 +238,7 @@ class Config:
                 )  # get data source again, could have select, columns etc
             except json.JSONDecodeError as err:
                 logger.warning(f"Not correct json: {real_path}\n{err}")
-            except deltalake.exceptions.TableNotFoundError:
+            except FileNotFoundError:
                 logger.warning(f"Not a real delta path: {real_path}")
             except Exception as err:
                 logger.warning(f"Error reading delta: {real_path}\n{err}")

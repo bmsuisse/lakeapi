@@ -22,9 +22,6 @@ import pyarrow.compute as pac
 import pyarrow.parquet
 import sqlglot.expressions as ex
 from sqlglot import select
-from deltalake.exceptions import TableNotFoundError
-from deltalake import Metadata as DeltaMetadata, Schema as DeltaSchema
-from deltalake.schema import PrimitiveType
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData
 from bmsdna.lakeapi.core.config import (
     BasicConfig,
@@ -35,7 +32,15 @@ from bmsdna.lakeapi.core.config import (
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
-
+from deltalake2db.delta_meta_retrieval import (
+    StructType,
+    DataType,
+    field_to_type,
+    PrimitiveType,
+    get_meta,
+    PolarsEngine,
+    MetaState as DeltaMetadata,
+)
 from bmsdna.lakeapi.utils.async_utils import _async
 
 logger = get_logger(__name__)
@@ -55,6 +60,49 @@ def select_df(
         return df.select(*select, append=False)
     else:
         return df.select(ex.Star(), append=False)
+
+
+def to_pyarrow_schema(schema: DataType) -> pa.DataType:
+    fields = []
+    if isinstance(schema, str):
+        type_map: dict[PrimitiveType, pa.DataType] = {
+            "integer": pa.int64(),
+            "long": pa.int64(),
+            "string": pa.string(),
+            "float": pa.float32(),
+            "double": pa.float64(),
+            "boolean": pa.bool_(),
+            "binary": pa.binary(),
+            "date": pa.date32(),
+            "timestamp": pa.timestamp("ns"),
+            "decimal": pa.decimal128(38, 10),
+        }
+        if schema in type_map:
+            return type_map[schema]
+        if schema.startswith("decimal"):
+            parts = schema[schema.index("(") + 1 : schema.index(")")].split(",")
+            precision = int(parts[0].strip())
+            scale = int(parts[1].strip())
+            return pa.decimal128(precision, scale)
+        raise ValueError(f"unknown primitive type {schema}")
+    if schema["type"] == "struct":
+        for f in schema["fields"]:
+            fields.append(
+                pa.field(
+                    f["name"],
+                    to_pyarrow_schema(field_to_type(f)),
+                    nullable=f.get("nullable", True),
+                )
+            )
+        return pa.struct(fields)
+    if schema["type"] == "array":
+        return pa.list_(to_pyarrow_schema(schema["elementType"]))
+    if schema["type"] == "map":
+        return pa.map_(
+            to_pyarrow_schema(schema["keyType"]),
+            to_pyarrow_schema(schema["valueType"]),
+        )
+    raise ValueError(f"unknown complex type {schema}")
 
 
 class Datasource:
@@ -118,13 +166,11 @@ class Datasource:
         if self.config.file_type == "delta":
             if self.source_uri.exists():
                 try:
-                    from deltalake import DeltaTable
-
                     df_uri, df_opts = (
                         self.source_uri if schema_only else self.execution_uri
                     ).get_uri_options(flavor="object_store")
-                    return DeltaTable(df_uri, storage_options=df_opts)
-                except TableNotFoundError:
+                    return get_meta(PolarsEngine(df_opts), df_uri)
+                except FileNotFoundError:
                     return None
         return None
 
@@ -163,7 +209,10 @@ class Datasource:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table(schema_only=True)
-            schema = dt.schema().to_pyarrow() if dt else None
+            assert dt is not None and dt.schema is not None
+            sc = to_pyarrow_schema(dt.schema)
+            assert isinstance(sc, pa.StructType)
+            return pa.schema(sc)
         if self.config.file_type == "parquet" and self.file_exists():
             fs, fs_uri = self.source_uri.get_fs_spec()
             schema = pyarrow.parquet.read_schema(fs_uri, filesystem=fs)
@@ -210,7 +259,6 @@ class Datasource:
 def get_partition_filter(
     param: tuple[str, str],
     deltaMeta: DeltaMetadata,
-    deltaSchema: DeltaSchema,
     param_def: Iterable[Param | str],
 ):
     operators = ("<=", ">=", "=", "==", "in", "not in")
@@ -228,14 +276,18 @@ def get_partition_filter(
 
     value_for_partitioning = value
     col_for_partitioning: Optional[str] = None
-    for partcol in deltaMeta.partition_columns:
+    deltaSchema = deltaMeta.schema
+    assert deltaMeta.last_metadata is not None
+    assert deltaSchema is not None
+    for partcol in deltaMeta.last_metadata.get("partitionColumns", []):
         if partcol == colname:
-            d_type = next((f.type for f in deltaSchema.fields if f.name == partcol))
-            d_type_str = str(d_type.type).lower()
+            d_type = next(
+                (f["type"] for f in deltaSchema["fields"] if f["name"] == partcol)
+            )
 
             col_for_partitioning = partcol
             value_for_partitioning = (
-                int(value) if d_type_str in ["int", "long", "integer"] else str(value)
+                int(value) if d_type in ["int", "long", "integer"] else str(value)
             )
 
         elif partcol.startswith(colname + "_md5_prefix_"):
@@ -288,17 +340,17 @@ def get_partition_filter(
 
 def filter_partitions_based_on_params(
     deltaMeta: DeltaMetadata,
-    deltaSchema: DeltaSchema,
     params: dict,
     param_def: Iterable[Param | str],
 ):
-    if len(deltaMeta.partition_columns) == 0:
+    if not deltaMeta.last_metadata:
+        return None
+    if not deltaMeta.last_metadata.get("partitionColumns"):
         return None
 
     partition_filters = []
     results = [
-        get_partition_filter(param, deltaMeta, deltaSchema, param_def)
-        for param in params.items()
+        get_partition_filter(param, deltaMeta, param_def) for param in params.items()
     ]
     partition_filters = [result for result in results if result is not None]
 
