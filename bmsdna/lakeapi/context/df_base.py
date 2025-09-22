@@ -219,7 +219,9 @@ class ExecutionContext(ABC):
                     spec_uri,
                     filesystem=spec_fs,
                     format=ds.ParquetFileFormat(
-                        read_options={"coerce_int96_timestamp_unit": "us"},
+                        read_options=ds.ParquetReadOptions(
+                            coerce_int96_timestamp_unit="us", dictionary_columns=None
+                        ),
                     ),  # type: ignore
                 )  # type: ignore
             case "ipc" | "arrow" | "feather" | "csv" | "orc":
