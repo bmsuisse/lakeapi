@@ -500,7 +500,7 @@ requires-dist = [
     { name = "argon2-cffi", marker = "extra == 'auth'" },
     { name = "arrow-odbc", specifier = ">=5.0.0" },
     { name = "arrow-odbc", marker = "extra == 'odbc'" },
-    { name = "deltalake2db", specifier = ">=1.0.4" },
+    { name = "deltalake2db", specifier = ">=1.0.5" },
     { name = "duckdb", specifier = ">=1.1.0,<2" },
     { name = "expandvars", specifier = ">=0.12.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
@@ -910,15 +910,15 @@ wheels = [
 
 [[package]]
 name = "deltalake2db"
-version = "1.0.4"
+version = "1.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
     { name = "sqlglot" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a8/31/4846484d77637994ad2c77fa86ecc64edb485a8579ae383d25f955a47393/deltalake2db-1.0.4.tar.gz", hash = "sha256:7ec56d6a51eda8f872b9ac397f4098ff5f8750756fd2b708d50afb3ff9fd0162", size = 240800, upload-time = "2025-09-23T08:51:42.412Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/af/04568824c6eb9b388db0bd794c9503619de830e60b91396c656719a1fed1/deltalake2db-1.0.5.tar.gz", hash = "sha256:2b8550c1c75c232aa512d535ae886abb3ede2d46ea318f5c4cd7a7bf3b9de797", size = 240923, upload-time = "2025-09-23T09:37:10.703Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/61/13/9afdba4842f5fff6f395c0d23c1358464b81d00973322ff643ee01a1af60/deltalake2db-1.0.4-py3-none-any.whl", hash = "sha256:9fe8ddcd548f0cc88651d7b9adda3cbf60ee2e5a60baad764c5f040df5990a76", size = 16751, upload-time = "2025-09-23T08:51:40.742Z" },
+    { url = "https://files.pythonhosted.org/packages/74/1d/90d5cec2e915960b7b1b8be6dc46d9f989edd2fff32b28960c7b4c549ccd/deltalake2db-1.0.5-py3-none-any.whl", hash = "sha256:8ed16375bfc2b58ed7b3c94fad5a0a1f00e416a7bcb32103269dc737e8c70eb5", size = 16895, upload-time = "2025-09-23T09:37:09.299Z" },
 ]
 
 [[package]]
