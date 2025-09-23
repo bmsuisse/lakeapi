@@ -1,8 +1,3 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
-
-client = TestClient(get_app())
-auth = get_auth()
 
 
 def test_simple_department():

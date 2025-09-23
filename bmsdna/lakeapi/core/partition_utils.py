@@ -1,7 +1,6 @@
 from typing import List, TYPE_CHECKING
 from bmsdna.lakeapi.context.source_uri import SourceUri
 from deltalake2db.delta_meta_retrieval import (
-    MetaState as DeltaMetadata,
     get_meta,
     PolarsEngine,
 )

@@ -45,10 +45,10 @@ while i < 100:
         naive_json_1(con.execute("SELECT * FROM fake"), f"out/{str(uuid4())}.json")
         count = active_count()
         rss = process.memory_info().rss
-        print(f"After Naive impl: NR Threads: {count}. RAM: {rss/1000/1000} MB")
+        print(f"After Naive impl: NR Threads: {count}. RAM: {rss / 1000 / 1000} MB")
         con.execute(
             f"CREATE TEMP VIEW t1 AS SELECT * FROM fake order by 1; COPY (SELECT * FROM t1) TO 'out/{str(uuid4())}.json' (FORMAT JSON, Array True);drop VIEW t1"
         )  # Works only once
         count = active_count()
         rss = process.memory_info().rss
-        print(f"NR Threads: {count}. RAM: {rss/1000/1000} MB")
+        print(f"NR Threads: {count}. RAM: {rss / 1000 / 1000} MB")

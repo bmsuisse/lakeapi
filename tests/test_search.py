@@ -1,10 +1,7 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
 import sys
 
 sys.path.append(".")
-client = TestClient(get_app())
-auth = get_auth()
+
 engines = ["duckdb"]
 
 

@@ -20,7 +20,6 @@ from mimetypes import guess_type
 from starlette.concurrency import iterate_in_threadpool
 import sqlglot.expressions as ex
 import anyio
-import inspect
 
 from bmsdna.lakeapi.utils.async_utils import _async
 

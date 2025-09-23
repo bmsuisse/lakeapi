@@ -27,7 +27,6 @@ from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.concurrency import run_in_threadpool
 from bmsdna.lakeapi.utils.async_utils import _async
 from deltalake2db.delta_meta_retrieval import (
-    MetaState as DeltaMetadata,
     PolarsEngine,
     get_meta,
 )

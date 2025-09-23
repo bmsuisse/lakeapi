@@ -1,8 +1,5 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
 
-client = TestClient(get_app())
-auth = get_auth()
+
 import pytest
 
 engines = ["duckdb", "polars"]

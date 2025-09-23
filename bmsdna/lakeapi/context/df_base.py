@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType

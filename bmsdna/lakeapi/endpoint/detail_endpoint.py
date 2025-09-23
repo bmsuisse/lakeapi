@@ -52,7 +52,6 @@ def create_detailed_meta_endpoint(
             include_in_schema=False,
         ),
     ) -> MetadataDetailResult:
-        import json
 
         req.state.lake_api_basic_config = basic_config
 

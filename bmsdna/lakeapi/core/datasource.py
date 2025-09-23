@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import os
 from datetime import datetime, date
@@ -13,12 +12,10 @@ from typing import (
     Union,
     cast,
     get_args,
-    TYPE_CHECKING,
     TypeAlias,
 )
 from bmsdna.lakeapi.context.source_uri import SourceUri
 import pyarrow as pa
-import pyarrow.compute as pac
 import pyarrow.parquet
 import sqlglot.expressions as ex
 from sqlglot import select
@@ -33,7 +30,6 @@ from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
 from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
 from deltalake2db.delta_meta_retrieval import (
-    StructType,
     DataType,
     field_to_type,
     PrimitiveType,
