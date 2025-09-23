@@ -53,7 +53,8 @@ def create_detailed_meta_endpoint(
         ),
     ) -> MetadataDetailResult:
         req.state.lake_api_basic_config = basic_config
-
+        if config.engine == "odbc":
+            engine = None
         with get_context_by_engine(
             engine or config.engine or basic_config.default_engine,
             basic_config.default_chunk_size,
