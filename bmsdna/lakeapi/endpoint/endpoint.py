@@ -258,8 +258,14 @@ def create_config_endpoint(
             )
         else:
             pre_filter = None
-        pre_filter_p2 = get_filter_dict(
-            params, config.params if config.params else [], None
+        pre_filter_p2 = (
+            get_filter_dict(
+                params.model_dump(exclude_unset=True),
+                config.params if config.params else [],
+                None,
+            )
+            if params
+            else None
         )
         if pre_filter or pre_filter_p2:
             pre_filter = pre_filter or []
