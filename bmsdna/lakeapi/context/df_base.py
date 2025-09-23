@@ -255,7 +255,6 @@ class ExecutionContext(ABC):
                 import pyarrow.dataset as ds
 
                 return ds.dataset(files, filesystem=spec_fs, format="parquet")  # type: ignore
-
             case _:
                 raise FileTypeNotSupportedError(
                     f"Not supported file type {file_type}",

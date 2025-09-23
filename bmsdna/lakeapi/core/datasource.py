@@ -64,6 +64,8 @@ def to_pyarrow_schema(schema: DataType) -> pa.DataType:
         type_map: dict[PrimitiveType, pa.DataType] = {
             "integer": pa.int64(),
             "long": pa.int64(),
+            "short": pa.int16(),
+            "byte": pa.int8(),
             "string": pa.string(),
             "float": pa.float32(),
             "double": pa.float64(),
