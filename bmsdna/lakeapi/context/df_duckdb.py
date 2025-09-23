@@ -338,7 +338,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: List[Tuple[str, OperatorType, Any]] | None,
+        filters: List[Tuple[str, OperatorType, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 
@@ -379,11 +379,15 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
         if file_type == "delta" and uri.exists():
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
+            df_filter = (
+                {p[0]: p[2] for p in filters if p[1] == "="} if filters else None
+            )
             duckdb_create_view_for_delta(
                 self.con,
                 ab_uri,
                 target_name,
                 storage_options=uri_opts,
+                conditions=df_filter,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
             )
             return
@@ -405,7 +409,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
 
         return super().register_datasource(
-            target_name, source_table_name, uri, file_type, partitions
+            target_name, source_table_name, uri, file_type, filters
         )
 
     async def list_tables(self) -> ResultData:

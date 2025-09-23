@@ -229,7 +229,7 @@ class Datasource:
 
     async def get_df(
         self,
-        partitions: Optional[List[Tuple[str, OperatorType, Any]]] = None,
+        filters: Optional[List[Tuple[str, OperatorType, Any]]] = None,
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
@@ -250,7 +250,7 @@ class Datasource:
                     self.tablename,
                     self.source_uri if endpoint == "meta" else self.execution_uri,
                     self.config.file_type,
-                    partitions=partitions,
+                    filters=filters,
                 )
                 self.df = await _async(self.sql_context.execute_sql(self.query))
 
@@ -261,7 +261,7 @@ def get_partition_filter(
     param: tuple[str, str],
     deltaMeta: DeltaMetadata,
     param_def: Iterable[Param | str],
-):
+) -> Optional[Tuple[str, OperatorType, Any]]:
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
     if not key or not value or key in ("limit", "offset"):
@@ -409,6 +409,39 @@ def _sql_value(value: str | datetime | date | None, engine: str):
     if isinstance(value, date):
         return ex.cast(ex.convert(value), "date")
     return value
+
+
+def get_filter_dict(
+    params: dict[str, Any],
+    param_def: list[Union[Param, str]],
+    columns: Optional[Sequence[str]],
+) -> dict[str, Any]:
+    result = {}
+    for key, value in params.items():
+        if not key or not value or key in ("limit", "offset"):
+            continue  # can that happen? I don't know
+        prmdef_and_op = get_param_def(key, param_def)
+        if prmdef_and_op is None:
+            raise ValueError(f"thats not parameter: {key}")
+        prmdef, op = prmdef_and_op
+        colname = prmdef.colname or prmdef.name
+
+        if prmdef.combi:
+            continue
+        elif columns and colname not in columns:
+            pass
+        else:
+            match op:
+                case "==":
+                    result[colname] = value if value is not None else None
+                case "=":
+                    result[colname] = value if value is not None else None
+                case "in":
+                    lsv = cast(list[str], value)
+                    if len(lsv) == 1:
+                        result[colname] = lsv[0]
+
+    return result
 
 
 def filter_df_based_on_params(

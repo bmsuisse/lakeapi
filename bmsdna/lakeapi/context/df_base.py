@@ -204,7 +204,7 @@ class ExecutionContext(ABC):
         self,
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[List[Tuple[str, OperatorType, Any]]],
     ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
@@ -241,12 +241,6 @@ class ExecutionContext(ABC):
                 )
 
                 return pyarrow.Table.from_pandas(pd)
-            case "avro":
-                import polars as pl
-
-                with spec_fs.open(spec_uri, "rb") as f:
-                    pd = pl.read_avro(f).to_arrow()  # type: ignore
-                return pd
             case "delta":
                 from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
 
@@ -385,9 +379,9 @@ class ExecutionContext(ABC):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[List[Tuple[str, OperatorType, Any]]],
     ):
-        ds = self.get_pyarrow_dataset(uri, file_type, partitions)
+        ds = self.get_pyarrow_dataset(uri, file_type, filters)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
         assert ds is not None
         self.register_arrow(target_name, ds)

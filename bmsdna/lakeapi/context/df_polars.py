@@ -217,7 +217,7 @@ class PolarsExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[List[Tuple[str, OperatorType, Any]]],
     ):
         import polars as pl
 
@@ -232,15 +232,15 @@ class PolarsExecutionContext(ExecutionContext):
                     db_uri, db_opts = uri.get_uri_options(flavor="original")
                     from deltalake2db import polars_scan_delta
 
-                    partition_filter = (
-                        {p[0]: p[2] for p in partitions if p[1] == "="}
-                        if partitions
+                    df_filter = (
+                        {p[0]: p[2] for p in filters if p[1] == "="}
+                        if filters
                         else None
                     )
                     df = polars_scan_delta(
                         db_uri,
                         storage_options=db_opts,
-                        conditions=partition_filter if partition_filter else None,
+                        conditions=df_filter if df_filter else None,
                     )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(
@@ -250,8 +250,6 @@ class PolarsExecutionContext(ExecutionContext):
                 df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
             case "arrow":
                 df = pl.scan_ipc(ab_uri, storage_options=uri_opts)
-            case "avro" if uri_opts is None:
-                df = cast(pl.LazyFrame, pl.read_avro(ab_uri))
             case "csv" if uri_opts is None:
                 df = pl.scan_csv(ab_uri)
             case "csv" if uri_opts is not None:
