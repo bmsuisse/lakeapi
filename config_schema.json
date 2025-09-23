@@ -74,18 +74,12 @@
                 "api_method": {
                     "anyOf": [
                         {
-                            "enum": [
-                                "get",
-                                "post"
-                            ],
+                            "enum": ["get", "post"],
                             "type": "string"
                         },
                         {
                             "items": {
-                                "enum": [
-                                    "get",
-                                    "post"
-                                ],
+                                "enum": ["get", "post"],
                                 "type": "string"
                             },
                             "type": "array"
@@ -174,11 +168,7 @@
                 "engine": {
                     "anyOf": [
                         {
-                            "enum": [
-                                "duckdb",
-                                "polars",
-                                "odbc"
-                            ],
+                            "enum": ["duckdb", "polars", "odbc"],
                             "type": "string"
                         },
                         {
@@ -212,10 +202,7 @@
                     "default": null
                 }
             },
-            "required": [
-                "name",
-                "tag"
-            ],
+            "required": ["name", "tag"],
             "title": "Config",
             "type": "object"
         },
@@ -256,7 +243,6 @@
                         "parquet",
                         "arrow",
                         "arrow-stream",
-                        "avro",
                         "csv",
                         "json",
                         "ndjson",
@@ -340,9 +326,7 @@
                     "title": "Table Name"
                 }
             },
-            "required": [
-                "uri"
-            ],
+            "required": ["uri"],
             "title": "DatasourceConfig",
             "type": "object"
         },
@@ -385,9 +369,7 @@
                     "title": "Index"
                 }
             },
-            "required": [
-                "db_path"
-            ],
+            "required": ["db_path"],
             "title": "DuckDBBackendConfig",
             "type": "object"
         },
@@ -398,20 +380,7 @@
                     "type": "string"
                 },
                 "operator": {
-                    "enum": [
-                        "=",
-                        ">",
-                        "<",
-                        ">=",
-                        "<=",
-                        "<>",
-                        "!=",
-                        "==",
-                        "between",
-                        "not between",
-                        "in",
-                        "not in"
-                    ],
+                    "enum": ["=", ">", "<", ">=", "<=", "<>", "!=", "==", "between", "not between", "in", "not in"],
                     "title": "Operator",
                     "type": "string"
                 },
@@ -421,21 +390,14 @@
                         {
                             "maxItems": 2,
                             "minItems": 2,
-                            "prefixItems": [
-                                {},
-                                {}
-                            ],
+                            "prefixItems": [{}, {}],
                             "type": "array"
                         }
                     ],
                     "title": "Value"
                 }
             },
-            "required": [
-                "key",
-                "operator",
-                "value"
-            ],
+            "required": ["key", "operator", "value"],
             "title": "Filter",
             "type": "object"
         },
@@ -454,11 +416,7 @@
                     "type": "string"
                 }
             },
-            "required": [
-                "name",
-                "lat_col",
-                "lon_col"
-            ],
+            "required": ["name", "lat_col", "lon_col"],
             "title": "NearbyConfig",
             "type": "object"
         },
@@ -553,9 +511,7 @@
                     "title": "Colname"
                 }
             },
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "title": "Param",
             "type": "object"
         },
@@ -573,10 +529,7 @@
                     "type": "array"
                 }
             },
-            "required": [
-                "name",
-                "columns"
-            ],
+            "required": ["name", "columns"],
             "title": "SearchConfig",
             "type": "object"
         },
@@ -599,9 +552,7 @@
                     "title": "Alias"
                 }
             },
-            "required": [
-                "name"
-            ],
+            "required": ["name"],
             "title": "SelectColumn",
             "type": "object"
         },
@@ -614,10 +565,7 @@
                 "direction": {
                     "anyOf": [
                         {
-                            "enum": [
-                                "asc",
-                                "desc"
-                            ],
+                            "enum": ["asc", "desc"],
                             "type": "string"
                         },
                         {
@@ -628,9 +576,7 @@
                     "title": "Direction"
                 }
             },
-            "required": [
-                "by"
-            ],
+            "required": ["by"],
             "title": "SortBy",
             "type": "object"
         },
@@ -645,10 +591,7 @@
                     "type": "string"
                 }
             },
-            "required": [
-                "name",
-                "passwordhash"
-            ],
+            "required": ["name", "passwordhash"],
             "title": "UserConfig",
             "type": "object"
         }
@@ -695,12 +638,7 @@
             "type": "object"
         }
     },
-    "required": [
-        "tables",
-        "users",
-        "app",
-        "accounts"
-    ],
+    "required": ["tables", "users", "app", "accounts"],
     "title": "YamlData",
     "type": "object"
 }

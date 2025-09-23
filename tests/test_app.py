@@ -489,16 +489,6 @@ def test_ndjson():
             assert len(response.json()) == 3
 
 
-def test_avro():
-    for _ in range(2):
-        for e in engines:
-            response = client.get(
-                f"/api/v1/test/fruits_avro?limit=3&format=json&%24engine={e}", auth=auth
-            )
-            assert response.status_code == 200
-            assert len(response.json()) == 3
-
-
 def test_fake_arrow():
     for _ in range(2):
         for e in engines:

@@ -14,7 +14,6 @@ FileTypes = Literal[
     "parquet",
     "arrow",
     "arrow-stream",
-    "avro",
     "csv",
     "json",
     "ndjson",

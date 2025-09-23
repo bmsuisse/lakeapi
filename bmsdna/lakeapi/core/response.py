@@ -28,7 +28,6 @@ logger = get_logger(__name__)
 
 
 class OutputFormats(Enum):
-    AVRO = 1
     CSV = 2
     CSV4EXCEL = 12
     SEMI_CSV = 11
@@ -45,9 +44,7 @@ class OutputFormats(Enum):
 
 async def parse_format(accept: Union[str, OutputFileType]) -> tuple[OutputFormats, str]:
     realaccept = accept.split(";")[0].strip().lower()
-    if realaccept == "application/avro" or realaccept == "avro":
-        return (OutputFormats.AVRO, ".avro")
-    elif realaccept == "text/csv" or realaccept == "csv":
+    if realaccept == "text/csv" or realaccept == "csv":
         return (OutputFormats.CSV, ".csv")
     elif realaccept == "text/csv+semicolon" or realaccept == "scsv":
         return (OutputFormats.SEMI_CSV, ".csv")
@@ -100,16 +97,7 @@ async def _write_frame(
     if csv_separator == "\\t":
         csv_separator = "\t"
     is_utf_8 = charset.lower() == "utf-8"
-    if format == OutputFormats.AVRO:
-        import polars as pl
-
-        ds = pl.from_arrow(
-            await _async(content.to_arrow_recordbatch(content.chunk_size))
-        )
-        assert isinstance(ds, pl.DataFrame)
-        ds.write_avro(out)
-        is_utf_8 = True
-    elif format == OutputFormats.CSV:
+    if format == OutputFormats.CSV:
         await _async(
             content.write_csv(
                 out + ("" if is_utf_8 else "_u8"), separator=csv_separator or ","

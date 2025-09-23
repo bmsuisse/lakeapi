@@ -292,24 +292,6 @@ tables:
       uri: json/fruits.json
       file_type: json
 
-  - name: fruits_avro
-    tag: test
-    version: 1
-    allow_get_all_pages: true
-    api_method:
-      - get
-      - post
-    params:
-      - name: fruits
-        operators:
-          - "="
-      - name: cars
-        operators:
-          - "="
-    datasource:
-      uri: avro/fruits.avro
-      file_type: avro
-
   - name: fruits_ndjson
     tag: test
     version: 1
