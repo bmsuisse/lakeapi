@@ -1,4 +1,3 @@
-
 from fastapi.testclient import TestClient
 import sys
 import pytest
@@ -11,7 +10,9 @@ engines = ("duckdb", "polars")
 @pytest.mark.parametrize("engine", engines)
 def test_data_partition(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={engine}")
+        response = client.get(
+            f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={engine}"
+        )
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -22,7 +23,9 @@ def test_data_partition(client: TestClient, engine):
                 "my_empty_col": None,
             }
         ]
-        response = client.get(f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={engine}")
+        response = client.get(
+            f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={engine}"
+        )
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -38,7 +41,9 @@ def test_data_partition(client: TestClient, engine):
 @pytest.mark.parametrize("engine", engines)
 def test_data_partition_mod(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={engine}")
+        response = client.get(
+            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={engine}"
+        )
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -66,7 +71,9 @@ def test_data_partition_mod(client: TestClient, engine):
 @pytest.mark.parametrize("engine", engines)
 def test_data_partition_int(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(f"/api/v1/test/fruits_partition_int?limit=1&format=json&A=2&%24engine={engine}")
+        response = client.get(
+            f"/api/v1/test/fruits_partition_int?limit=1&format=json&A=2&%24engine={engine}"
+        )
         assert response.status_code == 200
         assert response.json() == [
             {
