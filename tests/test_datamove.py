@@ -7,15 +7,15 @@ import os
 from hashlib import md5
 
 sys.path.append(".")
-client = TestClient(get_app())
+
 auth = get_auth()
 engines = ["duckdb", "polars"]
 
 
-def test_data_overwrite():
+def test_data_overwrite(client: TestClient):
     for e in engines:
         response = client.get(
-            f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth
+            f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}"
         )
         assert response.status_code == 200
         assert len(response.json()) == 1000
@@ -36,7 +36,7 @@ def test_data_overwrite():
 
     for e in engines:
         response = client.get(
-            f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}", auth=auth
+            f"/api/v1/test/fake_delta?limit=1000&&format=json&%24engine={e}"
         )
         assert response.status_code == 200
         assert len(response.json()) == 1000

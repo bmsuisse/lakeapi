@@ -44,7 +44,7 @@ def test_duckdb_fruits_car_param(client: TestClient):
         ]
 
 
-def test_data_csv():
+def test_data_csv(client: TestClient):
     for _ in range(2):
         response = client.get("/api/v1/test/fruits_duck?limit=1&format=csv&cars=audi")
         assert response.status_code == 200

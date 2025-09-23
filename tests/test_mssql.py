@@ -10,7 +10,7 @@ def test_simple_department(client: TestClient):
     assert len(departments) == 16
 
 
-def test_filter_group_name():
+def test_filter_group_name(client: TestClient):
     response = client.get(
         "/api/v1/mssql/mssql_department?format=json&limit=100&GroupName=Research%20and%20Development",
     )
@@ -19,7 +19,7 @@ def test_filter_group_name():
     assert len(tables) == 3
 
 
-def test_filter_offset():
+def test_filter_offset(client: TestClient):
     response = client.get(
         "/api/v1/mssql/mssql_department?format=json&limit=100&offset=10",
     )
@@ -28,7 +28,7 @@ def test_filter_offset():
     assert len(tables) == 6
 
 
-def test_metadata_detail():
+def test_metadata_detail(client: TestClient):
     response = client.get(
         "/api/v1/mssql/mssql_department/metadata_detail",
     )
