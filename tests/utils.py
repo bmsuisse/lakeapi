@@ -64,7 +64,6 @@ def create_rows_faker(num=1):
         {
             "name": fake.name(),
             "address": fake.address(),
-            "name": fake.name(),
             "email": fake.email(),
             "bs": fake.bs(),
             "city": fake.city(),

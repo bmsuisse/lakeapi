@@ -1,18 +1,13 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
-
-client = TestClient(get_app())
-auth = get_auth()
 import pytest
+from fastapi.testclient import TestClient
 
 engines = ["duckdb", "polars"]
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_parquet(engine):
+def test_parquet(engine, client: TestClient):
     response = client.get(
         f"/api/v1/blobb/blob_test?format=json&limit=50&$engine={engine}",
-        auth=auth,
     )
     assert response.status_code == 200
     fakedt = response.json()
@@ -20,10 +15,9 @@ def test_parquet(engine):
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_delta(engine):
+def test_delta(engine, client: TestClient):
     response = client.get(
         f"/api/v1/blobb/fake?format=json&limit=50&$engine={engine}",
-        auth=auth,
     )
     assert response.status_code == 200
     fakedt = response.json()

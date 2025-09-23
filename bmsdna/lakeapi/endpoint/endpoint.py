@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional, Type, Union, cast
+from typing import List, Literal, Optional, Type, Union, cast, Any
 
 import pyarrow as pa
 
@@ -15,18 +15,18 @@ from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import (
     Datasource,
     filter_df_based_on_params,
+    get_filter_dict,
     filter_partitions_based_on_params,
 )
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import create_parameter_model, create_response_model
 from bmsdna.lakeapi.core.response import create_response
-from bmsdna.lakeapi.core.types import Engines, OutputFileType
+from bmsdna.lakeapi.core.types import Engines, OperatorType, OutputFileType
 from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.concurrency import run_in_threadpool
 from bmsdna.lakeapi.utils.async_utils import _async
 from deltalake2db.delta_meta_retrieval import (
-    MetaState as DeltaMetadata,
     PolarsEngine,
     get_meta,
 )
@@ -40,7 +40,7 @@ async def get_partitions(
     uri: SourceUri,
     params: BaseModel,
     config: Config,
-) -> Optional[list]:
+) -> Optional[list[tuple[str, OperatorType, Any]]]:
     try:
         df_uri, df_opts = uri.get_uri_options(flavor="object_store")
 
@@ -252,14 +252,30 @@ def create_config_endpoint(
             accounts=configs.accounts,
         )
         if config.datasource.file_type == "delta":
-            parts = await get_partitions(
+            pre_filter = await get_partitions(
                 realdataframe, realdataframe.execution_uri, params, config
             )
         else:
-            parts = None
-        df = await realdataframe.get_df(partitions=parts)
+            pre_filter = None
+        pre_filter_p2 = (
+            get_filter_dict(
+                params.model_dump(exclude_unset=True),
+                config.params if config.params else [],
+                None,
+            )
+            if params
+            else None
+        )
+        if pre_filter or pre_filter_p2:
+            pre_filter = pre_filter or []
+            if pre_filter_p2:
+                for k, v in pre_filter_p2.items():
+                    if k not in pre_filter:
+                        pre_filter.append((k, "=", v))
+
+        df = await realdataframe.get_df(filters=pre_filter)
         df_cols = await _async(df.columns())
-        expr = get_params_filter_expr(
+        expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
             context,
             df_cols,
             config,

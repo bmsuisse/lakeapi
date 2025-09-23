@@ -1,6 +1,6 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.24.0"
+version = "0.24.2"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
@@ -19,7 +19,7 @@ dependencies = [
     "pandas >=2.1.0,<3",
     "fsspec >=2024.2.0,<2025",
     "adlfs >=2024.2.0,<2025",
-    "deltalake2db >=1.0.2",
+    "deltalake2db >=1.0.5",
 ]
 requires-python = "~=3.10"
 
@@ -92,4 +92,5 @@ test = [
     "adbc-driver-sqlite >=0.10.0",
     "python-dotenv >=1.0.1,<2",
     "deltalake>=1.1.4",
+    "pytest-asyncio>=0.23.8",
 ]

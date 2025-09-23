@@ -1,18 +1,15 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
 import sys
+from fastapi.testclient import TestClient
 
 sys.path.append(".")
-client = TestClient(get_app())
-auth = get_auth()
+
 engines = ["duckdb", "polars"]
 
 
-def test_returns_complex():
+def test_returns_complex(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=10&format=json&%24engine={e}",
-            auth=auth,
         )
         assert response.status_code == 200
         jsd = response.json()
@@ -21,11 +18,10 @@ def test_returns_complex():
         assert isinstance(jsd[0]["person"], dict)
 
 
-def test_returns_jsonify():
+def test_returns_jsonify(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=10&format=json&jsonify_complex=True&%24engine={e}",
-            auth=auth,
         )
         assert response.status_code == 200
         jsd = response.json()
@@ -38,10 +34,9 @@ def test_returns_jsonify():
         assert isinstance(json.loads(jsd[0]["person"]), dict)
 
 
-def test_returns_metadatadeta():
+def test_returns_metadatadeta(client: TestClient):
     response = client.get(
         "/api/v1/complexer/complex_fruits/metadata_detail",
-        auth=auth,
     )
     assert response.status_code == 200
 
@@ -60,10 +55,9 @@ def test_returns_metadatadeta():
     assert "fruits" in jsd["max_string_lengths"]
 
 
-def test_returns_metadatadeta_partition():
+def test_returns_metadatadeta_partition(client: TestClient):
     response = client.get(
         "/api/v1/test/fruits_partition/metadata_detail",
-        auth=auth,
     )
     assert response.status_code == 200
 
@@ -72,10 +66,9 @@ def test_returns_metadatadeta_partition():
     assert jsd["max_string_lengths"]["my_empty_col"] is None
 
 
-def test_returns_metadatadeta_jsonifiyed():
+def test_returns_metadatadeta_jsonifiyed(client: TestClient):
     response = client.get(
         "/api/v1/complexer/complex_fruits/metadata_detail?jsonify_complex=True",
-        auth=auth,
     )
     assert response.status_code == 200
 
@@ -94,11 +87,10 @@ def test_returns_metadatadeta_jsonifiyed():
     assert "fruits" in jsd["max_string_lengths"]
 
 
-def test_returns_csv():
+def test_returns_csv(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=10&format=csv&%24engine={e}",
-            auth=auth,
         )
         assert response.status_code == 200
         import csv

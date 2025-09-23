@@ -105,8 +105,9 @@ class ODBCResultData(ResultData):
     async def to_pandas(self):
         return (await self.get_df()).to_pandas()
 
-    async def to_arrow_table(self):
-        return await self.get_df()
+    async def to_pylist(self):
+        df = await self.get_df()
+        return df.to_pylist()
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):  # type: ignore
         query = get_sql(self.original_sql, dialect=self.dialect)
@@ -183,7 +184,7 @@ class ODBCExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: List[Tuple[str, OperatorType, Any]] | None,
+        filters: List[Tuple[str, OperatorType, Any]] | None,
     ):
         assert file_type == "odbc"
         assert uri.account is None

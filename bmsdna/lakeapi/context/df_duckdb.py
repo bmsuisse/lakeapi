@@ -81,14 +81,17 @@ class DuckDBResultData(ResultData):
 
         return await run_in_threadpool(_to_df)
 
-    async def to_arrow_table(self):
+    async def to_pylist(self):
         query = get_sql(self.original_sql, dialect="duckdb")
 
-        def _to_df():
+        def _to_list():
             self.con.execute(query)
-            return pa.Table.from_batches(self.con.arrow())
+            assert self.con.description is not None
+            col_names = [d[0] for d in self.con.description]
+            res = self.con.fetchall()
+            return [dict(zip(col_names, r)) for r in res]
 
-        return await run_in_threadpool(_to_df)
+        return await run_in_threadpool(_to_list)
 
     async def to_arrow_recordbatch(self, chunk_size: int = 10000):
         query = get_sql(self.original_sql, dialect="duckdb")
@@ -334,7 +337,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        partitions: List[Tuple[str, OperatorType, Any]] | None,
+        filters: List[Tuple[str, OperatorType, Any]] | None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 
@@ -375,11 +378,15 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
         if file_type == "delta" and uri.exists():
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
+            df_filter = (
+                {p[0]: p[2] for p in filters if p[1] == "="} if filters else None
+            )
             duckdb_create_view_for_delta(
                 self.con,
                 ab_uri,
                 target_name,
                 storage_options=uri_opts,
+                conditions=df_filter,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
             )
             return
@@ -401,7 +408,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
 
         return super().register_datasource(
-            target_name, source_table_name, uri, file_type, partitions
+            target_name, source_table_name, uri, file_type, filters
         )
 
     async def list_tables(self) -> ResultData:

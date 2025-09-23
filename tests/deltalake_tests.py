@@ -41,5 +41,5 @@ while i < 100:
 
     count = active_count()
     rss = process.memory_info().rss
-    print(f"before Naive impl: NR Threads: {count}. RAM: {rss/1000/1000} MB")
+    print(f"before Naive impl: NR Threads: {count}. RAM: {rss / 1000 / 1000} MB")
     naive_json_1(dss, f"out/{str(uuid4())}.json")

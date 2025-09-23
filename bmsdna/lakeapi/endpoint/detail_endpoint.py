@@ -52,10 +52,9 @@ def create_detailed_meta_endpoint(
             include_in_schema=False,
         ),
     ) -> MetadataDetailResult:
-        import json
-
         req.state.lake_api_basic_config = basic_config
-
+        if config.engine == "odbc":
+            engine = None
         with get_context_by_engine(
             engine or config.engine or basic_config.default_engine,
             basic_config.default_chunk_size,
@@ -95,9 +94,7 @@ def create_detailed_meta_endpoint(
                             append=False,
                         ),
                     ).distinct()
-                    partition_values = (
-                        await (await context.execute_sql(qb)).to_arrow_table()
-                    ).to_pylist()
+                    partition_values = await (await context.execute_sql(qb)).to_pylist()
             schema = await df.arrow_schema()
             str_cols = [
                 name
@@ -143,13 +140,7 @@ def create_detailed_meta_endpoint(
                     )
                 )
                 str_lengths_df = (
-                    (
-                        (
-                            await (
-                                await context.execute_sql(str_lengths_query)
-                            ).to_arrow_table()
-                        ).to_pylist()
-                    )
+                    (await (await context.execute_sql(str_lengths_query)).to_pylist())
                     if len(str_cols) > 0 or len(complex_str_cols) > 0
                     else [{}]
                 )

@@ -1,8 +1,35 @@
+from fastapi.testclient import TestClient
 import pytest
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv()
+
+
+@pytest.fixture(scope="session")
+def app():
+    from tests.utils import get_app
+
+    app = get_app()
+    yield app
+
+
+@pytest.fixture(scope="session")
+def client_no_auth(app):
+    client = TestClient(app)
+    yield client
+    client.close()
+
+
+@pytest.fixture(scope="session")
+def client(app):
+    from tests.utils import get_auth
+
+    client = TestClient(app)
+    client.auth = get_auth()
+    yield client
+    client.close()
 
 
 @pytest.fixture(scope="session", autouse=True)

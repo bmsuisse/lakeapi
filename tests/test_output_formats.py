@@ -1,21 +1,20 @@
-from fastapi.testclient import TestClient
-from .utils import get_app, get_auth
 import sys
 import pyarrow as pa
 import pytest
 
 sys.path.append(".")
-client = TestClient(get_app())
-auth = get_auth()
+
 engines = ["duckdb", "polars"]
 
 
+from fastapi.testclient import TestClient
+
+
 @pytest.mark.parametrize("engine", engines)
-def test_data_csv4excel(engine):
+def test_data_csv4excel(client: TestClient, engine):
     # csv 4 excel is a really ... strange... format
     response = client.get(
-        f"/api/v1/test/fruits?limit=1&format=csv4excel&cars=audi&%24engine={engine}",
-        auth=auth,
+        f"/api/v1/test/fruits?limit=1&format=csv4excel&cars=audi&%24engine={engine}"
     )
     assert response.status_code == 200
 
@@ -30,10 +29,9 @@ def test_data_csv4excel(engine):
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_data_csv_custom(engine):
+def test_data_csv_custom(client: TestClient, engine):
     response = client.get(
-        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=utf-16-be&$csv_separator=|",
-        auth=auth,
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=utf-16-be&$csv_separator=|"
     )
     assert response.status_code == 200
 
@@ -48,8 +46,7 @@ def test_data_csv_custom(engine):
     assert line1_dict == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
     response = client.get(
-        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=cp850&$csv_separator=\\t",
-        auth=auth,
+        f"/api/v1/test/fruits?limit=1&format=csv&cars=audi&%24engine={engine}&$encoding=cp850&$csv_separator=\\t"
     )
     assert response.status_code == 200
 
@@ -62,33 +59,31 @@ def test_data_csv_custom(engine):
     assert line1_dict == {"A": "2", "fruits": "banana", "B": "4", "cars": "audi"}
 
 
-def test_data_html():
+def test_data_html(client: TestClient):
     for e in engines:
         # csv 4 excel is a really ... strange... format
         response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=html&cars=audi&%24engine={e}",
-            auth=auth,
+            f"/api/v1/test/fruits?limit=1&format=html&cars=audi&%24engine={e}"
         )
         assert response.status_code == 200
         assert response.text.startswith("<")
 
 
-def test_data_xml():
+def test_data_xml(client: TestClient):
     for e in engines:
         # csv 4 excel is a really ... strange... format
         response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=xml&cars=audi&%24engine={e}", auth=auth
+            f"/api/v1/test/fruits?limit=1&format=xml&cars=audi&%24engine={e}"
         )
         assert response.status_code == 200
         assert response.text.startswith("<")
 
 
-def test_data_arrow_stream():
+def test_data_arrow_stream(client: TestClient):
     for e in engines:
         # csv 4 excel is a really ... strange... format
         response = client.get(
-            f"/api/v1/test/fruits?limit=1&format=arrow-stream&cars=audi&%24engine={e}",
-            auth=auth,
+            f"/api/v1/test/fruits?limit=1&format=arrow-stream&cars=audi&%24engine={e}"
         )
         assert response.status_code == 200
         import tempfile
