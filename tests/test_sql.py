@@ -1,35 +1,30 @@
-
+from fastapi.testclient import TestClient
 
 engines = ["duckdb", "polars"]
 
 
-def test_tables():
+def test_tables(client: TestClient):
+    for e in engines:
+        response = client.get(f"/api/sql/tables?%24engine={e}")
+        assert response.status_code == 200
+        tables = response.json()
+        assert len(tables) > 5
+
+
+def test_get(client: TestClient):
     for e in engines:
         response = client.get(
-            f"/api/sql/tables?%24engine={e}",
-            auth=auth,
+            f"/api/sql?%24engine={e}&sql=SELECT distinct B FROM complexer_complex_fruits union select distinct A as B FROM startest_fruits"
         )
         assert response.status_code == 200
         tables = response.json()
         assert len(tables) > 5
 
 
-def test_get():
-    for e in engines:
-        response = client.get(
-            f"/api/sql?%24engine={e}&sql=SELECT distinct B FROM complexer_complex_fruits union select distinct A as B FROM startest_fruits",
-            auth=auth,
-        )
-        assert response.status_code == 200
-        tables = response.json()
-        assert len(tables) > 5
-
-
-def test_post():
+def test_post(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/sql?%24engine={e}&",
-            auth=auth,
             data="SELECT distinct B FROM complexer_complex_fruits union select distinct  A as B FROM startest_fruits",  # type: ignore
         )
         assert response.status_code == 200
@@ -37,7 +32,7 @@ def test_post():
         assert len(tables) > 5
 
 
-def test_sql_where_post():
+def test_sql_where_post(client: TestClient):
     # better naming needed in the future
 
     query = """select * 
@@ -48,7 +43,6 @@ def test_sql_where_post():
 
     response = client.post(
         "/api/sql",
-        auth=auth,
         data=query,  # type: ignore
     )
     assert response.status_code == 200
@@ -63,7 +57,7 @@ def test_sql_where_post():
     ]
 
 
-def test_sql_where_get():
+def test_sql_where_get(client: TestClient):
     # better naming needed in the future
 
     query = """select * 
@@ -74,7 +68,6 @@ def test_sql_where_get():
 
     response = client.get(
         "/api/sql",
-        auth=auth,
         params={"sql": query},
     )
     assert response.status_code == 200

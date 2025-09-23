@@ -5,12 +5,11 @@ sys.path.append(".")
 engines = ["duckdb"]
 
 
-def test_search():
+from fastapi.testclient import TestClient
+
+def test_search(client: TestClient):
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}&search=Karen%20example",
-            auth=auth,
-        )
+        response = client.get(f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}&search=Karen%20example")
         assert response.status_code == 200
         jsd = response.json()
         assert len(jsd) >= 3
@@ -30,12 +29,9 @@ def test_search():
             )
 
 
-def test_no_search():
+def test_no_search(client: TestClient):
     for e in engines:
-        response = client.get(
-            f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}",
-            auth=auth,
-        )
+        response = client.get(f"/api/v1/test/search_sample?limit=5&format=json&%24engine={e}")
         assert response.status_code == 200
         jsd = response.json()
         assert len(jsd) >= 3

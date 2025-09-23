@@ -1,19 +1,17 @@
+
+from fastapi.testclient import TestClient
 import sys
 import pytest
 
 sys.path.append(".")
 
-
 engines = ("duckdb", "polars")
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_data_partition(engine):
+def test_data_partition(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(
-            f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={engine}",
-            auth=auth,
-        )
+        response = client.get(f"/api/v1/test/fruits_partition?limit=1&format=json&cars=audi&%24engine={engine}")
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -24,10 +22,7 @@ def test_data_partition(engine):
                 "my_empty_col": None,
             }
         ]
-        response = client.get(
-            f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={engine}",
-            auth=auth,
-        )
+        response = client.get(f"/api/v1/test/fruits_partition?limit=1&format=json&fruits=ananas&%24engine={engine}")
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -41,12 +36,9 @@ def test_data_partition(engine):
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_data_partition_mod(engine):
+def test_data_partition_mod(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(
-            f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={engine}",
-            auth=auth,  # works because of implicit parameters
-        )
+        response = client.get(f"/api/v1/test/fruits_partition_mod?limit=1&format=json&cars=audi&%24engine={engine}")
         assert response.status_code == 200
         assert response.json() == [
             {
@@ -58,7 +50,6 @@ def test_data_partition_mod(engine):
         ]
         response = client.post(
             f"/api/v1/test/fruits_partition_mod?limit=1&format=json&%24engine={engine}",
-            auth=auth,
             json={"cars_in": ["audi"]},
         )
         assert response.status_code == 200
@@ -73,12 +64,9 @@ def test_data_partition_mod(engine):
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_data_partition_int(engine):
+def test_data_partition_int(client: TestClient, engine):
     for _ in range(2):
-        response = client.get(
-            f"/api/v1/test/fruits_partition_int?limit=1&format=json&A=2&%24engine={engine}",
-            auth=auth,  # works because of implicit parameters
-        )
+        response = client.get(f"/api/v1/test/fruits_partition_int?limit=1&format=json&A=2&%24engine={engine}")
         assert response.status_code == 200
         assert response.json() == [
             {

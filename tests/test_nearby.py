@@ -1,5 +1,6 @@
 import sys
 import json
+from fastapi.testclient import TestClient
 import pytest
 
 sys.path.append(".")
@@ -8,10 +9,9 @@ engines = ["duckdb", "polars"]
 
 
 @pytest.mark.parametrize("engine", engines)
-def test_nearby(engine):
+def test_nearby(client: TestClient, engine):
     response = client.post(
         f"/api/v1/test/fake_delta?limit=50&format=ndjson&%24engine={engine}",
-        auth=auth,
         json={"nearby": {"lat": 46.7, "lon": 8.6, "distance_m": 10000}},
     )
     assert response.status_code == 200
@@ -27,11 +27,10 @@ def test_nearby(engine):
         assert item["nearby"] <= 10000
 
 
-def test_no_nearby():
+def test_no_nearby(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/test/fake_delta?limit=50&format=ndjson&%24engine={e}",
-            auth=auth,
             json={},
         )
         assert response.status_code == 200

@@ -1,15 +1,15 @@
 import sys
+from fastapi.testclient import TestClient
 
 sys.path.append(".")
 
 engines = ["duckdb", "polars"]
 
 
-def test_not_in():
+def test_not_in(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"cars_not_in": ["audi", "fiat"]},
         )
         assert response.status_code == 200
@@ -21,11 +21,10 @@ def test_not_in():
             assert item["cars"] != "fiat"
 
 
-def test_in():
+def test_in(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"fruits_in": ["banana", "kiwi"]},
         )
         assert response.status_code == 200
@@ -36,11 +35,10 @@ def test_in():
             assert item["fruits"] == "banana"
 
 
-def test_contains():
+def test_contains(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"fruits_contains": "anan"},
         )
         assert response.status_code == 200
@@ -51,11 +49,10 @@ def test_contains():
             assert item["fruits"] in ["banana", "ananas"]
 
 
-def test_startswith():
+def test_startswith(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"fruits_startswith": "anan"},
         )
         assert response.status_code == 200
@@ -67,11 +64,10 @@ def test_startswith():
             assert item["fruits"] not in ["banana"]
 
 
-def test_not_contains():
+def test_not_contains(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"fruits_not_contains": "anan"},
         )
         assert response.status_code == 200
@@ -82,11 +78,10 @@ def test_not_contains():
             assert item["fruits"] not in ["banana", "ananas"]
 
 
-def test_not_equals():
+def test_not_equals(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"fruits_ne": "banana"},
         )
         assert response.status_code == 200
@@ -97,11 +92,10 @@ def test_not_equals():
             assert item["fruits"] != "banana"
 
 
-def test_gt():
+def test_gt(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_gt": "2"},
         )
         assert response.status_code == 200
@@ -112,13 +106,12 @@ def test_gt():
             assert item["B"] > 2
 
 
-def test_gt_date_get():
+def test_gt_date_get(client: TestClient):
     from datetime import datetime
 
     for e in ["duckdb"]:  # TODO: Enable polalrs once they support datetime decently
         response = client.get(
             f"/api/v1/test/fruits_date?limit=5&format=json&%24engine={e}&date_field_gt=2023-01-01T00:00",
-            auth=auth,
         )
         assert response.status_code == 200
         jsd = response.json()
@@ -128,11 +121,10 @@ def test_gt_date_get():
             assert datetime.fromisoformat(item["date_field"]) > datetime(2023, 1, 1)
 
 
-def test_gte():
+def test_gte(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_gte": "2"},
         )
         assert response.status_code == 200
@@ -143,11 +135,10 @@ def test_gte():
             assert item["B"] >= 2
 
 
-def test_lt():
+def test_lt(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_lt": 7},
         )
         assert response.status_code == 200
@@ -158,11 +149,10 @@ def test_lt():
             assert item["B"] < 7
 
 
-def test_lte():
+def test_lte(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_lte": 7},
         )
         assert response.status_code == 200
@@ -173,11 +163,10 @@ def test_lte():
             assert item["B"] <= 7
 
 
-def test_between():
+def test_between(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_between": [5, 7]},
         )
         assert response.status_code == 200
@@ -189,17 +178,15 @@ def test_between():
 
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_between": [5, 7, 9]},
         )
         assert response.status_code == 400
 
 
-def test_not_between():
+def test_not_between(client: TestClient):
     for e in engines:
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_not_between": [5, 7]},
         )
         assert response.status_code == 200
@@ -211,17 +198,15 @@ def test_not_between():
 
         response = client.post(
             f"/api/v1/complexer/complex_fruits?limit=5&format=json&%24engine={e}",
-            auth=auth,
             json={"B_not_between": [5, 7, 9]},
         )
         assert response.status_code == 400
 
 
-def test_has():
+def test_has(client: TestClient):
     for e in engines:
         response = client.get(
             f"/api/v1/array/weather?limit=100&temperatures_has=E1&format=json&%24engine={e}",
-            auth=auth,
         )
         assert response.status_code == 200
         jsd = response.json()
@@ -232,7 +217,6 @@ def test_has():
 
         response = client.post(
             f"/api/v1/array/weather?limit=100&format=json&%24engine={e}",
-            auth=auth,
             json={"temperatures_has": "E1"},
         )
         assert response.status_code == 200

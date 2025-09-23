@@ -1,9 +1,9 @@
+from fastapi.testclient import TestClient
 
 
-def test_simple_department():
+def test_simple_department(client: TestClient):
     response = client.get(
         "/api/v1/mssql/mssql_department?format=json&limit=50",
-        auth=auth,
     )
     assert response.status_code == 200
     departments = response.json()
@@ -13,7 +13,6 @@ def test_simple_department():
 def test_filter_group_name():
     response = client.get(
         "/api/v1/mssql/mssql_department?format=json&limit=100&GroupName=Research%20and%20Development",
-        auth=auth,
     )
     assert response.status_code == 200
     tables = response.json()
@@ -23,7 +22,6 @@ def test_filter_group_name():
 def test_filter_offset():
     response = client.get(
         "/api/v1/mssql/mssql_department?format=json&limit=100&offset=10",
-        auth=auth,
     )
     assert response.status_code == 200
     tables = response.json()
@@ -33,6 +31,5 @@ def test_filter_offset():
 def test_metadata_detail():
     response = client.get(
         "/api/v1/mssql/mssql_department/metadata_detail",
-        auth=auth,
     )
     assert response.status_code == 200
