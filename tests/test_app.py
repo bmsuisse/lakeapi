@@ -519,11 +519,11 @@ def test_metadata_no_hidden(client: TestClient):
     assert "cars_md5_prefix_2" not in field_names
 
 
-def test_auth_metadata(client: TestClient):
-    response = client.get("/metadata")
+def test_auth_metadata(client_no_auth: TestClient):
+    response = client_no_auth.get("/metadata")
     assert response.status_code == 401
 
-    response = client.get("/api/v1/test/fake_arrow/metadata_detail")
+    response = client_no_auth.get("/api/v1/test/fake_arrow/metadata_detail")
     assert response.status_code == 401
 
 

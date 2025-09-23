@@ -1,6 +1,9 @@
 import time
 import sys
 import asyncio
+from fastapi.concurrency import run_in_threadpool
+from fastapi.testclient import TestClient
+import pytest
 
 sys.path.append(".")
 
@@ -8,10 +11,7 @@ sys.path.append(".")
 engines = ("duckdb", "polars")
 
 
-from fastapi.concurrency import run_in_threadpool
-from fastapi.testclient import TestClient
-
-
+@pytest.mark.asyncio
 async def test_async_execution(client: TestClient):
     # simulate a lot of async requests and guarantee that the execution is under 1 second
 

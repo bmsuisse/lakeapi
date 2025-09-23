@@ -47,13 +47,21 @@ async def init_routes(configs: Configs, basic_config: BasicConfig):
                     basic_config=basic_config,
                     accounts=configs.accounts,
                 )
-                schema = await get_schema_cached(
-                    basic_config, realdataframe, config.datasource.get_unique_hash()
-                )
-                if schema is None:
-                    logger.warning(
-                        f"Could not get response type for f{config.route}. Path does not exist:{realdataframe}"
+                try:
+                    schema = await get_schema_cached(
+                        basic_config, realdataframe, config.datasource.get_unique_hash()
                     )
+                    if schema is None:
+                        logger.warning(
+                            f"Could not get response type for {config.route}. Path does not exist:{realdataframe}"
+                        )
+                except Exception as err:
+                    logger.warning(
+                        f"Could not get schema for {config.route}. Error:{err}",
+                        exc_info=err,
+                    )
+                    schema = None
+
                 metadata.append(
                     {
                         "name": config.name,
