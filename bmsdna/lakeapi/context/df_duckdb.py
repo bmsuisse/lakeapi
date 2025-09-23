@@ -65,9 +65,8 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
 
         def _get_schema():
-            with self.con.cursor() as cur:
-                cur.execute(query)
-                return cur.arrow().schema
+            self.con.execute(query)
+            return self.con.arrow().schema
 
         self._arrow_schema = await run_in_threadpool(_get_schema)
 
