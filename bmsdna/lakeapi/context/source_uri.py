@@ -118,7 +118,7 @@ class SourceUri:
             )
         os.makedirs(local_path + "/_delta_log", exist_ok=True)
         fs, fs_path = self.get_fs_spec()
-        fs.get(fs_path + "/", local_path + "/_delta_log", recursive=True)
+        fs.get(fs_path + "/_delta_log", local_path + "/_delta_log", recursive=True)
         for path in meta.add_actions.keys():
             if not os.path.exists(local_path + "/" + path):
                 fs.get_file(fs_path + "/" + path, local_path + "/" + path)
