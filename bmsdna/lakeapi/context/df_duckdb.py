@@ -85,12 +85,11 @@ class DuckDBResultData(ResultData):
         query = get_sql(self.original_sql, dialect="duckdb")
 
         def _to_list():
-            with self.con.cursor() as cur:
-                cur.execute(query)
-                assert cur.description is not None
-                col_names = [d[0] for d in cur.description]
-                res = cur.fetchall()
-                return [dict(zip(col_names, r)) for r in res]
+            self.con.execute(query)
+            assert self.con.description is not None
+            col_names = [d[0] for d in self.con.description]
+            res = self.con.fetchall()
+            return [dict(zip(col_names, r)) for r in res]
 
         return await run_in_threadpool(_to_list)
 

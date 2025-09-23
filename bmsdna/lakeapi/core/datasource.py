@@ -422,7 +422,7 @@ def get_filter_dict(
             continue  # can that happen? I don't know
         prmdef_and_op = get_param_def(key, param_def)
         if prmdef_and_op is None:
-            raise ValueError(f"thats not parameter: {key}")
+            continue
         prmdef, op = prmdef_and_op
         colname = prmdef.colname or prmdef.name
 
@@ -458,7 +458,7 @@ def filter_df_based_on_params(
             continue  # can that happen? I don't know
         prmdef_and_op = get_param_def(key, param_def)
         if prmdef_and_op is None:
-            raise ValueError(f"thats not parameter: {key}")
+            continue
         prmdef, op = prmdef_and_op
         colname = prmdef.colname or prmdef.name
 
