@@ -92,4 +92,5 @@ test = [
     "adbc-driver-sqlite >=0.10.0",
     "python-dotenv >=1.0.1,<2",
     "deltalake>=1.1.4",
+    "pytest-asyncio>=0.23.8",
 ]
