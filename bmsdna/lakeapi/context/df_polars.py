@@ -68,13 +68,24 @@ class PolarsResultData(ResultData):
         self.random_name = "tbl_" + str(uuid4()).replace("-", "")
         self.registred_df = False
         self.to_register = to_register
+        self._ctx = None
+
+    def __exit__(self, *args, **kwargs):
+        if self._ctx is not None:
+            self._ctx.unregister(self._ctx.tables())
+        self.to_register = {}
+        super().__exit__(*args, **kwargs)
 
     def get_sql_context(self):
+        if self._ctx is not None:
+            self._ctx.unregister(self._ctx.tables())
+            self._ctx = None
         import polars as pl
 
         ctx = pl.SQLContext()
         for k, v in self.to_register.items():
             ctx.register(k, v)
+        self._ctx = ctx
         return ctx
 
     def get_df(self):

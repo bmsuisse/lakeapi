@@ -72,6 +72,12 @@ class ResultData(ABC):
         super().__init__()
         self.chunk_size = chunk_size
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
     def columns(self):
         return (self.arrow_schema()).names
 

@@ -212,7 +212,7 @@ def create_config_endpoint(
             chunk_size=real_chunk_size,
         )
         assert config.datasource is not None
-        realdataframe = Datasource(
+        with Datasource(
             config.version_str,
             config.tag,
             config.name,
@@ -220,96 +220,96 @@ def create_config_endpoint(
             sql_context=context,
             basic_config=basic_config,
             accounts=configs.accounts,
-        )
-        if params:
-            pre_filter, covered_all = get_filters(
-                params.model_dump(exclude_unset=True),
-                config.params if config.params else [],
-                None,
+        ) as realdataframe:
+            if params:
+                pre_filter, covered_all = get_filters(
+                    params.model_dump(exclude_unset=True),
+                    config.params if config.params else [],
+                    None,
+                )
+            else:
+                pre_filter, covered_all = None, True
+            df = realdataframe.get_df(filters=pre_filter)
+            df_cols = df.columns()
+            expr = (
+                get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
+                    context,
+                    df_cols,
+                    config,
+                    params,
+                )
+                if not covered_all
+                else None
             )
-        else:
-            pre_filter, covered_all = None, True
-        df = realdataframe.get_df(filters=pre_filter)
-        df_cols = df.columns()
-        expr = (
-            get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
+            new_query = df.query_builder()
+            new_query = new_query.where(expr) if expr is not None else new_query
+            columns = exclude_cols(df_cols, basic_config)
+            if select:
+                columns = [
+                    c for c in columns if c in split_csv(select)
+                ]  # split , is a bit naive, we might want to support real CSV with quotes here
+            if config.datasource.exclude and len(config.datasource.exclude) > 0:
+                columns = [c for c in columns if c not in config.datasource.exclude]
+            if config.datasource.sortby:
+                for s in config.datasource.sortby:
+                    new_query = cast(ex.Select, new_query).order_by(
+                        ex.column(s.by, quoted=True).desc()
+                        if s.direction and s.direction.lower() == "desc"
+                        else ex.column(s.by, quoted=True),
+                        copy=False,
+                    )
+            if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
+                jsonify_complex = True
+            if jsonify_complex:
+                base_schema = df.arrow_schema()
+
+                complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
+
+                new_query = context.jsonify_complex(new_query, complex_cols, columns)
+            else:
+                new_query = new_query.select(
+                    *[ex.column(c, quoted=True) for c in columns], append=False
+                )
+
+            if distinct:
+                assert len(columns) <= 3  # reduce complexity here
+                new_query = cast(ex.Select, new_query).distinct()
+
+            if not (limit == -1 and config.allow_get_all_pages):
+                limit = (1000 if limit == -1 else limit) or 1000
+                new_query = new_query.limit(limit)
+                if offset:
+                    new_query.offset(offset, copy=False)
+
+            new_query = handle_search_request(
                 context,
-                df_cols,
                 config,
                 params,
+                basic_config,
+                source_view=realdataframe.tablename,
+                query=new_query,
             )
-            if not covered_all
-            else None
-        )
-        new_query = df.query_builder()
-        new_query = new_query.where(expr) if expr is not None else new_query
-        columns = exclude_cols(df_cols, basic_config)
-        if select:
-            columns = [
-                c for c in columns if c in split_csv(select)
-            ]  # split , is a bit naive, we might want to support real CSV with quotes here
-        if config.datasource.exclude and len(config.datasource.exclude) > 0:
-            columns = [c for c in columns if c not in config.datasource.exclude]
-        if config.datasource.sortby:
-            for s in config.datasource.sortby:
-                new_query = cast(ex.Select, new_query).order_by(
-                    ex.column(s.by, quoted=True).desc()
-                    if s.direction and s.direction.lower() == "desc"
-                    else ex.column(s.by, quoted=True),
-                    copy=False,
+            new_query = handle_nearby_request(
+                context,
+                config,
+                params,
+                basic_config,
+                source_view=realdataframe.tablename,
+                query=new_query,
+            )
+            logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
+
+            try:
+                return await create_response(
+                    request.url,
+                    request.query_params,
+                    format or request.headers["Accept"],
+                    context=context,
+                    sql=new_query,
+                    basic_config=basic_config,
+                    close_context=True,
+                    charset=request.query_params.get("$encoding"),
                 )
-        if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
-            jsonify_complex = True
-        if jsonify_complex:
-            base_schema = df.arrow_schema()
-
-            complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
-
-            new_query = context.jsonify_complex(new_query, complex_cols, columns)
-        else:
-            new_query = new_query.select(
-                *[ex.column(c, quoted=True) for c in columns], append=False
-            )
-
-        if distinct:
-            assert len(columns) <= 3  # reduce complexity here
-            new_query = cast(ex.Select, new_query).distinct()
-
-        if not (limit == -1 and config.allow_get_all_pages):
-            limit = (1000 if limit == -1 else limit) or 1000
-            new_query = new_query.limit(limit)
-            if offset:
-                new_query.offset(offset, copy=False)
-
-        new_query = handle_search_request(
-            context,
-            config,
-            params,
-            basic_config,
-            source_view=realdataframe.tablename,
-            query=new_query,
-        )
-        new_query = handle_nearby_request(
-            context,
-            config,
-            params,
-            basic_config,
-            source_view=realdataframe.tablename,
-            query=new_query,
-        )
-        logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
-
-        try:
-            return await create_response(
-                request.url,
-                request.query_params,
-                format or request.headers["Accept"],
-                context=context,
-                sql=new_query,
-                basic_config=basic_config,
-                close_context=True,
-                charset=request.query_params.get("$encoding"),
-            )
-        except Exception as err:
-            logger.error("Error in creating response", exc_info=err)
-            raise HTTPException(status_code=500)
+            except Exception as err:
+                logger.error("Error in creating response", exc_info=err)
+                raise HTTPException(status_code=500)

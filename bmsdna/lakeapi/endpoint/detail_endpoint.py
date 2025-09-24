@@ -60,7 +60,7 @@ def create_detailed_meta_endpoint(
             basic_config.default_chunk_size,
         ) as context:
             assert config.datasource is not None
-            realdataframe = Datasource(
+            with Datasource(
                 config.version_str,
                 config.tag,
                 config.name,
@@ -68,33 +68,35 @@ def create_detailed_meta_endpoint(
                 sql_context=context,
                 basic_config=basic_config,
                 accounts=configs.accounts,
-            )
-
-            if not realdataframe.file_exists():
-                raise HTTPException(404)
-            partition_columns = []
-            partition_values = None
-            delta_tbl = None
-            df = realdataframe.get_df(None)
-            if config.datasource.file_type == "delta":
-                delta_tbl = realdataframe.get_delta_table(schema_only=True)
-                assert delta_tbl is not None
-                assert delta_tbl.last_metadata is not None
-                partition_columns = delta_tbl.last_metadata.get("partitionColumns", [])
-                partition_columns = [
-                    c
-                    for c in partition_columns
-                    if not basic_config.should_hide_col_name(c)
-                ]  # also hide those from metadata detail
-                if len(partition_columns) > 0:
-                    qb = cast(
-                        ex.Select,
-                        df.query_builder().select(
-                            *[ex.column(c, quoted=True) for c in partition_columns],
-                            append=False,
-                        ),
-                    ).distinct()
-                    partition_values = await context.execute_sql(qb).to_pylist()
+            ) as realdataframe:
+                if not realdataframe.file_exists():
+                    raise HTTPException(404)
+                partition_columns = []
+                partition_values = None
+                delta_tbl = None
+                df = realdataframe.get_df(None)
+                if config.datasource.file_type == "delta":
+                    delta_tbl = realdataframe.get_delta_table(schema_only=True)
+                    assert delta_tbl is not None
+                    assert delta_tbl.last_metadata is not None
+                    partition_columns = delta_tbl.last_metadata.get(
+                        "partitionColumns", []
+                    )
+                    partition_columns = [
+                        c
+                        for c in partition_columns
+                        if not basic_config.should_hide_col_name(c)
+                    ]  # also hide those from metadata detail
+                    if len(partition_columns) > 0:
+                        qb = cast(
+                            ex.Select,
+                            df.query_builder().select(
+                                *[ex.column(c, quoted=True) for c in partition_columns],
+                                append=False,
+                            ),
+                        ).distinct()
+                        with context.execute_sql(qb) as res:
+                            partition_values = await res.to_pylist()
             schema = df.arrow_schema()
             str_cols = [
                 name
@@ -139,11 +141,12 @@ def create_detailed_meta_endpoint(
                         ),
                     )
                 )
-                str_lengths_df = (
-                    (await (context.execute_sql(str_lengths_query)).to_pylist())
-                    if len(str_cols) > 0 or len(complex_str_cols) > 0
-                    else [{}]
-                )
+                with context.execute_sql(str_lengths_query) as res:
+                    str_lengths_df = (
+                        (await res.to_pylist())
+                        if len(str_cols) > 0 or len(complex_str_cols) > 0
+                        else [{}]
+                    )
                 str_lengths = str_lengths_df[0]
             else:
                 str_lengths = {}

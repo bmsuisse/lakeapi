@@ -38,7 +38,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 from bmsdna.lakeapi.core.datasource import Datasource
 
                 assert config.datasource is not None
-                realdataframe = Datasource(
+                with Datasource(
                     config.version_str,
                     config.tag,
                     config.name,
@@ -46,21 +46,23 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                     sql_context=mgr.get_context(config.engine),
                     basic_config=basic_config,
                     accounts=configs.accounts,
-                )
-                try:
-                    schema = get_schema_cached(
-                        basic_config, realdataframe, config.datasource.get_unique_hash()
-                    )
-                    if schema is None:
-                        logger.warning(
-                            f"Could not get response type for {config.route}. Path does not exist:{realdataframe}"
+                ) as realdataframe:
+                    try:
+                        schema = get_schema_cached(
+                            basic_config,
+                            realdataframe,
+                            config.datasource.get_unique_hash(),
                         )
-                except Exception as err:
-                    logger.warning(
-                        f"Could not get schema for {config.route}. Error:{err}",
-                        exc_info=err,
-                    )
-                    schema = None
+                        if schema is None:
+                            logger.warning(
+                                f"Could not get response type for {config.route}. Path does not exist:{realdataframe}"
+                            )
+                    except Exception as err:
+                        logger.warning(
+                            f"Could not get schema for {config.route}. Error:{err}",
+                            exc_info=err,
+                        )
+                        schema = None
 
                 metadata.append(
                     {

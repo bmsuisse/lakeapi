@@ -139,6 +139,13 @@ class Datasource:
     def __str__(self) -> str:
         return str(self.source_uri)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        if self.df:
+            self.df.__exit__(*args)
+
     @property
     def execution_uri(self):
         if not self.copy_local:
