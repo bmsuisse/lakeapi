@@ -33,8 +33,6 @@ from deltalake2db.delta_meta_retrieval import (
     DataType,
     field_to_type,
     PrimitiveType,
-    get_meta,
-    PolarsEngine,
     MetaState as DeltaMetadata,
 )
 from bmsdna.lakeapi.utils.async_utils import _async
@@ -171,10 +169,10 @@ class Datasource:
         if self.config.file_type == "delta":
             if self.source_uri.exists():
                 try:
-                    df_uri, df_opts = (
-                        self.source_uri if schema_only else self.execution_uri
-                    ).get_uri_options(flavor="object_store")
-                    return get_meta(PolarsEngine(df_opts), df_uri)
+                    from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
+
+                    meta = get_deltalake_meta(self.source_uri)
+                    return meta
                 except FileNotFoundError:
                     return None
         return None

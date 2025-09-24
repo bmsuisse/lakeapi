@@ -26,10 +26,6 @@ from bmsdna.lakeapi.endpoint.endpoint_search import handle_search_request
 from bmsdna.lakeapi.endpoint.endpoint_nearby import handle_nearby_request
 from starlette.concurrency import run_in_threadpool
 from bmsdna.lakeapi.utils.async_utils import _async
-from deltalake2db.delta_meta_retrieval import (
-    PolarsEngine,
-    get_meta,
-)
 
 
 logger = get_logger(__name__)
