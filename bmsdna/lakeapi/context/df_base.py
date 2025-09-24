@@ -72,11 +72,11 @@ class ResultData(ABC):
         super().__init__()
         self.chunk_size = chunk_size
 
-    async def columns(self):
-        return (await self.arrow_schema()).names
+    def columns(self):
+        return (self.arrow_schema()).names
 
     @abstractmethod
-    async def arrow_schema(self) -> "pa.Schema": ...
+    def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
     async def to_pylist(self) -> Sequence[dict]: ...
@@ -386,7 +386,7 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    async def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
+    def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
 
     @abstractmethod
-    async def list_tables(self) -> ResultData: ...
+    def list_tables(self) -> ResultData: ...

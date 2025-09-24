@@ -273,8 +273,8 @@ def create_config_endpoint(
                     if k not in pre_filter:
                         pre_filter.append((k, "=", v))
 
-        df = await realdataframe.get_df(filters=pre_filter)
-        df_cols = await _async(df.columns())
+        df = realdataframe.get_df(filters=pre_filter)
+        df_cols = df.columns()
         expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
             context,
             df_cols,
@@ -301,7 +301,7 @@ def create_config_endpoint(
         if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
             jsonify_complex = True
         if jsonify_complex:
-            base_schema = await df.arrow_schema()
+            base_schema = df.arrow_schema()
 
             complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 

@@ -202,7 +202,7 @@ class Datasource:
             )
         return ex.table_(tname)
 
-    async def get_schema(self) -> pa.Schema:
+    def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table(schema_only=True)
@@ -221,9 +221,9 @@ class Datasource:
                 ]
                 return pyarrow.schema(fields)
             return schema
-        return await (await self.get_df(endpoint="meta")).arrow_schema()
+        return (self.get_df(endpoint="meta")).arrow_schema()
 
-    async def get_df(
+    def get_df(
         self,
         filters: Optional[List[Tuple[str, OperatorType, Any]]] = None,
         endpoint: endpoints = "request",
@@ -248,7 +248,7 @@ class Datasource:
                     self.config.file_type,
                     filters=filters,
                 )
-                self.df = await _async(self.sql_context.execute_sql(self.query))
+                self.df = self.sql_context.execute_sql(self.query)
 
         return self.df  # type: ignore
 

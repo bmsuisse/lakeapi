@@ -22,10 +22,7 @@ def get_app(default_engine="duckdb"):
         default_engine=default_engine,
     )
 
-    async def _init():
-        await bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
-
-    sti = asyncio.run(_init())
+    bmsdna.lakeapi.init_lakeapi(app, True, cfg, "config_test.yml")
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(

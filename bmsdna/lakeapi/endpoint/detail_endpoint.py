@@ -75,7 +75,7 @@ def create_detailed_meta_endpoint(
             partition_columns = []
             partition_values = None
             delta_tbl = None
-            df = await realdataframe.get_df(None)
+            df = realdataframe.get_df(None)
             if config.datasource.file_type == "delta":
                 delta_tbl = realdataframe.get_delta_table(schema_only=True)
                 assert delta_tbl is not None
@@ -94,8 +94,8 @@ def create_detailed_meta_endpoint(
                             append=False,
                         ),
                     ).distinct()
-                    partition_values = await (await context.execute_sql(qb)).to_pylist()
-            schema = await df.arrow_schema()
+                    partition_values = await context.execute_sql(qb).to_pylist()
+            schema = df.arrow_schema()
             str_cols = [
                 name
                 for name in schema.names
@@ -140,7 +140,7 @@ def create_detailed_meta_endpoint(
                     )
                 )
                 str_lengths_df = (
-                    (await (await context.execute_sql(str_lengths_query)).to_pylist())
+                    (await (context.execute_sql(str_lengths_query)).to_pylist())
                     if len(str_cols) > 0 or len(complex_str_cols) > 0
                     else [{}]
                 )
@@ -180,7 +180,7 @@ def create_detailed_meta_endpoint(
                     ),
                 )
 
-            schema = await df.arrow_schema()
+            schema = df.arrow_schema()
             mdt = realdataframe.sql_context.get_modified_date(
                 realdataframe.source_uri, realdataframe.config.file_type
             )

@@ -46,8 +46,8 @@ class DuckDBResultData(ResultData):
         self._arrow_schema = None
         self._df = None
 
-    async def columns(self):
-        return (await self.arrow_schema()).names
+    def columns(self):
+        return (self.arrow_schema()).names
 
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
@@ -59,7 +59,7 @@ class DuckDBResultData(ResultData):
                 ).subquery()
             )
 
-    async def arrow_schema(self) -> pa.Schema:
+    def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
@@ -68,7 +68,7 @@ class DuckDBResultData(ResultData):
             self.con.execute(query)
             return self.con.arrow().schema
 
-        self._arrow_schema = await run_in_threadpool(_get_schema)
+        self._arrow_schema = _get_schema()
 
         return self._arrow_schema
 
@@ -207,7 +207,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def close(self):
         self.con.close()
 
-    async def execute_sql(
+    def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -411,8 +411,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             target_name, source_table_name, uri, file_type, filters
         )
 
-    async def list_tables(self) -> ResultData:
-        return await self.execute_sql(
+    def list_tables(self) -> ResultData:
+        return self.execute_sql(
             """SELECT table_name as name, table_type 
                from information_schema.tables where table_schema='main'
             """

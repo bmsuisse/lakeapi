@@ -78,7 +78,7 @@ class ODBCResultData(ResultData):
                 .as_("t")
             )
 
-    async def arrow_schema(self) -> pa.Schema:
+    def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect=self.dialect)
@@ -151,7 +151,7 @@ class ODBCExecutionContext(ExecutionContext):
     def supports_view_creation(self) -> bool:
         return False
 
-    async def execute_sql(
+    def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -190,8 +190,8 @@ class ODBCExecutionContext(ExecutionContext):
         assert uri.account is None
         self.datasources[target_name] = uri.uri
 
-    async def list_tables(self) -> ResultData:
-        return await self.execute_sql(
+    def list_tables(self) -> ResultData:
+        return self.execute_sql(
             "SELECT table_schema, table_name as name, table_type from information_schema.tables"
         )
 

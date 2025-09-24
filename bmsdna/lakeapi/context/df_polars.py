@@ -89,7 +89,7 @@ class PolarsResultData(ResultData):
             self._df = _df
         return _df
 
-    async def columns(self):
+    def columns(self):
         if self._df is None:
             _df = pl.DataFrame(
                 [],
@@ -110,7 +110,7 @@ class PolarsResultData(ResultData):
                 )
             )
 
-    async def arrow_schema(self) -> pa.Schema:
+    def arrow_schema(self) -> pa.Schema:
         if self._df is None:
             _df = pl.DataFrame(
                 [],
@@ -280,7 +280,7 @@ class PolarsExecutionContext(ExecutionContext):
 
         self._to_register[target_name] = df
 
-    async def execute_sql(
+    def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -289,8 +289,8 @@ class PolarsExecutionContext(ExecutionContext):
     ) -> PolarsResultData:
         return PolarsResultData(sql, self.chunk_size, self._to_register.copy())
 
-    async def list_tables(self) -> ResultData:
-        return await self.execute_sql("SHOW TABLES")
+    def list_tables(self) -> ResultData:
+        return self.execute_sql("SHOW TABLES")
 
     def __enter__(self):
         return self
