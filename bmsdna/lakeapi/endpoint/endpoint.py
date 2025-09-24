@@ -222,24 +222,20 @@ def create_config_endpoint(
             accounts=configs.accounts,
         ) as realdataframe:
             if params:
-                pre_filter, covered_all = get_filters(
+                pre_filter, _ = get_filters(
                     params.model_dump(exclude_unset=True),
                     config.params if config.params else [],
                     None,
                 )
             else:
-                pre_filter, covered_all = None, True
+                pre_filter = None
             df = realdataframe.get_df(filters=pre_filter)
             df_cols = df.columns()
-            expr = (
-                get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
-                    context,
-                    df_cols,
-                    config,
-                    params,
-                )
-                if not covered_all
-                else None
+            expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
+                context,
+                df_cols,
+                config,
+                params,
             )
             new_query = df.query_builder()
             new_query = new_query.where(expr) if expr is not None else new_query
