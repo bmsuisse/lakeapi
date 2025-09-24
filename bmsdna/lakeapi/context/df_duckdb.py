@@ -5,7 +5,11 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from deltalake2db import duckdb_create_view_for_delta, duckdb_apply_storage_options
+from deltalake2db import (
+    duckdb_create_view_for_delta,
+    duckdb_apply_storage_options,
+    FilterType,
+)
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -46,8 +50,8 @@ class DuckDBResultData(ResultData):
         self._arrow_schema = None
         self._df = None
 
-    async def columns(self):
-        return (await self.arrow_schema()).names
+    def columns(self):
+        return (self.arrow_schema()).names
 
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
@@ -59,7 +63,7 @@ class DuckDBResultData(ResultData):
                 ).subquery()
             )
 
-    async def arrow_schema(self) -> pa.Schema:
+    def arrow_schema(self) -> pa.Schema:
         if self._arrow_schema is not None:
             return self._arrow_schema
         query = get_sql(self.original_sql, limit=0, dialect="duckdb")
@@ -68,7 +72,7 @@ class DuckDBResultData(ResultData):
             self.con.execute(query)
             return self.con.arrow().schema
 
-        self._arrow_schema = await run_in_threadpool(_get_schema)
+        self._arrow_schema = _get_schema()
 
         return self._arrow_schema
 
@@ -207,7 +211,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     def close(self):
         self.con.close()
 
-    async def execute_sql(
+    def execute_sql(
         self,
         sql: Union[
             ex.Query,
@@ -337,7 +341,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: List[Tuple[str, OperatorType, Any]] | None,
+        filters: Optional[FilterType],
+        meta_only: bool = False,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 
@@ -378,15 +383,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
         if file_type == "delta" and uri.exists():
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
-            df_filter = (
-                {p[0]: p[2] for p in filters if p[1] == "="} if filters else None
-            )
             duckdb_create_view_for_delta(
                 self.con,
                 ab_uri,
                 target_name,
                 storage_options=uri_opts,
-                conditions=df_filter,
+                conditions=filters,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
             )
             return
@@ -411,8 +413,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
             target_name, source_table_name, uri, file_type, filters
         )
 
-    async def list_tables(self) -> ResultData:
-        return await self.execute_sql(
+    def list_tables(self) -> ResultData:
+        return self.execute_sql(
             """SELECT table_name as name, table_type 
                from information_schema.tables where table_schema='main'
             """

@@ -38,6 +38,7 @@ from deltalake2db.delta_meta_retrieval import (
     MetaState as DeltaMetadata,
 )
 from bmsdna.lakeapi.utils.async_utils import _async
+from deltalake2db.filter_by_meta import FilterType, Operator as SupportedOperator
 
 logger = get_logger(__name__)
 
@@ -138,19 +139,24 @@ class Datasource:
     def __str__(self) -> str:
         return str(self.source_uri)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        if self.df:
+            self.df.__exit__(*args)
+
     @property
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert self.config.file_type == "delta", (
-            "only delta is supported for copy_local"
-        )
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
                     self.basic_config.local_data_cache_path,
                     hashlib.md5(self.source_uri.uri.encode("utf-8")).hexdigest(),
-                )
+                ),
+                self.config.file_type == "delta",
             )
         return self._execution_uri
 
@@ -204,7 +210,7 @@ class Datasource:
             )
         return ex.table_(tname)
 
-    async def get_schema(self) -> pa.Schema:
+    def get_schema(self) -> pa.Schema:
         schema: pa.Schema | None = None
         if self.config.file_type == "delta" and self.file_exists():
             dt = self.get_delta_table(schema_only=True)
@@ -223,11 +229,11 @@ class Datasource:
                 ]
                 return pyarrow.schema(fields)
             return schema
-        return await (await self.get_df(endpoint="meta")).arrow_schema()
+        return (self.get_df(endpoint="meta")).arrow_schema()
 
-    async def get_df(
+    def get_df(
         self,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]] = None,
+        filters: Optional[FilterType] = None,
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
@@ -249,8 +255,9 @@ class Datasource:
                     self.source_uri if endpoint == "meta" else self.execution_uri,
                     self.config.file_type,
                     filters=filters,
+                    meta_only=endpoint == "meta",
                 )
-                self.df = await _async(self.sql_context.execute_sql(self.query))
+                self.df = self.sql_context.execute_sql(self.query)
 
         return self.df  # type: ignore
 
@@ -409,12 +416,13 @@ def _sql_value(value: str | datetime | date | None, engine: str):
     return value
 
 
-def get_filter_dict(
+def get_filters(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[Sequence[str]],
-) -> dict[str, Any]:
-    result = {}
+) -> tuple[FilterType, bool]:
+    result: list[tuple[str, SupportedOperator, Any]] = []
+    covered_all = True
     for key, value in params.items():
         if not key or not value or key in ("limit", "offset"):
             continue  # can that happen? I don't know
@@ -425,21 +433,18 @@ def get_filter_dict(
         colname = prmdef.colname or prmdef.name
 
         if prmdef.combi:
+            covered_all = False
             continue
         elif columns and colname not in columns:
+            covered_all = False
             pass
         else:
-            match op:
-                case "==":
-                    result[colname] = value if value is not None else None
-                case "=":
-                    result[colname] = value if value is not None else None
-                case "in":
-                    lsv = cast(list[str], value)
-                    if len(lsv) == 1:
-                        result[colname] = lsv[0]
+            if op not in get_args(SupportedOperator):
+                covered_all = False
+            else:
+                result.append((colname, cast(SupportedOperator, op), value))
 
-    return result
+    return result, covered_all
 
 
 def filter_df_based_on_params(
@@ -504,14 +509,6 @@ def filter_df_based_on_params(
                         )
                         if value is not None
                         else ~ex.column(colname, quoted=True).is_(ex.convert(None))
-                    )
-                case "==":
-                    exprs.append(
-                        ex.column(colname, quoted=True).eq(
-                            _sql_value(value, engine=context.engine_name)
-                        )
-                        if value is not None
-                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "=":
                     exprs.append(

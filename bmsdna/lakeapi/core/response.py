@@ -288,17 +288,19 @@ async def create_response(
     )
 
     if format == OutputFormats.JSON:
-        return Response(
-            content=await _async((await _async(context.execute_sql(sql))).to_json()),
-            headers=headers,
-            media_type=(media_type or "application/json") + "; charset=" + charset,
-        )
+        with context.execute_sql(sql) as res:
+            return Response(
+                content=await _async(res.to_json()),
+                headers=headers,
+                media_type=(media_type or "application/json") + "; charset=" + charset,
+            )
     if format == OutputFormats.ND_JSON:
-        return Response(
-            content=await _async((await _async(context.execute_sql(sql))).to_ndjson()),
-            headers=headers,
-            media_type="application/json-nd; charset=" + charset,
-        )
+        with context.execute_sql(sql) as res:
+            return Response(
+                content=await _async(res.to_ndjson()),
+                headers=headers,
+                media_type="application/json-nd; charset=" + charset,
+            )
 
     if format in [
         OutputFormats.JSON,
@@ -314,16 +316,16 @@ async def create_response(
 
     async def response_stream(context: ExecutionContext, sql, url, format):
         chunk_size = 64 * 1024
-        content = await _async(context.execute_sql(sql))
-        additional_files = await _write_frame(
-            url,
-            content,
-            format,
-            temp_file.name,
-            basic_config,
-            query_params.get("$csv_separator", None),
-            charset,
-        )
+        with context.execute_sql(sql) as content:
+            additional_files = await _write_frame(
+                url,
+                content,
+                format,
+                temp_file.name,
+                basic_config,
+                query_params.get("$csv_separator", None),
+                charset,
+            )
 
         async with await anyio.open_file(temp_file.name, mode="rb") as file:
             more_body = True

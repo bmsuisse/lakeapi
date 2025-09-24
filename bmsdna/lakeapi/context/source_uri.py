@@ -100,15 +100,19 @@ class SourceUri:
         fs, fs_path = self.get_fs_spec()
         return fs.exists(fs_path)
 
-    def copy_to_local(self, local_path: str):
+    def copy_to_local(self, local_path: str, delta_table: bool):
         if self.account is None:
             raise ValueError("Cannot copy local files")
-        from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+        if not delta_table:
+            fs, fs_path = self.get_fs_spec()
+            stat = fs.stat(fs_path)
+            lm = stat.get("last_modified", stat.get("Last-Modified"))
+            if not lm:
+                raise ValueError("Cannot determine last modified date", stat.keys())
 
-        df_uri, df_opts = self.get_uri_options(flavor="object_store")
-        meta = get_meta(PolarsEngine(df_opts), df_uri)
-        vnr = meta.version
-        if local_versions.get(self.uri) == vnr:
+            if local_versions.get(self.uri) != lm:
+                fs.get_file(fs_path, local_path)
+                local_versions[self.uri] = lm
             return SourceUri(
                 uri=local_path,
                 data_path=None,
@@ -116,17 +120,42 @@ class SourceUri:
                 accounts=self.accounts,
                 token_retrieval_func=self.token_retrieval_func,
             )
-        os.makedirs(local_path, exist_ok=True)
-        fs, fs_path = self.get_fs_spec()
-        fs.get(fs_path + "/", local_path, recursive=True)
-        local_versions[self.uri] = vnr
-        return SourceUri(
-            uri=local_path,
-            data_path=None,
-            account=None,
-            accounts=self.accounts,
-            token_retrieval_func=self.token_retrieval_func,
-        )
+        if delta_table:
+            from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+
+            df_uri, df_opts = self.get_uri_options(flavor="object_store")
+            meta = get_meta(PolarsEngine(df_opts), df_uri)
+            vnr = meta.version
+            if local_versions.get(self.uri) == vnr:
+                return SourceUri(
+                    uri=local_path,
+                    data_path=None,
+                    account=None,
+                    accounts=self.accounts,
+                    token_retrieval_func=self.token_retrieval_func,
+                )
+
+            os.makedirs(local_path + "/_delta_log", exist_ok=True)
+            fs, fs_path = self.get_fs_spec()
+            if fs.exists(fs_path.removesuffix("/") + "/_delta_log"):
+                fs.get(
+                    fs_path + "/_delta_log/",
+                    local_path + "/_delta_log/",
+                    recursive=True,
+                )
+                for path in meta.add_actions.keys():
+                    if not os.path.exists(local_path + "/" + path):
+                        fs.get_file(fs_path + "/" + path, local_path + "/" + path)
+            else:
+                fs.get(fs_path, local_path, recursive=True)
+            local_versions[self.uri] = vnr
+            return SourceUri(
+                uri=local_path,
+                data_path=None,
+                account=None,
+                accounts=self.accounts,
+                token_retrieval_func=self.token_retrieval_func,
+            )
 
     def __str__(self):
         return self.real_uri

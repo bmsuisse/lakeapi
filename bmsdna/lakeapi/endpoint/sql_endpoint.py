@@ -21,7 +21,7 @@ def init_duck_con(
 ):
     for cfg in configs:
         assert cfg.datasource is not None
-        df = Datasource(
+        with Datasource(
             cfg.version_str,
             cfg.tag,
             cfg.name,
@@ -29,19 +29,18 @@ def init_duck_con(
             sql_context=con,
             accounts=configs.accounts,
             basic_config=basic_config,
-        )
-
-        if cfg.engine != "odbc" and df.file_exists():
-            try:
-                con.register_datasource(
-                    df.unique_table_name,
-                    df.tablename,
-                    df.execution_uri,
-                    df.config.file_type,
-                    None,
-                )
-            except (FileTypeNotSupportedError, FileNotFoundError):
-                logger.warning(f"Cannot query {df.tablename}")
+        ) as df:
+            if cfg.engine != "odbc" and df.file_exists():
+                try:
+                    con.register_datasource(
+                        df.unique_table_name,
+                        df.tablename,
+                        df.execution_uri,
+                        df.config.file_type,
+                        None,
+                    )
+                except (FileTypeNotSupportedError, FileNotFoundError):
+                    logger.warning(f"Cannot query {df.tablename}")
 
 
 def _get_sql_context(
@@ -92,7 +91,7 @@ def create_sql_endpoint(
         ),
     ):
         con = _get_sql_context(engine, basic_config, configs)
-        return await (await con.list_tables()).to_pylist()
+        return await con.list_tables().to_pylist()
 
     @router.post(
         "/api/sql",

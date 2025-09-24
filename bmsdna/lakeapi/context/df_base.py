@@ -8,7 +8,7 @@ import pyarrow as pa
 import sqlglot.expressions as ex
 
 from bmsdna.lakeapi.utils.async_utils import _async
-
+from deltalake2db import FilterType
 
 from .source_uri import SourceUri
 
@@ -72,11 +72,17 @@ class ResultData(ABC):
         super().__init__()
         self.chunk_size = chunk_size
 
-    async def columns(self):
-        return (await self.arrow_schema()).names
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def columns(self):
+        return (self.arrow_schema()).names
 
     @abstractmethod
-    async def arrow_schema(self) -> "pa.Schema": ...
+    def arrow_schema(self) -> "pa.Schema": ...
 
     @abstractmethod
     async def to_pylist(self) -> Sequence[dict]: ...
@@ -204,7 +210,7 @@ class ExecutionContext(ABC):
         self,
         uri: SourceUri,
         file_type: FileTypes,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[FilterType],
     ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
@@ -378,7 +384,8 @@ class ExecutionContext(ABC):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[FilterType],
+        meta_only: bool = False,
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, filters)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
@@ -386,7 +393,7 @@ class ExecutionContext(ABC):
         self.register_arrow(target_name, ds)
 
     @abstractmethod
-    async def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
+    def execute_sql(self, sql: Union[ex.Query, str]) -> ResultData: ...
 
     @abstractmethod
-    async def list_tables(self) -> ResultData: ...
+    def list_tables(self) -> ResultData: ...

@@ -15,7 +15,7 @@ from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import (
     Datasource,
     filter_df_based_on_params,
-    get_filter_dict,
+    get_filters,
     filter_partitions_based_on_params,
 )
 from bmsdna.lakeapi.core.log import get_logger
@@ -33,36 +33,6 @@ from deltalake2db.delta_meta_retrieval import (
 
 
 logger = get_logger(__name__)
-
-
-async def get_partitions(
-    datasource: Datasource,
-    uri: SourceUri,
-    params: BaseModel,
-    config: Config,
-) -> Optional[list[tuple[str, OperatorType, Any]]]:
-    try:
-        df_uri, df_opts = uri.get_uri_options(flavor="object_store")
-
-        def _schema_meta():
-            meta = get_meta(PolarsEngine(df_opts), df_uri)
-            assert meta.last_metadata is not None
-            return meta
-
-        meta = await run_in_threadpool(_schema_meta)
-        parts = (
-            filter_partitions_based_on_params(
-                meta,
-                params.model_dump(exclude_unset=True) if params else {},
-                config.params or [],
-            )
-            if not config.datasource or config.datasource.file_type == "delta"
-            else None
-        )
-    except Exception as err:
-        logger.warning(f"Could not get partitions for {uri}", exc_info=err)
-        parts = None
-    return parts
 
 
 def remove_search_nearby(
@@ -242,7 +212,7 @@ def create_config_endpoint(
             chunk_size=real_chunk_size,
         )
         assert config.datasource is not None
-        realdataframe = Datasource(
+        with Datasource(
             config.version_str,
             config.tag,
             config.name,
@@ -250,106 +220,92 @@ def create_config_endpoint(
             sql_context=context,
             basic_config=basic_config,
             accounts=configs.accounts,
-        )
-        if config.datasource.file_type == "delta":
-            pre_filter = await get_partitions(
-                realdataframe, realdataframe.execution_uri, params, config
-            )
-        else:
-            pre_filter = None
-        pre_filter_p2 = (
-            get_filter_dict(
-                params.model_dump(exclude_unset=True),
-                config.params if config.params else [],
-                None,
-            )
-            if params
-            else None
-        )
-        if pre_filter or pre_filter_p2:
-            pre_filter = pre_filter or []
-            if pre_filter_p2:
-                for k, v in pre_filter_p2.items():
-                    if k not in pre_filter:
-                        pre_filter.append((k, "=", v))
-
-        df = await realdataframe.get_df(filters=pre_filter)
-        df_cols = await _async(df.columns())
-        expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
-            context,
-            df_cols,
-            config,
-            params,
-        )
-        new_query = df.query_builder()
-        new_query = new_query.where(expr) if expr is not None else new_query
-        columns = exclude_cols(df_cols, basic_config)
-        if select:
-            columns = [
-                c for c in columns if c in split_csv(select)
-            ]  # split , is a bit naive, we might want to support real CSV with quotes here
-        if config.datasource.exclude and len(config.datasource.exclude) > 0:
-            columns = [c for c in columns if c not in config.datasource.exclude]
-        if config.datasource.sortby:
-            for s in config.datasource.sortby:
-                new_query = cast(ex.Select, new_query).order_by(
-                    ex.column(s.by, quoted=True).desc()
-                    if s.direction and s.direction.lower() == "desc"
-                    else ex.column(s.by, quoted=True),
-                    copy=False,
+        ) as realdataframe:
+            if params:
+                pre_filter, _ = get_filters(
+                    params.model_dump(exclude_unset=True),
+                    config.params if config.params else [],
+                    None,
                 )
-        if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
-            jsonify_complex = True
-        if jsonify_complex:
-            base_schema = await df.arrow_schema()
-
-            complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
-
-            new_query = context.jsonify_complex(new_query, complex_cols, columns)
-        else:
-            new_query = new_query.select(
-                *[ex.column(c, quoted=True) for c in columns], append=False
+            else:
+                pre_filter = None
+            df = realdataframe.get_df(filters=pre_filter)
+            df_cols = df.columns()
+            expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
+                context,
+                df_cols,
+                config,
+                params,
             )
+            new_query = df.query_builder()
+            new_query = new_query.where(expr) if expr is not None else new_query
+            columns = exclude_cols(df_cols, basic_config)
+            if select:
+                columns = [
+                    c for c in columns if c in split_csv(select)
+                ]  # split , is a bit naive, we might want to support real CSV with quotes here
+            if config.datasource.exclude and len(config.datasource.exclude) > 0:
+                columns = [c for c in columns if c not in config.datasource.exclude]
+            if config.datasource.sortby:
+                for s in config.datasource.sortby:
+                    new_query = cast(ex.Select, new_query).order_by(
+                        ex.column(s.by, quoted=True).desc()
+                        if s.direction and s.direction.lower() == "desc"
+                        else ex.column(s.by, quoted=True),
+                        copy=False,
+                    )
+            if has_complex and format in ["csv", "excel", "scsv", "csv4excel"]:
+                jsonify_complex = True
+            if jsonify_complex:
+                base_schema = df.arrow_schema()
 
-        if distinct:
-            assert len(columns) <= 3  # reduce complexity here
-            new_query = cast(ex.Select, new_query).distinct()
+                complex_cols = [c for c in columns if is_complex_type(base_schema, c)]
 
-        if not (limit == -1 and config.allow_get_all_pages):
-            limit = (1000 if limit == -1 else limit) or 1000
-            new_query = new_query.limit(limit)
-            if offset:
-                new_query.offset(offset, copy=False)
+                new_query = context.jsonify_complex(new_query, complex_cols, columns)
+            else:
+                new_query = new_query.select(
+                    *[ex.column(c, quoted=True) for c in columns], append=False
+                )
 
-        new_query = handle_search_request(
-            context,
-            config,
-            params,
-            basic_config,
-            source_view=realdataframe.tablename,
-            query=new_query,
-        )
-        new_query = handle_nearby_request(
-            context,
-            config,
-            params,
-            basic_config,
-            source_view=realdataframe.tablename,
-            query=new_query,
-        )
-        logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
+            if distinct:
+                assert len(columns) <= 3  # reduce complexity here
+                new_query = cast(ex.Select, new_query).distinct()
 
-        try:
-            return await create_response(
-                request.url,
-                request.query_params,
-                format or request.headers["Accept"],
-                context=context,
-                sql=new_query,
-                basic_config=basic_config,
-                close_context=True,
-                charset=request.query_params.get("$encoding"),
+            if not (limit == -1 and config.allow_get_all_pages):
+                limit = (1000 if limit == -1 else limit) or 1000
+                new_query = new_query.limit(limit)
+                if offset:
+                    new_query.offset(offset, copy=False)
+
+            new_query = handle_search_request(
+                context,
+                config,
+                params,
+                basic_config,
+                source_view=realdataframe.tablename,
+                query=new_query,
             )
-        except Exception as err:
-            logger.error("Error in creating response", exc_info=err)
-            raise HTTPException(status_code=500)
+            new_query = handle_nearby_request(
+                context,
+                config,
+                params,
+                basic_config,
+                source_view=realdataframe.tablename,
+                query=new_query,
+            )
+            logger.debug(f"Query: {get_sql(new_query, dialect='duckdb')}")
+
+            try:
+                return await create_response(
+                    request.url,
+                    request.query_params,
+                    format or request.headers["Accept"],
+                    context=context,
+                    sql=new_query,
+                    basic_config=basic_config,
+                    close_context=True,
+                    charset=request.query_params.get("$encoding"),
+                )
+            except Exception as err:
+                logger.error("Error in creating response", exc_info=err)
+                raise HTTPException(status_code=500)

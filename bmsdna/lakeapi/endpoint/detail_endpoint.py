@@ -60,7 +60,7 @@ def create_detailed_meta_endpoint(
             basic_config.default_chunk_size,
         ) as context:
             assert config.datasource is not None
-            realdataframe = Datasource(
+            with Datasource(
                 config.version_str,
                 config.tag,
                 config.name,
@@ -68,138 +68,145 @@ def create_detailed_meta_endpoint(
                 sql_context=context,
                 basic_config=basic_config,
                 accounts=configs.accounts,
-            )
-
-            if not realdataframe.file_exists():
-                raise HTTPException(404)
-            partition_columns = []
-            partition_values = None
-            delta_tbl = None
-            df = await realdataframe.get_df(None)
-            if config.datasource.file_type == "delta":
-                delta_tbl = realdataframe.get_delta_table(schema_only=True)
-                assert delta_tbl is not None
-                assert delta_tbl.last_metadata is not None
-                partition_columns = delta_tbl.last_metadata.get("partitionColumns", [])
-                partition_columns = [
-                    c
-                    for c in partition_columns
-                    if not basic_config.should_hide_col_name(c)
-                ]  # also hide those from metadata detail
-                if len(partition_columns) > 0:
-                    qb = cast(
-                        ex.Select,
-                        df.query_builder().select(
-                            *[ex.column(c, quoted=True) for c in partition_columns],
-                            append=False,
-                        ),
-                    ).distinct()
-                    partition_values = await (await context.execute_sql(qb)).to_pylist()
-            schema = await df.arrow_schema()
-            str_cols = [
-                name
-                for name in schema.names
-                if (
-                    pa.types.is_string(schema.field(name).type)
-                    or pa.types.is_large_string(schema.field(name).type)
-                )
-                and not basic_config.should_hide_col_name(name)
-            ]
-            complex_str_cols = (
-                [
+            ) as realdataframe:
+                if not realdataframe.file_exists():
+                    raise HTTPException(404)
+                partition_columns = []
+                partition_values = None
+                delta_tbl = None
+                df = realdataframe.get_df(None)
+                if config.datasource.file_type == "delta":
+                    delta_tbl = realdataframe.get_delta_table(schema_only=True)
+                    assert delta_tbl is not None
+                    assert delta_tbl.last_metadata is not None
+                    partition_columns = delta_tbl.last_metadata.get(
+                        "partitionColumns", []
+                    )
+                    partition_columns = [
+                        c
+                        for c in partition_columns
+                        if not basic_config.should_hide_col_name(c)
+                    ]  # also hide those from metadata detail
+                    if len(partition_columns) > 0:
+                        qb = cast(
+                            ex.Select,
+                            df.query_builder().select(
+                                *[ex.column(c, quoted=True) for c in partition_columns],
+                                append=False,
+                            ),
+                        ).distinct()
+                        with context.execute_sql(qb) as res:
+                            partition_values = await res.to_pylist()
+                schema = df.arrow_schema()
+                str_cols = [
                     name
                     for name in schema.names
                     if (
-                        pa.types.is_struct(schema.field(name).type)
-                        or pa.types.is_list(schema.field(name).type)
+                        pa.types.is_string(schema.field(name).type)
+                        or pa.types.is_large_string(schema.field(name).type)
                     )
                     and not basic_config.should_hide_col_name(name)
                 ]
-                if jsonify_complex
-                else []
-            )
-            if include_str_lengths:
-                str_lengths_query = (
-                    select(
-                        *[
-                            ex.func(
-                                "MAX",
-                                ex.func(context.len_func, ex.column(sc, quoted=True)),
-                            ).as_(sc)
-                            for sc in str_cols + complex_str_cols
-                        ]
+                complex_str_cols = (
+                    [
+                        name
+                        for name in schema.names
+                        if (
+                            pa.types.is_struct(schema.field(name).type)
+                            or pa.types.is_list(schema.field(name).type)
+                        )
+                        and not basic_config.should_hide_col_name(name)
+                    ]
+                    if jsonify_complex
+                    else []
+                )
+                if include_str_lengths:
+                    str_lengths_query = (
+                        select(
+                            *[
+                                ex.func(
+                                    "MAX",
+                                    ex.func(
+                                        context.len_func, ex.column(sc, quoted=True)
+                                    ),
+                                ).as_(sc)
+                                for sc in str_cols + complex_str_cols
+                            ]
+                        )
+                        .from_("strcols")
+                        .with_(
+                            "strcols",
+                            as_=context.jsonify_complex(
+                                df.query_builder(),
+                                complex_str_cols,
+                                str_cols + complex_str_cols,
+                            ),
+                        )
                     )
-                    .from_("strcols")
-                    .with_(
-                        "strcols",
-                        as_=context.jsonify_complex(
-                            df.query_builder(),
-                            complex_str_cols,
-                            str_cols + complex_str_cols,
+                    with context.execute_sql(str_lengths_query) as res:
+                        str_lengths_df = (
+                            (await res.to_pylist())
+                            if len(str_cols) > 0 or len(complex_str_cols) > 0
+                            else [{}]
+                        )
+                    str_lengths = str_lengths_df[0]
+                else:
+                    str_lengths = {}
+
+                def _recursive_get_type(t: pa.DataType) -> MetadataSchemaFieldType:
+                    is_complex = pa.types.is_nested(t)
+
+                    return MetadataSchemaFieldType(
+                        type_str=str(pa.string())
+                        if is_complex and jsonify_complex
+                        else str(t),
+                        orig_type_str=str(t),
+                        fields=(
+                            [
+                                MetadataSchemaField(
+                                    name=f.name, type=_recursive_get_type(f.type)
+                                )
+                                for f in [
+                                    t.field(find)
+                                    for find in range(
+                                        0, cast(pa.StructType, t).num_fields
+                                    )
+                                ]
+                            ]
+                            if pa.types.is_struct(t) and not jsonify_complex
+                            else None
+                        ),
+                        inner=(
+                            _recursive_get_type(cast(pa.ListType, t).value_type)
+                            if pa.types.is_list(t)
+                            or pa.types.is_large_list(t)
+                            or pa.types.is_fixed_size_list(t)
+                            and cast(pa.ListType, t).value_type is not None
+                            and not jsonify_complex
+                            else None
                         ),
                     )
-                )
-                str_lengths_df = (
-                    (await (await context.execute_sql(str_lengths_query)).to_pylist())
-                    if len(str_cols) > 0 or len(complex_str_cols) > 0
-                    else [{}]
-                )
-                str_lengths = str_lengths_df[0]
-            else:
-                str_lengths = {}
 
-            def _recursive_get_type(t: pa.DataType) -> MetadataSchemaFieldType:
-                is_complex = pa.types.is_nested(t)
-
-                return MetadataSchemaFieldType(
-                    type_str=str(pa.string())
-                    if is_complex and jsonify_complex
-                    else str(t),
-                    orig_type_str=str(t),
-                    fields=(
-                        [
-                            MetadataSchemaField(
-                                name=f.name, type=_recursive_get_type(f.type)
-                            )
-                            for f in [
-                                t.field(find)
-                                for find in range(0, cast(pa.StructType, t).num_fields)
-                            ]
-                        ]
-                        if pa.types.is_struct(t) and not jsonify_complex
-                        else None
-                    ),
-                    inner=(
-                        _recursive_get_type(cast(pa.ListType, t).value_type)
-                        if pa.types.is_list(t)
-                        or pa.types.is_large_list(t)
-                        or pa.types.is_fixed_size_list(t)
-                        and cast(pa.ListType, t).value_type is not None
-                        and not jsonify_complex
-                        else None
-                    ),
+                schema = df.arrow_schema()
+                mdt = realdataframe.sql_context.get_modified_date(
+                    realdataframe.source_uri, realdataframe.config.file_type
                 )
-
-            schema = await df.arrow_schema()
-            mdt = realdataframe.sql_context.get_modified_date(
-                realdataframe.source_uri, realdataframe.config.file_type
-            )
-            return MetadataDetailResult(
-                partition_values=partition_values,
-                partition_columns=partition_columns,
-                max_string_lengths=str_lengths,
-                data_schema=[
-                    MetadataSchemaField(
-                        name=n,
-                        type=_recursive_get_type(schema.field(n).type),
-                        max_str_length=str_lengths.get(n, None),
-                    )
-                    for n in schema.names
-                    if not basic_config.should_hide_col_name(n)
-                ],
-                delta_meta=delta_tbl.last_metadata if delta_tbl else None,
-                delta_schema=delta_tbl.schema if delta_tbl else None,
-                parameters=config.params,  # type: ignore
-                search=config.search,
-                modified_date=mdt,
-            )
+                return MetadataDetailResult(
+                    partition_values=partition_values,
+                    partition_columns=partition_columns,
+                    max_string_lengths=str_lengths,
+                    data_schema=[
+                        MetadataSchemaField(
+                            name=n,
+                            type=_recursive_get_type(schema.field(n).type),
+                            max_str_length=str_lengths.get(n, None),
+                        )
+                        for n in schema.names
+                        if not basic_config.should_hide_col_name(n)
+                    ],
+                    delta_meta=delta_tbl.last_metadata if delta_tbl else None,
+                    delta_schema=delta_tbl.schema if delta_tbl else None,
+                    parameters=config.params,  # type: ignore
+                    search=config.search,
+                    modified_date=mdt,
+                )

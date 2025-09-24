@@ -6,10 +6,7 @@ from bmsdna.lakeapi.api.api import init_lakeapi
 def run_fastapi():
     app = FastAPI()
 
-    async def _init():
-        await init_lakeapi(app, use_basic_auth=True)
-
-    asyncio.run(_init())
+    init_lakeapi(app, use_basic_auth=True)
 
     @app.get("/")
     async def root(req: Request):
