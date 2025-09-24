@@ -139,7 +139,7 @@ class SourceUri:
             fs, fs_path = self.get_fs_spec()
             if fs.exists(fs_path.removesuffix("/") + "/_delta_log"):
                 fs.get(
-                    fs_path + "/_delta_log", local_path + "/_delta_log", recursive=True
+                    fs_path + "/_delta_log", local_path + "/_delta_log/", recursive=True
                 )
                 for path in meta.add_actions.keys():
                     if not os.path.exists(local_path + "/" + path):
