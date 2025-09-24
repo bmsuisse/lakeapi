@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable, Literal, TYPE_CHECKING
 import fsspec
 import adlfs
@@ -121,10 +122,9 @@ class SourceUri:
                 token_retrieval_func=self.token_retrieval_func,
             )
         if delta_table:
-            from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+            from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-            df_uri, df_opts = self.get_uri_options(flavor="object_store")
-            meta = get_meta(PolarsEngine(df_opts), df_uri)
+            meta = get_deltalake_meta(self)
             vnr = meta.version
             if local_versions.get(self.uri) == vnr:
                 return SourceUri(
@@ -145,6 +145,9 @@ class SourceUri:
                 )
                 for path in meta.add_actions.keys():
                     if not os.path.exists(local_path + "/" + path):
+                        Path(local_path + "/" + path).parent.mkdir(
+                            parents=True, exist_ok=True
+                        )
                         fs.get_file(fs_path + "/" + path, local_path + "/" + path)
             else:
                 fs.get(fs_path, local_path, recursive=True)
@@ -159,3 +162,6 @@ class SourceUri:
 
     def __str__(self):
         return self.real_uri
+
+    def __hash__(self) -> int:
+        return hash(self.real_uri)

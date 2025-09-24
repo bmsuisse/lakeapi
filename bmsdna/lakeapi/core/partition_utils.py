@@ -1,9 +1,5 @@
 from typing import List, TYPE_CHECKING
 from bmsdna.lakeapi.context.source_uri import SourceUri
-from deltalake2db.delta_meta_retrieval import (
-    get_meta,
-    PolarsEngine,
-)
 import logging
 
 if TYPE_CHECKING:
@@ -25,8 +21,9 @@ def _with_implicit_parameters(
             return paramslist
 
         try:
-            dt_uri, dt_opts = uri.get_uri_options(flavor="object_store")
-            meta = get_meta(PolarsEngine(dt_opts), dt_uri)  # to ensure connectivity
+            from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
+
+            meta = get_deltalake_meta(uri)
             assert meta.last_metadata is not None
             part_cols = meta.last_metadata.get("partitionColumns", [])
             if part_cols and len(part_cols) > 0:

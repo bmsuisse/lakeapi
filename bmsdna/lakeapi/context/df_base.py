@@ -248,10 +248,9 @@ class ExecutionContext(ABC):
 
                 return pyarrow.Table.from_pandas(pd)
             case "delta":
-                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+                from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
-                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                meta = get_deltalake_meta(uri)
                 assert meta.protocol is not None
                 if meta.protocol["minReaderVersion"] > 1:
                     raise ValueError(
@@ -367,10 +366,9 @@ class ExecutionContext(ABC):
             return None
         if file_type == "delta":
             try:
-                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+                from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
-                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                meta = get_deltalake_meta(uri)
                 return meta.last_write_time
             except FileNotFoundError:
                 return None

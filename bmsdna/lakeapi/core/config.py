@@ -220,10 +220,9 @@ class Config:
 
             real_path = str(uri_obj)
             try:
-                ab_uri, ab_opts = uri_obj.get_uri_options(flavor="object_store")
-                from deltalake2db.delta_meta_retrieval import get_meta, PolarsEngine
+                from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                meta = get_meta(PolarsEngine(ab_opts), ab_uri)
+                meta = get_deltalake_meta(uri_obj)
                 assert meta.last_metadata is not None
                 cfg = json.loads(
                     meta.last_metadata.get("configuration", {}).get(
