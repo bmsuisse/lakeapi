@@ -142,15 +142,13 @@ class Datasource:
     def execution_uri(self):
         if not self.copy_local:
             return self.source_uri
-        assert self.config.file_type == "delta", (
-            "only delta is supported for copy_local"
-        )
         if self._execution_uri is None:
             self._execution_uri = self.source_uri.copy_to_local(
                 os.path.join(
                     self.basic_config.local_data_cache_path,
                     hashlib.md5(self.source_uri.uri.encode("utf-8")).hexdigest(),
-                )
+                ),
+                self.config.file_type == "delta",
             )
         return self._execution_uri
 
