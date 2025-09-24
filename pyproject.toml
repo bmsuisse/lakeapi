@@ -16,7 +16,6 @@ dependencies = [
     "fastapi >=0.110.0",
     "arrow-odbc >=5.0.0",
     "expandvars >=0.12.0",
-    "pandas >=2.1.0,<3",
     "fsspec >=2024.2.0,<2025",
     "adlfs >=2024.2.0,<2025",
     "deltalake2db >=1.1.1",
@@ -32,6 +31,7 @@ polars = ["fastexcel"]
 auth = ["argon2-cffi", "pyjwt"]
 useradd = ["ruamel.yaml"]
 odbc = ["arrow-odbc"]
+pandas = ["pandas >=2.1.0,<3"]
 
 [build-system]
 requires = ["hatchling"]

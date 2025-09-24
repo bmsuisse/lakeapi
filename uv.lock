@@ -432,7 +432,7 @@ wheels = [
 
 [[package]]
 name = "bmsdna-lakeapi"
-version = "0.24.3"
+version = "0.25.1"
 source = { editable = "." }
 dependencies = [
     { name = "adlfs" },
@@ -444,7 +444,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastexcel" },
     { name = "fsspec" },
-    { name = "pandas" },
     { name = "polars" },
     { name = "pyjwt" },
     { name = "pyyaml" },
@@ -460,6 +459,9 @@ auth = [
 ]
 odbc = [
     { name = "arrow-odbc" },
+]
+pandas = [
+    { name = "pandas" },
 ]
 polars = [
     { name = "fastexcel" },
@@ -508,7 +510,7 @@ requires-dist = [
     { name = "fastexcel", specifier = ">=0.10.4" },
     { name = "fastexcel", marker = "extra == 'polars'" },
     { name = "fsspec", specifier = ">=2024.2.0,<2025" },
-    { name = "pandas", specifier = ">=2.1.0,<3" },
+    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.1.0,<3" },
     { name = "polars", specifier = ">=1.12.0,<2" },
     { name = "pyjwt", specifier = ">=2.6.0,<3" },
     { name = "pyjwt", marker = "extra == 'auth'" },
@@ -518,7 +520,7 @@ requires-dist = [
     { name = "sqlglot", specifier = ">=24.0.0" },
     { name = "xlsxwriter", specifier = ">=3.1.0,<4" },
 ]
-provides-extras = ["polars", "auth", "useradd", "odbc"]
+provides-extras = ["polars", "auth", "useradd", "odbc", "pandas"]
 
 [package.metadata.requires-dev]
 dev = [
