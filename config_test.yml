@@ -347,7 +347,6 @@ tables:
     datasource:
       uri: parquet/fake_ns.parquet
       file_type: parquet
-      copy_local: true
 
   - name: fake_duckdb
     tag: test
@@ -503,6 +502,15 @@ tables:
     datasource:
       uri: "az://testlake/td/faker.parquet"
       file_type: parquet
+      account: "test_account"
+
+  - name: blob_test_copied
+    tag: blobb
+    api_method: get
+    datasource:
+      uri: "az://testlake/td/faker.parquet"
+      file_type: parquet
+      copy_local: true
       account: "test_account"
 
   - name: "*"
