@@ -15,7 +15,7 @@ from bmsdna.lakeapi.core.config import BasicConfig, Config, Configs
 from bmsdna.lakeapi.core.datasource import (
     Datasource,
     filter_df_based_on_params,
-    get_filter_dict,
+    get_filters,
     filter_partitions_based_on_params,
 )
 from bmsdna.lakeapi.core.log import get_logger
@@ -33,36 +33,6 @@ from deltalake2db.delta_meta_retrieval import (
 
 
 logger = get_logger(__name__)
-
-
-async def get_partitions(
-    datasource: Datasource,
-    uri: SourceUri,
-    params: BaseModel,
-    config: Config,
-) -> Optional[list[tuple[str, OperatorType, Any]]]:
-    try:
-        df_uri, df_opts = uri.get_uri_options(flavor="object_store")
-
-        def _schema_meta():
-            meta = get_meta(PolarsEngine(df_opts), df_uri)
-            assert meta.last_metadata is not None, f"No metadata for {datasource}"
-            return meta
-
-        meta = await run_in_threadpool(_schema_meta)
-        parts = (
-            filter_partitions_based_on_params(
-                meta,
-                params.model_dump(exclude_unset=True) if params else {},
-                config.params or [],
-            )
-            if not config.datasource or config.datasource.file_type == "delta"
-            else None
-        )
-    except Exception as err:
-        logger.warning(f"Could not get partitions for {uri}", exc_info=err)
-        parts = None
-    return parts
 
 
 def remove_search_nearby(
@@ -251,35 +221,25 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         )
-        if config.datasource.file_type == "delta":
-            pre_filter = await get_partitions(
-                realdataframe, realdataframe.execution_uri, params, config
-            )
-        else:
-            pre_filter = None
-        pre_filter_p2 = (
-            get_filter_dict(
+        if params:
+            pre_filter, covered_all = get_filters(
                 params.model_dump(exclude_unset=True),
                 config.params if config.params else [],
                 None,
             )
-            if params
-            else None
-        )
-        if pre_filter or pre_filter_p2:
-            pre_filter = pre_filter or []
-            if pre_filter_p2:
-                for k, v in pre_filter_p2.items():
-                    if k not in pre_filter:
-                        pre_filter.append((k, "=", v))
-
+        else:
+            pre_filter, covered_all = None, True
         df = realdataframe.get_df(filters=pre_filter)
         df_cols = df.columns()
-        expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
-            context,
-            df_cols,
-            config,
-            params,
+        expr = (
+            get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
+                context,
+                df_cols,
+                config,
+                params,
+            )
+            if not covered_all
+            else None
         )
         new_query = df.query_builder()
         new_query = new_query.where(expr) if expr is not None else new_query

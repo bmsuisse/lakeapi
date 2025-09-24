@@ -8,7 +8,7 @@ import pyarrow as pa
 import sqlglot.expressions as ex
 
 from bmsdna.lakeapi.utils.async_utils import _async
-
+from deltalake2db import FilterType
 
 from .source_uri import SourceUri
 
@@ -204,7 +204,7 @@ class ExecutionContext(ABC):
         self,
         uri: SourceUri,
         file_type: FileTypes,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[FilterType],
     ) -> "Optional[pas.Dataset | pa.Table]":
         spec_fs, spec_uri = uri.get_fs_spec()
         match file_type:
@@ -378,7 +378,8 @@ class ExecutionContext(ABC):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[FilterType],
+        meta_only: bool = False,
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, filters)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)

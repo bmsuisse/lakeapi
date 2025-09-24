@@ -38,6 +38,7 @@ from deltalake2db.delta_meta_retrieval import (
     MetaState as DeltaMetadata,
 )
 from bmsdna.lakeapi.utils.async_utils import _async
+from deltalake2db.filter_by_meta import FilterType, Operator as SupportedOperator
 
 logger = get_logger(__name__)
 
@@ -225,7 +226,7 @@ class Datasource:
 
     def get_df(
         self,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]] = None,
+        filters: Optional[FilterType] = None,
         endpoint: endpoints = "request",
     ) -> ResultData:
         if self.df is None:
@@ -247,6 +248,7 @@ class Datasource:
                     self.source_uri if endpoint == "meta" else self.execution_uri,
                     self.config.file_type,
                     filters=filters,
+                    meta_only=endpoint == "meta",
                 )
                 self.df = self.sql_context.execute_sql(self.query)
 
@@ -407,12 +409,13 @@ def _sql_value(value: str | datetime | date | None, engine: str):
     return value
 
 
-def get_filter_dict(
+def get_filters(
     params: dict[str, Any],
     param_def: list[Union[Param, str]],
     columns: Optional[Sequence[str]],
-) -> dict[str, Any]:
-    result = {}
+) -> tuple[FilterType, bool]:
+    result: list[tuple[str, SupportedOperator, Any]] = []
+    covered_all = True
     for key, value in params.items():
         if not key or not value or key in ("limit", "offset"):
             continue  # can that happen? I don't know
@@ -423,21 +426,18 @@ def get_filter_dict(
         colname = prmdef.colname or prmdef.name
 
         if prmdef.combi:
+            covered_all = False
             continue
         elif columns and colname not in columns:
+            covered_all = False
             pass
         else:
-            match op:
-                case "==":
-                    result[colname] = value if value is not None else None
-                case "=":
-                    result[colname] = value if value is not None else None
-                case "in":
-                    lsv = cast(list[str], value)
-                    if len(lsv) == 1:
-                        result[colname] = lsv[0]
+            if op not in get_args(SupportedOperator):
+                covered_all = False
+            else:
+                result.append((colname, cast(SupportedOperator, op), value))
 
-    return result
+    return result, covered_all
 
 
 def filter_df_based_on_params(
@@ -502,14 +502,6 @@ def filter_df_based_on_params(
                         )
                         if value is not None
                         else ~ex.column(colname, quoted=True).is_(ex.convert(None))
-                    )
-                case "==":
-                    exprs.append(
-                        ex.column(colname, quoted=True).eq(
-                            _sql_value(value, engine=context.engine_name)
-                        )
-                        if value is not None
-                        else ex.column(colname, quoted=True).is_(ex.convert(None))
                     )
                 case "=":
                     exprs.append(

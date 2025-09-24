@@ -1,4 +1,3 @@
-import asyncio
 from fastapi import FastAPI, Request, status
 import dataclasses
 from faker import Faker

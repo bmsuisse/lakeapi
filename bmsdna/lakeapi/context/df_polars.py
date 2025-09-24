@@ -11,6 +11,7 @@ from typing import List, Optional, Tuple, Union, cast, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     import polars as pl
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
+from deltalake2db import FilterType
 import pyarrow.dataset
 import sqlglot.expressions as ex
 from sqlglot import from_, parse_one
@@ -217,7 +218,8 @@ class PolarsExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: Optional[List[Tuple[str, OperatorType, Any]]],
+        filters: Optional[FilterType],
+        meta_only: bool = False,
     ):
         import polars as pl
 
@@ -230,18 +232,17 @@ class PolarsExecutionContext(ExecutionContext):
 
                 try:
                     db_uri, db_opts = uri.get_uri_options(flavor="original")
-                    from deltalake2db import polars_scan_delta
+                    from deltalake2db import polars_scan_delta, get_polars_schema
 
-                    df_filter = (
-                        {p[0]: p[2] for p in filters if p[1] == "="}
-                        if filters
-                        else None
-                    )
-                    df = polars_scan_delta(
-                        db_uri,
-                        storage_options=db_opts,
-                        conditions=df_filter if df_filter else None,
-                    )
+                    if meta_only:
+                        schema = get_polars_schema(db_uri, storage_options=db_opts)
+                        df = pl.DataFrame(schema=schema)
+                    else:
+                        df = polars_scan_delta(
+                            db_uri,
+                            storage_options=db_opts,
+                            conditions=filters,
+                        )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(
                         f"Delta table version {ab_uri} not supported"

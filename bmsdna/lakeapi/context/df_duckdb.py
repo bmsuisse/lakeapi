@@ -5,7 +5,11 @@ import pyarrow as pa
 from typing import List, Optional, Tuple, Any, Union, cast
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
 from bmsdna.lakeapi.context.df_base import ExecutionContext, ResultData, get_sql
-from deltalake2db import duckdb_create_view_for_delta, duckdb_apply_storage_options
+from deltalake2db import (
+    duckdb_create_view_for_delta,
+    duckdb_apply_storage_options,
+    FilterType,
+)
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
@@ -337,7 +341,8 @@ class DuckDbExecutionContextBase(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: List[Tuple[str, OperatorType, Any]] | None,
+        filters: Optional[FilterType],
+        meta_only: bool = False,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 
@@ -378,15 +383,12 @@ class DuckDbExecutionContextBase(ExecutionContext):
             return
         if file_type == "delta" and uri.exists():
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
-            df_filter = (
-                {p[0]: p[2] for p in filters if p[1] == "="} if filters else None
-            )
             duckdb_create_view_for_delta(
                 self.con,
                 ab_uri,
                 target_name,
                 storage_options=uri_opts,
-                conditions=df_filter,
+                conditions=filters,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
             )
             return

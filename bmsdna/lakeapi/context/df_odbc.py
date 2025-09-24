@@ -184,7 +184,8 @@ class ODBCExecutionContext(ExecutionContext):
         source_table_name: Optional[str],
         uri: SourceUri,
         file_type: FileTypes,
-        filters: List[Tuple[str, OperatorType, Any]] | None,
+        filters: Any,
+        meta_only: bool = False,
     ):
         assert file_type == "odbc"
         assert uri.account is None
