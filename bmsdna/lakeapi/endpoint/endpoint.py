@@ -46,7 +46,7 @@ async def get_partitions(
 
         def _schema_meta():
             meta = get_meta(PolarsEngine(df_opts), df_uri)
-            assert meta.last_metadata is not None
+            assert meta.last_metadata is not None, f"No metadata for {datasource}"
             return meta
 
         meta = await run_in_threadpool(_schema_meta)
