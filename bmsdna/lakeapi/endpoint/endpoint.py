@@ -238,7 +238,7 @@ def create_config_endpoint(
             df = realdataframe.get_df(
                 filters=pre_filter,
                 limit=limit
-                if not config.datasource.sortby
+                if not config.datasource.sortby and not offset
                 else None,  # if sorted we need all data to sort correctly
             )
             df_cols = df.columns()
