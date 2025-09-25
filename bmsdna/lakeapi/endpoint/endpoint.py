@@ -229,7 +229,7 @@ def create_config_endpoint(
                 pre_filter = None
             if config.datasource.file_type == "delta" and config.params is not None:
                 st = realdataframe.get_delta_table(True)
-                if st is not None:
+                if st is not None and params is not None:
                     part_filter = filter_partitions_based_on_params(
                         st, params.model_dump(exclude_unset=True), config.params
                     )
