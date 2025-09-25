@@ -282,9 +282,11 @@ def create_config_endpoint(
                 assert len(columns) <= 3  # reduce complexity here
                 new_query = cast(ex.Select, new_query).distinct()
 
-            new_query = new_query.limit(limit)
-            if offset:
-                new_query.offset(offset, copy=False)
+            if not (limit == -1 and config.allow_get_all_pages):
+                limit = (1000 if limit == -1 else limit) or 1000
+                new_query = new_query.limit(limit)
+                if offset:
+                    new_query.offset(offset, copy=False)
 
             new_query = handle_search_request(
                 context,
