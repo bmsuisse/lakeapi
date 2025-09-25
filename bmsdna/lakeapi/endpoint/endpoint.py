@@ -207,6 +207,8 @@ def create_config_endpoint(
             engine,
             chunk_size=real_chunk_size,
         )
+        if not (limit == -1 and config.allow_get_all_pages):
+            limit = (1000 if limit == -1 else limit) or 1000
         assert config.datasource is not None
         with Datasource(
             config.version_str,
@@ -225,7 +227,7 @@ def create_config_endpoint(
                 )
             else:
                 pre_filter = None
-            df = realdataframe.get_df(filters=pre_filter)
+            df = realdataframe.get_df(filters=pre_filter, limit=limit)
             df_cols = df.columns()
             expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
                 context,
@@ -267,8 +269,6 @@ def create_config_endpoint(
                 assert len(columns) <= 3  # reduce complexity here
                 new_query = cast(ex.Select, new_query).distinct()
 
-            if not (limit == -1 and config.allow_get_all_pages):
-                limit = (1000 if limit == -1 else limit) or 1000
                 new_query = new_query.limit(limit)
                 if offset:
                     new_query.offset(offset, copy=False)

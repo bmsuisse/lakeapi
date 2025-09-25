@@ -233,6 +233,7 @@ class Datasource:
         self,
         filters: Optional[FilterType] = None,
         endpoint: endpoints = "request",
+        limit: int | None = None,
     ) -> ResultData:
         if self.df is None:
             unique_table_name = (
@@ -254,6 +255,7 @@ class Datasource:
                     self.config.file_type,
                     filters=filters,
                     meta_only=endpoint == "meta",
+                    limit=limit,
                 )
                 self.df = self.sql_context.execute_sql(self.query)
 

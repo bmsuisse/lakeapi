@@ -384,6 +384,7 @@ class ExecutionContext(ABC):
         file_type: FileTypes,
         filters: Optional[FilterType],
         meta_only: bool = False,
+        limit: int | None = None,
     ):
         ds = self.get_pyarrow_dataset(uri, file_type, filters)
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)

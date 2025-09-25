@@ -186,6 +186,7 @@ class ODBCExecutionContext(ExecutionContext):
         file_type: FileTypes,
         filters: Any,
         meta_only: bool = False,
+        limit: int | None = None,
     ):
         assert file_type == "odbc"
         assert uri.account is None
