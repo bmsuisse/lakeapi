@@ -227,7 +227,13 @@ def create_config_endpoint(
                 )
             else:
                 pre_filter = None
-            df = realdataframe.get_df(filters=pre_filter, limit=limit)
+
+            df = realdataframe.get_df(
+                filters=pre_filter,
+                limit=limit
+                if not config.datasource.sortby
+                else None,  # if sorted we need all data to sort correctly
+            )
             df_cols = df.columns()
             expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
                 context,
