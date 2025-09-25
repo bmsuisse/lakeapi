@@ -219,9 +219,10 @@ def create_config_endpoint(
             basic_config=basic_config,
             accounts=configs.accounts,
         ) as realdataframe:
-            if params:
+            param_dict = params.model_dump(exclude_unset=True) if params else None
+            if param_dict:
                 pre_filter, _ = get_filters(
-                    params.model_dump(exclude_unset=True),
+                    param_dict,
                     config.params if config.params else [],
                     None,
                 )
@@ -229,16 +230,19 @@ def create_config_endpoint(
                 pre_filter = None
             if config.datasource.file_type == "delta" and config.params is not None:
                 st = realdataframe.get_delta_table(True)
-                if st is not None and params is not None:
+                if st is not None and param_dict is not None:
                     part_filter = filter_partitions_based_on_params(
-                        st, params.model_dump(exclude_unset=True), config.params
+                        st, param_dict, config.params
                     )
                     if part_filter:
                         pre_filter = list(pre_filter or []) + part_filter
             df = realdataframe.get_df(
                 filters=pre_filter,
                 limit=limit
-                if not config.datasource.sortby and not offset and not limit == -1
+                if not config.datasource.sortby
+                and not offset
+                and not limit == -1
+                and not param_dict
                 else None,  # if sorted we need all data to sort correctly
             )
             df_cols = df.columns()
