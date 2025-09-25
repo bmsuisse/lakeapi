@@ -28,7 +28,7 @@ from bmsdna.lakeapi.core.config import (
 )
 from bmsdna.lakeapi.core.log import get_logger
 from bmsdna.lakeapi.core.model import get_param_def
-from bmsdna.lakeapi.core.types import DeltaOperatorTypes, OperatorType
+from bmsdna.lakeapi.core.types import OperatorType
 from deltalake2db.delta_meta_retrieval import (
     DataType,
     field_to_type,
@@ -266,7 +266,7 @@ def get_partition_filter(
     param: tuple[str, str],
     deltaMeta: DeltaMetadata,
     param_def: Iterable[Param | str],
-) -> Optional[Tuple[str, OperatorType, Any]]:
+) -> Optional[Tuple[str, SupportedOperator, Any]]:
     operators = ("<=", ">=", "=", "==", "in", "not in")
     key, value = param
     if not key or not value or key in ("limit", "offset"):
@@ -276,7 +276,7 @@ def get_partition_filter(
     if prmdef_and_op is None:
         raise ValueError(f"thats not parameter: {key}")
     prmdef, op = prmdef_and_op
-    if op not in get_args(DeltaOperatorTypes):
+    if op not in get_args(SupportedOperator):
         return None
     colname = prmdef.colname or prmdef.name
 
@@ -339,7 +339,7 @@ def get_partition_filter(
     # partition value must be string
     return (
         col_for_partitioning,
-        op,
+        cast(SupportedOperator, op),
         value_for_partitioning,
     )
 

@@ -227,7 +227,14 @@ def create_config_endpoint(
                 )
             else:
                 pre_filter = None
-
+            if config.datasource.file_type == "delta" and config.params is not None:
+                st = realdataframe.get_delta_table(True)
+                if st is not None:
+                    part_filter = filter_partitions_based_on_params(
+                        st, params.model_dump(exclude_unset=True), config.params
+                    )
+                    if part_filter:
+                        pre_filter = list(pre_filter or []) + part_filter
             df = realdataframe.get_df(
                 filters=pre_filter,
                 limit=limit
