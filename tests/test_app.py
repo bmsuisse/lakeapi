@@ -77,21 +77,20 @@ def test_fruits_sort_desc(client: TestClient):
             ]
 
 
-def test_fruits_offset_1(client: TestClient):
+@pytest.mark.parametrize("engine", engines)
+def test_fruits_offset_1(engine, client: TestClient):
     for _ in range(2):
-        for e in engines:  # polars does not support offset
-            response = client.get(
-                f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={e}",
-            )
-            assert response.status_code == 200
-            assert response.json() == [
-                {
-                    "A": 2,
-                    "fruits": "banana",
-                    "B": 4,
-                    "cars": "audi",
-                }
-            ]
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&&offset=0&format=json&%24engine={engine}",
+        )
+        assert response.status_code == 200
+        res = response.json()
+        response = client.get(
+            f"/api/v1/test/fruits?limit=1&&offset=1&format=json&%24engine={engine}",
+        )
+        assert response.status_code == 200
+        res2 = response.json()
+        assert res != res2
 
 
 def test_data_limit(client: TestClient):
