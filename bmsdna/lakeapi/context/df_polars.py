@@ -231,6 +231,7 @@ class PolarsExecutionContext(ExecutionContext):
         file_type: FileTypes,
         filters: Optional[FilterType],
         meta_only: bool = False,
+        limit: int | None = None,
     ):
         import polars as pl
 
@@ -245,7 +246,7 @@ class PolarsExecutionContext(ExecutionContext):
                     db_uri, db_opts = uri.get_uri_options(flavor="original")
                     from deltalake2db import polars_scan_delta, get_polars_schema
 
-                    if meta_only:
+                    if meta_only or limit == 0:
                         schema = get_polars_schema(db_uri, storage_options=db_opts)
                         df = pl.DataFrame(schema=schema)
                     else:
@@ -253,6 +254,7 @@ class PolarsExecutionContext(ExecutionContext):
                             db_uri,
                             storage_options=db_opts,
                             conditions=filters,
+                            limit=limit,
                         )
                 except DeltaProtocolError as de:
                     raise FileTypeNotSupportedError(

@@ -343,6 +343,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
         file_type: FileTypes,
         filters: Optional[FilterType],
         meta_only: bool = False,
+        limit: int | None = None,
     ):
         self.modified_dates[target_name] = self.get_modified_date(uri, file_type)
 
@@ -390,6 +391,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 storage_options=uri_opts,
                 conditions=filters,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+                limit=limit,
             )
             return
         if file_type == "duckdb":

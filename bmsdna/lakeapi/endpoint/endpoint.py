@@ -207,6 +207,8 @@ def create_config_endpoint(
             engine,
             chunk_size=real_chunk_size,
         )
+        if not (limit == -1 and config.allow_get_all_pages):
+            limit = (1000 if limit == -1 else limit) or 1000
         assert config.datasource is not None
         with Datasource(
             config.version_str,
@@ -225,7 +227,20 @@ def create_config_endpoint(
                 )
             else:
                 pre_filter = None
-            df = realdataframe.get_df(filters=pre_filter)
+            if config.datasource.file_type == "delta" and config.params is not None:
+                st = realdataframe.get_delta_table(True)
+                if st is not None and params is not None:
+                    part_filter = filter_partitions_based_on_params(
+                        st, params.model_dump(exclude_unset=True), config.params
+                    )
+                    if part_filter:
+                        pre_filter = list(pre_filter or []) + part_filter
+            df = realdataframe.get_df(
+                filters=pre_filter,
+                limit=limit
+                if not config.datasource.sortby and not offset and not limit == -1
+                else None,  # if sorted we need all data to sort correctly
+            )
             df_cols = df.columns()
             expr = get_params_filter_expr(  # this supports all kinds of filters, while the prefilter only supports equality
                 context,

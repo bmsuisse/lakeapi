@@ -432,7 +432,7 @@ wheels = [
 
 [[package]]
 name = "bmsdna-lakeapi"
-version = "0.24.3"
+version = "0.25.2"
 source = { editable = "." }
 dependencies = [
     { name = "adlfs" },
@@ -444,7 +444,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastexcel" },
     { name = "fsspec" },
-    { name = "pandas" },
     { name = "polars" },
     { name = "pyjwt" },
     { name = "pyyaml" },
@@ -460,6 +459,9 @@ auth = [
 ]
 odbc = [
     { name = "arrow-odbc" },
+]
+pandas = [
+    { name = "pandas" },
 ]
 polars = [
     { name = "fastexcel" },
@@ -501,14 +503,14 @@ requires-dist = [
     { name = "argon2-cffi", marker = "extra == 'auth'" },
     { name = "arrow-odbc", specifier = ">=5.0.0" },
     { name = "arrow-odbc", marker = "extra == 'odbc'" },
-    { name = "deltalake2db", specifier = ">=1.1.1" },
+    { name = "deltalake2db", specifier = ">=1.1.4" },
     { name = "duckdb", specifier = ">=1.1.0,<2" },
     { name = "expandvars", specifier = ">=0.12.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
     { name = "fastexcel", specifier = ">=0.10.4" },
     { name = "fastexcel", marker = "extra == 'polars'" },
     { name = "fsspec", specifier = ">=2024.2.0,<2025" },
-    { name = "pandas", specifier = ">=2.1.0,<3" },
+    { name = "pandas", marker = "extra == 'pandas'", specifier = ">=2.1.0,<3" },
     { name = "polars", specifier = ">=1.12.0,<2" },
     { name = "pyjwt", specifier = ">=2.6.0,<3" },
     { name = "pyjwt", marker = "extra == 'auth'" },
@@ -518,7 +520,7 @@ requires-dist = [
     { name = "sqlglot", specifier = ">=24.0.0" },
     { name = "xlsxwriter", specifier = ">=3.1.0,<4" },
 ]
-provides-extras = ["polars", "auth", "useradd", "odbc"]
+provides-extras = ["polars", "auth", "useradd", "odbc", "pandas"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -912,15 +914,15 @@ wheels = [
 
 [[package]]
 name = "deltalake2db"
-version = "1.1.1"
+version = "1.1.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
     { name = "sqlglot" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/c3/0dac5043069d8b49ad846c97ba5ce3443eaf6bac248ec27f3e0a8bbdbbe9/deltalake2db-1.1.1.tar.gz", hash = "sha256:9aa1a62b3f1b0f2d79e8a028d0e43beb5bf3ea89ad599e14dbd622affe6b6994", size = 246492, upload-time = "2025-09-24T16:11:37.51Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/7b/030086da48f107fcd7e39c94ebc22732ceaffefbab00a852e86fa2d0a2f2/deltalake2db-1.1.4.tar.gz", hash = "sha256:51de2b36f3a7c58dee9d7b7656537dff5433900231b7d13fa8c23c3e0275a1e7", size = 246904, upload-time = "2025-09-25T08:08:14.891Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/8a/a2da1c17994cd3d543303ea16aa3c3b33889f24b6856df0b3718cd1de0c4/deltalake2db-1.1.1-py3-none-any.whl", hash = "sha256:6f17caef7630d3b217d2898f30984755d824c6aaf44d6b7b0fd6daa9c91198a4", size = 19137, upload-time = "2025-09-24T16:11:36.128Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/ab/269c39628a2d2cf89357767ee32814de876052ed3c518e0fedd3d9217961/deltalake2db-1.1.4-py3-none-any.whl", hash = "sha256:2cba9bfabecc0664aa62856aea6882fc4279ccb9f048ebefa9071cda886b1dc9", size = 19540, upload-time = "2025-09-25T08:08:13.426Z" },
 ]
 
 [[package]]

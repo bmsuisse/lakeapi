@@ -160,6 +160,12 @@ class DuckDBBackendConfig:
     index: List[str] | None = None
 
 
+def _to_dict(d: Union[list, dict]):
+    if isinstance(d, list):
+        return {i["key"]: i["value"] for i in d}
+    return d
+
+
 @dataclass
 class Config:
     name: str
@@ -225,7 +231,7 @@ class Config:
                 meta = get_deltalake_meta(uri_obj)
                 assert meta.last_metadata is not None
                 cfg = json.loads(
-                    meta.last_metadata.get("configuration", {}).get(
+                    _to_dict(meta.last_metadata.get("configuration", {})).get(
                         "lakeapi.config", "{}"
                     )
                 )

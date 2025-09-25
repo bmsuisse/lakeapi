@@ -54,7 +54,6 @@ OperatorType = Literal[
     "has",
     "startswith",
 ]
-DeltaOperatorTypes = Literal["<", "=", ">", ">=", "<=", "in", "not in"]
 PolaryTypeFunction = Literal[
     "sum",
     "count",
