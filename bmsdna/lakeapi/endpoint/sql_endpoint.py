@@ -35,7 +35,7 @@ def _register_tables(
                         con.register_datasource(
                             df.unique_table_name,
                             df.tablename,
-                            df.execution_uri,
+                            df.get_execution_uri(False),
                             df.config.file_type,
                             None,
                         )

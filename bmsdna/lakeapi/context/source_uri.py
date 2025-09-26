@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Literal, TYPE_CHECKING
+from typing import Callable, Literal, TYPE_CHECKING, Union
 import fsspec
 import adlfs
 import os
@@ -32,6 +32,7 @@ def _convert_options(
 
 
 local_versions = dict()
+local_delta_meta_versions = dict()
 
 
 class SourceUri:
@@ -68,6 +69,9 @@ class SourceUri:
             or self.uri.startswith("abfss://")  # fsspec
         )
 
+    def is_local(self):
+        return self.account is None and "://" not in self.uri
+
     def get_fs_spec(self) -> tuple[fsspec.AbstractFileSystem, str]:
         if self.account is None:
             return fsspec.filesystem("file"), self.real_uri
@@ -101,9 +105,18 @@ class SourceUri:
         fs, fs_path = self.get_fs_spec()
         return fs.exists(fs_path)
 
-    def copy_to_local(self, local_path: str, delta_table: bool):
+    def copy_to_local(
+        self, local_path: str, delta_table: Union[bool, Literal["meta"]] = False
+    ):
+        local_uri = SourceUri(
+            uri=local_path,
+            data_path=None,
+            account=None,
+            accounts=self.accounts,
+            token_retrieval_func=self.token_retrieval_func,
+        )
         if self.account is None:
-            raise ValueError("Cannot copy local files")
+            return self  # this is a no-op for local files
         if not delta_table:
             fs, fs_path = self.get_fs_spec()
             stat = fs.stat(fs_path)
@@ -114,26 +127,16 @@ class SourceUri:
             if local_versions.get(self.uri) != lm:
                 fs.get_file(fs_path, local_path)
                 local_versions[self.uri] = lm
-            return SourceUri(
-                uri=local_path,
-                data_path=None,
-                account=None,
-                accounts=self.accounts,
-                token_retrieval_func=self.token_retrieval_func,
-            )
+            return local_uri
         if delta_table:
             from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
             meta = get_deltalake_meta(self)
             vnr = meta.version
             if local_versions.get(self.uri) == vnr:
-                return SourceUri(
-                    uri=local_path,
-                    data_path=None,
-                    account=None,
-                    accounts=self.accounts,
-                    token_retrieval_func=self.token_retrieval_func,
-                )
+                return local_uri
+            if delta_table == "meta" and local_delta_meta_versions.get(self.uri) == vnr:
+                return local_uri
 
             os.makedirs(local_path + "/_delta_log", exist_ok=True)
             fs, fs_path = self.get_fs_spec()
@@ -143,22 +146,23 @@ class SourceUri:
                     local_path + "/_delta_log/",
                     recursive=True,
                 )
-                for path in meta.add_actions.keys():
-                    if not os.path.exists(local_path + "/" + path):
-                        Path(local_path + "/" + path).parent.mkdir(
-                            parents=True, exist_ok=True
-                        )
-                        fs.get_file(fs_path + "/" + path, local_path + "/" + path)
+                if delta_table != "meta":
+                    for path in meta.add_actions.keys():
+                        if not os.path.exists(local_path + "/" + path):
+                            Path(local_path + "/" + path).parent.mkdir(
+                                parents=True, exist_ok=True
+                            )
+                            fs.get_file(fs_path + "/" + path, local_path + "/" + path)
+                else:
+                    # we only copy the _delta_log, so that table is not really copied,
+                    # we must not set local_versions here
+                    local_delta_meta_versions[self.uri] = vnr
+                    return local_uri
+
             else:
                 fs.get(fs_path, local_path, recursive=True)
             local_versions[self.uri] = vnr
-            return SourceUri(
-                uri=local_path,
-                data_path=None,
-                account=None,
-                accounts=self.accounts,
-                token_retrieval_func=self.token_retrieval_func,
-            )
+            return local_uri
 
     def __str__(self):
         return self.real_uri

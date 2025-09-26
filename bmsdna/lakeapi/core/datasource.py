@@ -130,7 +130,11 @@ class Datasource:
             basic_config.data_path if config.file_type not in ["odbc"] else None,
             token_retrieval_func=basic_config.token_retrieval_func,
         )
-        self.copy_local = config.copy_local
+        self.copy_local = (
+            config.copy_local
+            if config.copy_local is not None
+            else basic_config.default_copy_local
+        )
         self._execution_uri = None
         self.source_uri = base_source_uri
 
@@ -144,18 +148,26 @@ class Datasource:
         if self.df:
             self.df.__exit__(*args)
 
-    @property
-    def execution_uri(self):
+    def get_execution_uri(self, meta_only: bool):
         if not self.copy_local:
             return self.source_uri
+        if meta_only and self.config.file_type != "delta":
+            return self.source_uri  # can get meta from source directly
         if self._execution_uri is None:
-            self._execution_uri = self.source_uri.copy_to_local(
+            local_uri = self.source_uri.copy_to_local(
                 os.path.join(
                     self.basic_config.local_data_cache_path,
                     hashlib.md5(self.source_uri.uri.encode("utf-8")).hexdigest(),
                 ),
-                self.config.file_type == "delta",
+                "meta"
+                if meta_only and self.config.file_type == "delta"
+                else self.config == "delta",
             )
+            if (
+                meta_only
+            ):  # since we only copy the _delta_log, must redo copy_local next time
+                return local_uri
+            self._execution_uri = local_uri
         return self._execution_uri
 
     def file_exists(self):
@@ -251,7 +263,7 @@ class Datasource:
                 self.sql_context.register_datasource(
                     self.unique_table_name if unique_table_name else self.tablename,
                     self.tablename,
-                    self.source_uri if endpoint == "meta" else self.execution_uri,
+                    self.get_execution_uri(endpoint == "meta"),
                     self.config.file_type,
                     filters=filters,
                     meta_only=endpoint == "meta",
