@@ -52,6 +52,7 @@ class BasicConfig:
     local_data_cache_path: str
     token_retrieval_func: "Optional[Callable[[SourceUri, str], TokenCredential]]"
     should_hide_col_name: Callable[[str], bool]
+    default_copy_local: bool = False
 
 
 def _should_hide_colname(name: str):
@@ -130,7 +131,7 @@ def _expand_env_vars(uri: str):
 @dataclass
 class DatasourceConfig:
     uri: str
-    copy_local: Optional[bool] = False
+    copy_local: Optional[bool] = None
     account: Optional[str] = None
     file_type: FileTypes = "delta"
     select: Optional[List[SelectColumn]] = None
@@ -299,7 +300,7 @@ class Config:
             select=select,
             exclude=exclude,
             sortby=sortby,
-            copy_local=datasource.get("copy_local", False),
+            copy_local=datasource.get("copy_local"),
             table_name=datasource.get("table_name", None),
             filters=None,
         )

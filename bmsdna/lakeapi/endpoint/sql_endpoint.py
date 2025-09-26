@@ -1,5 +1,5 @@
 from typing import Optional, Union
-from fastapi import APIRouter, BackgroundTasks, Header, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Header, Query, Request, Response
 from bmsdna.lakeapi.context.df_base import ExecutionContext, FileTypeNotSupportedError
 from bmsdna.lakeapi.core.config import BasicConfig, Configs
 from bmsdna.lakeapi.core.datasource import Datasource
@@ -9,15 +9,14 @@ from bmsdna.lakeapi.core.response import create_response
 from bmsdna.lakeapi.context import get_context_by_engine, Engines
 
 
-sql_contexts: dict[str, ExecutionContext] = {}
-
 logger = get_logger(__name__)
 
 
-def init_duck_con(
+def _register_tables(
     con: ExecutionContext,
     basic_config: BasicConfig,
     configs: Configs,
+    tables: list[str],
 ):
     for cfg in configs:
         assert cfg.datasource is not None
@@ -32,40 +31,16 @@ def init_duck_con(
         ) as df:
             if cfg.engine != "odbc" and df.file_exists():
                 try:
-                    con.register_datasource(
-                        df.unique_table_name,
-                        df.tablename,
-                        df.execution_uri,
-                        df.config.file_type,
-                        None,
-                    )
+                    if df.unique_table_name in tables:
+                        con.register_datasource(
+                            df.unique_table_name,
+                            df.tablename,
+                            df.get_execution_uri(False),
+                            df.config.file_type,
+                            None,
+                        )
                 except (FileTypeNotSupportedError, FileNotFoundError):
                     logger.warning(f"Cannot query {df.tablename}")
-
-
-def _get_sql_context(
-    engine: Engines,
-    basic_config: BasicConfig,
-    configs: Configs,
-):
-    assert engine not in ["odbc", "sqlite"]
-    global sql_contexts
-    if engine not in sql_contexts:
-        sql_contexts[engine] = get_context_by_engine(
-            engine,
-            basic_config.default_chunk_size,
-        )
-        init_duck_con(
-            sql_contexts[engine],
-            basic_config,
-            configs,
-        )
-        if basic_config.prepare_sql_db_hook is not None:
-            basic_config.prepare_sql_db_hook(
-                sql_contexts[engine],
-            )
-
-    return sql_contexts[engine]
 
 
 def create_sql_endpoint(
@@ -73,13 +48,6 @@ def create_sql_endpoint(
     basic_config: BasicConfig,
     configs: Configs,
 ):
-    @router.on_event("shutdown")
-    async def shutdown_event():
-        global sql_contexts
-        for item in sql_contexts.values():
-            item.__exit__()
-        sql_contexts = {}
-
     @router.get("/api/sql/tables", tags=["sql"], operation_id="get_sql_tables")
     async def get_sql_tables(
         request: Request,
@@ -90,8 +58,33 @@ def create_sql_endpoint(
             title="$engine", alias="$engine", default="duckdb", include_in_schema=False
         ),
     ):
-        con = _get_sql_context(engine, basic_config, configs)
-        return await con.list_tables().to_pylist()
+        engine = engine or basic_config.default_engine
+        if engine == "odbc":
+            with get_context_by_engine(
+                engine,
+                basic_config.default_chunk_size,
+            ) as con:
+                return await con.list_tables().to_pylist()
+        else:
+            tbls = []
+            with get_context_by_engine(
+                engine,
+                basic_config.default_chunk_size,
+            ) as con:
+                for cfg in configs:
+                    assert cfg.datasource is not None
+                    with Datasource(
+                        cfg.version_str,
+                        cfg.tag,
+                        cfg.name,
+                        config=cfg.datasource,
+                        sql_context=con,
+                        accounts=configs.accounts,
+                        basic_config=basic_config,
+                    ) as df:
+                        if cfg.engine != "odbc" and df.file_exists():
+                            tbls.append(df.unique_table_name)
+            return tbls
 
     @router.post(
         "/api/sql",
@@ -111,20 +104,39 @@ def create_sql_endpoint(
         ),
     ):
         body = await request.body()
-
-        con = _get_sql_context(engine, basic_config, configs)
-
         sql = body.decode("utf-8")
+        con = None
+        try:
+            con = get_context_by_engine(
+                engine,
+                basic_config.default_chunk_size,
+            )
+            import sqlglot as sg
+            import sqlglot.expressions as exp
 
-        return await create_response(
-            request.url,
-            request.query_params,
-            format or request.headers["Accept"],
-            con,
-            sql,
-            basic_config=basic_config,
-            close_context=False,
-        )
+            expr = sg.parse_one(sql, dialect=con.dialect)
+            if not isinstance(
+                expr, (exp.Select, exp.Union, exp.Intersect, exp.Except, exp.CTE)
+            ):
+                return Response(
+                    status_code=400, content="Only a single SELECT statement is allowed"
+                )
+            table_names = [t.name for t in expr.find_all(exp.Table)]
+            _register_tables(con, basic_config, configs, table_names)
+
+            return await create_response(
+                request.url,
+                request.query_params,
+                format or request.headers["Accept"],
+                con,
+                sql,
+                basic_config=basic_config,
+                close_context=True,
+            )
+        except Exception as e:
+            if con:
+                con.close()
+            raise e
 
     @router.get(
         "/api/sql",
@@ -144,14 +156,35 @@ def create_sql_endpoint(
             include_in_schema=False,
         ),
     ):
-        con = _get_sql_context(engine, basic_config, configs)
+        con = None
+        try:
+            con = get_context_by_engine(
+                engine,
+                basic_config.default_chunk_size,
+            )
+            import sqlglot as sg
+            import sqlglot.expressions as exp
 
-        return await create_response(
-            request.url,
-            request.query_params,
-            format or request.headers["Accept"],
-            con,
-            sql,
-            basic_config=basic_config,
-            close_context=False,
-        )
+            expr = sg.parse_one(sql, dialect=con.dialect)
+            if not isinstance(
+                expr, (exp.Select, exp.Union, exp.Intersect, exp.Except, exp.CTE)
+            ):
+                return Response(
+                    status_code=400, content="Only a single SELECT statement is allowed"
+                )
+            table_names = [t.name for t in expr.find_all(exp.Table)]
+            _register_tables(con, basic_config, configs, table_names)
+
+            return await create_response(
+                request.url,
+                request.query_params,
+                format or request.headers["Accept"],
+                con,
+                sql,
+                basic_config=basic_config,
+                close_context=True,
+            )
+        except Exception as e:
+            if con:
+                con.close()
+            raise e
