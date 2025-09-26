@@ -122,7 +122,12 @@ class SourceUri:
             stat = fs.stat(fs_path)
             lm = stat.get("last_modified", stat.get("Last-Modified"))
             if not lm:
-                raise ValueError("Cannot determine last modified date", stat.keys())
+                raise ValueError(
+                    "Cannot determine last modified date",
+                    stat.keys(),
+                    self.real_uri,
+                    type(fs),
+                )
 
             if local_versions.get(self.uri) != lm:
                 fs.get_file(fs_path, local_path)
