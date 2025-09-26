@@ -160,8 +160,8 @@ class Datasource:
                     hashlib.md5(self.source_uri.uri.encode("utf-8")).hexdigest(),
                 ),
                 "meta"
-                if meta_only and self.config.file_type == "delta"
-                else self.config == "delta",
+                if (meta_only and self.config.file_type == "delta")
+                else (self.config == "delta"),
             )
             if (
                 meta_only
