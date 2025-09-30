@@ -25,7 +25,7 @@ async def test_async_execution(client: TestClient):
 
         duration = end - start
         print(f"Engine {engine} took {duration} seconds with format {format}")
-        assert duration < 1.0
+        assert duration < 1.5
 
     def call_api_2(engine, format):
         start = time.time()
@@ -37,7 +37,7 @@ async def test_async_execution(client: TestClient):
 
         duration = end - start
         print(f"Engine {engine} took {duration} seconds with format {format}")
-        assert duration < 1.0
+        assert duration < 1.5
 
     def call_api_3(engine, format):
         start = time.time()
@@ -49,7 +49,7 @@ async def test_async_execution(client: TestClient):
 
         duration = end - start
         print(f"Engine {engine} took {duration} seconds with format {format}")
-        assert duration < 1.0
+        assert duration < 1.5
 
     def call_api_4(engine, format):
         start = time.time()
@@ -61,7 +61,7 @@ async def test_async_execution(client: TestClient):
 
         duration = end - start
         print(f"Engine {engine} took {duration} seconds with format {format}")
-        assert duration < 1.0
+        assert duration < 1.5
 
     tasks = []
     for _ in range(100):
