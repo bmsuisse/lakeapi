@@ -22,6 +22,7 @@ from uuid import uuid4
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
 from .source_uri import SourceUri
+import csv
 
 
 logger = get_logger(__name__)
@@ -154,7 +155,19 @@ class DuckDBResultData(ResultData):
 
     async def write_csv(self, file_name: str, *, separator: str):
         if not ENABLE_COPY_TO:
-            return await super().write_csv(file_name, separator=separator)
+            query = get_sql(self.original_sql, dialect="duckdb")
+            await run_in_threadpool(self.con.execute, query)
+            assert self.con.description is not None
+            col_names = [d[0] for d in self.con.description]
+            with open(file_name, "w", newline="", encoding="utf-8") as csvfile:
+                writer = csv.DictWriter(
+                    csvfile, fieldnames=col_names, delimiter=separator
+                )
+                writer.writeheader()
+                while chunk := self.con.fetchmany(self.chunk_size):
+                    for row in chunk:
+                        writer.writerow(dict(zip(col_names, row)))
+            return
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
