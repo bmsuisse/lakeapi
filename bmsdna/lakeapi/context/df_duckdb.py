@@ -13,7 +13,7 @@ from deltalake2db import (
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_, parse_one
+import sqlglot as sg
 import os
 from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -31,6 +31,10 @@ ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
 DUCK_CONFIG = {}
 DUCK_INIT_SCRIPTS: list[str] = []
 AZURE_LOADED_SCRIPTS: list[str] = []
+
+
+def _to_json(query: ex.Query):
+    return sg.select("to_json(t)", dialect="duckdb").from_(query.subquery("t"))
 
 
 def _get_temp_table_name():
@@ -55,11 +59,11 @@ class DuckDBResultData(ResultData):
 
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
-            return from_(self.original_sql.subquery())
+            return sg.from_(self.original_sql.subquery())
         else:
-            return from_(
+            return sg.from_(
                 cast(
-                    ex.Select, parse_one(self.original_sql, dialect="duckdb")
+                    ex.Select, sg.parse_one(self.original_sql, dialect="duckdb")
                 ).subquery()
             )
 
@@ -119,9 +123,26 @@ class DuckDBResultData(ResultData):
 
         await run_in_threadpool(self.con.execute, full_query)
 
+    async def to_ndjson(self) -> str:
+        query = get_sql(self.original_sql, dialect="duckdb")
+
+        query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
+        await run_in_threadpool(self.con.execute, query)
+        res = []
+        while chunk := self.con.fetchmany(self.chunk_size):
+            for item in chunk:
+                res.append(item[0])
+        return "\n".join(res)
+
     async def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return await super().write_nd_json(file_name)
+            query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
+            await run_in_threadpool(self.con.execute, query)
+            with open(file_name, "w", encoding="utf-8") as f:
+                while chunk := self.con.fetchmany(self.chunk_size):
+                    for item in chunk:
+                        f.write(item[0] + "\n")
+            return
         query = get_sql(self.original_sql, dialect="duckdb")
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
@@ -144,8 +165,22 @@ class DuckDBResultData(ResultData):
 
     async def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-            return await super().write_json(file_name)
+            query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
+            await run_in_threadpool(self.con.execute, query)
+            with open(file_name, "w", encoding="utf-8") as f:
+                f.write("[\n")
+                first = True
+                while chunk := self.con.fetchmany(self.chunk_size):
+                    for item in chunk:
+                        if not first:
+                            f.write(",\n")
+                        else:
+                            first = False
+                        f.write(",\n".join([r[0] for r in item]))
+                f.write("\n]")
+            return
         query = get_sql(self.original_sql, dialect="duckdb")
+
         uuidstr = _get_temp_table_name()
         full_query = f"""CREATE TEMP VIEW {uuidstr} AS {query};
                          COPY (SELECT *FROM {uuidstr})  

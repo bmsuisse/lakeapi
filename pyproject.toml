@@ -1,16 +1,13 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.26.0"
+version = "0.27.0"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
     "pyyaml ~=6.0",
     "duckdb >=1.1.0,<2",
-    "polars >=1.12.0,<2",
     "sqlglot >=24.0.0",
-    "fastexcel >=0.10.4",
     "argon2-cffi >=23.1.0,<24",
-    "xlsxwriter >=3.1.0,<4",
     "pyjwt >=2.6.0,<3",
     "ruamel.yaml >=0.18.5",
     "fastapi >=0.110.0",
@@ -27,7 +24,7 @@ validate_lakeapi_schema = "bmsdna.lakeapi.tools.validateschema:validate_schema_c
 add_lakeapi_user = "bmsdna.lakeapi.tools.useradd:useradd_cli"
 
 [project.optional-dependencies]
-polars = ["fastexcel"]
+polars = ["fastexcel", "polars >=1.12.0,<2", "xlsxwriter >=3.1.0,<4"]
 auth = ["argon2-cffi", "pyjwt"]
 useradd = ["ruamel.yaml"]
 odbc = ["arrow-odbc"]
@@ -93,4 +90,5 @@ test = [
     "python-dotenv >=1.0.1,<2",
     "deltalake>=1.1.4",
     "pytest-asyncio>=0.23.8",
+    "polars >=1.12.0,<2",
 ]

@@ -106,7 +106,10 @@ class SourceUri:
         return fs.exists(fs_path)
 
     def copy_to_local(
-        self, local_path: str, delta_table: Union[bool, Literal["meta"]] = False
+        self,
+        local_path: str,
+        delta_table: Union[bool, Literal["meta"]] = False,
+        use_polars=False,
     ):
         local_uri = SourceUri(
             uri=local_path,
@@ -136,7 +139,7 @@ class SourceUri:
         if delta_table:
             from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-            meta = get_deltalake_meta(self)
+            meta = get_deltalake_meta(use_polars, self)
             vnr = meta.version
             if local_versions.get(self.uri) == vnr:
                 return local_uri

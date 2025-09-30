@@ -23,7 +23,7 @@ def _with_implicit_parameters(
         try:
             from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-            meta = get_deltalake_meta(uri)
+            meta = get_deltalake_meta(basic_config.default_engine == "polars", uri)
             assert meta.last_metadata is not None
             part_cols = meta.last_metadata.get("partitionColumns", [])
             if part_cols and len(part_cols) > 0:
