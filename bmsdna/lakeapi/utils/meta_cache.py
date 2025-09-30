@@ -8,6 +8,8 @@ from deltalake2db import (
     DeltaTableMeta,
     duckdb_apply_storage_options,
 )
+from deltalake2db.duckdb import apply_storage_options_fsspec
+from deltalake2db.azure_helper import get_account_name_from_path
 from typing import Optional
 
 
@@ -28,12 +30,22 @@ def get_deltalake_meta(use_polars: bool, uri: SourceUri):
         ab_uri, ab_opts = uri.get_uri_options(flavor="original")
 
         if not uri.is_local():
-            duckdb_apply_storage_options(
-                _global_duck_con,
-                ab_uri,
-                ab_opts,
-                use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
-            )
+            if os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1" and "://" in ab_uri:
+                account_name_path = get_account_name_from_path(ab_uri)
+                fake_protocol = apply_storage_options_fsspec(
+                    _global_duck_con,
+                    ab_uri,
+                    ab_opts or {},
+                    account_name_path=account_name_path,
+                )
+                ab_uri = fake_protocol + "://" + ab_uri.split("://")[1]
+            else:
+                duckdb_apply_storage_options(
+                    _global_duck_con,
+                    ab_uri,
+                    ab_opts,
+                    use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+                )
         meta_engine = DuckDBMetaEngine(_global_duck_con)
 
     if mt := _cached_meta.get(uri):
