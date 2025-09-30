@@ -162,6 +162,7 @@ class Datasource:
                 "meta"
                 if (meta_only and self.config.file_type == "delta")
                 else (self.config.file_type == "delta"),
+                self.basic_config.default_engine == "polars",
             )
             if (
                 meta_only
@@ -183,7 +184,9 @@ class Datasource:
                 try:
                     from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                    meta = get_deltalake_meta(self.source_uri)
+                    meta = get_deltalake_meta(
+                        self.basic_config.default_engine == "polars", self.source_uri
+                    )
                     return meta
                 except FileNotFoundError:
                     return None

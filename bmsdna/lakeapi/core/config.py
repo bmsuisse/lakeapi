@@ -229,7 +229,9 @@ class Config:
             try:
                 from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                meta = get_deltalake_meta(uri_obj)
+                meta = get_deltalake_meta(
+                    basic_config.default_engine == "polars", uri_obj
+                )
                 assert meta.last_metadata is not None
                 cfg = json.loads(
                     _to_dict(meta.last_metadata.get("configuration", {})).get(

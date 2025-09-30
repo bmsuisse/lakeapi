@@ -19,8 +19,6 @@ from sqlglot import from_, parse_one
 from uuid import uuid4
 from .source_uri import SourceUri
 
-ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
-
 
 def _get_temp_table_name():
     return "temp_" + str(uuid4()).replace("-", "")

@@ -3,7 +3,18 @@ from datetime import datetime
 
 from sqlglot import Dialect
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
-from typing import Sequence, Literal, Optional, List, Tuple, Any, TYPE_CHECKING, Union
+from typing import (
+    Callable,
+    Sequence,
+    Literal,
+    Optional,
+    List,
+    Tuple,
+    Any,
+    TYPE_CHECKING,
+    Union,
+    cast,
+)
 import pyarrow as pa
 import sqlglot.expressions as ex
 
@@ -35,6 +46,7 @@ def get_sql(
     limit: int | None = None,
     *,
     dialect: str | Dialect,
+    modifier: Optional[Callable[[ex.Query], ex.Query]] = None,
 ) -> str:
     if not isinstance(sql_or_pypika, str) and dialect == "tsql":
         from_ = sql_or_pypika.args.get(
@@ -60,10 +72,20 @@ def get_sql(
             )
         )
     if isinstance(sql_or_pypika, str):
-        return sql_or_pypika
+        if not modifier:
+            return sql_or_pypika
+        else:
+            import sqlglot
+
+            sql_or_pypika = cast(
+                ex.Query, sqlglot.parse_one(sql_or_pypika, dialect=dialect)
+            )
+
     if len(sql_or_pypika.expressions) == 0:
         sql_or_pypika = sql_or_pypika.select("*")
     assert not isinstance(sql_or_pypika, str)
+    if modifier:
+        sql_or_pypika = modifier(sql_or_pypika)
     return sql_or_pypika.sql(dialect=dialect)
 
 
@@ -111,7 +133,7 @@ class ResultData(ABC):
 
         return pydantic.TypeAdapter(list[dict]).dump_json(full_list)
 
-    async def to_ndjson(self):
+    async def to_ndjson(self) -> str:
         import polars as pl
 
         result_strings = []
@@ -250,7 +272,7 @@ class ExecutionContext(ABC):
             case "delta":
                 from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                meta = get_deltalake_meta(uri)
+                meta = get_deltalake_meta(self.engine_name == "polars", uri)
                 assert meta.protocol is not None
                 if meta.protocol["minReaderVersion"] > 1:
                     raise ValueError(
@@ -368,7 +390,7 @@ class ExecutionContext(ABC):
             try:
                 from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
-                meta = get_deltalake_meta(uri)
+                meta = get_deltalake_meta(self.engine_name == "polars", uri)
                 return meta.last_write_time
             except FileNotFoundError:
                 return None
