@@ -13,7 +13,7 @@ from deltalake2db import (
 import duckdb
 import pyarrow.dataset
 import sqlglot.expressions as ex
-from sqlglot import from_, parse_one
+import sqlglot as sg
 import os
 from datetime import timezone
 from bmsdna.lakeapi.core.config import SearchConfig
@@ -34,14 +34,7 @@ AZURE_LOADED_SCRIPTS: list[str] = []
 
 
 def _to_json(query: ex.Query):
-    q = query.copy()
-
-    if isinstance(q, ex.Select):
-        q.set("expressions", [ex.func("to_json", *q.expressions)])
-        return q
-    for sel in q.selects:
-        sel.set("expressions", [ex.func("to_json", *sel.expressions)])
-    return q
+    return sg.select("to_json(t)", dialect="duckdb").from_(query.subquery("t"))
 
 
 def _get_temp_table_name():
@@ -66,11 +59,11 @@ class DuckDBResultData(ResultData):
 
     def query_builder(self) -> ex.Select:
         if not isinstance(self.original_sql, str):
-            return from_(self.original_sql.subquery())
+            return sg.from_(self.original_sql.subquery())
         else:
-            return from_(
+            return sg.from_(
                 cast(
-                    ex.Select, parse_one(self.original_sql, dialect="duckdb")
+                    ex.Select, sg.parse_one(self.original_sql, dialect="duckdb")
                 ).subquery()
             )
 
