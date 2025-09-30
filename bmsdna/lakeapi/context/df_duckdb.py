@@ -33,6 +33,17 @@ DUCK_INIT_SCRIPTS: list[str] = []
 AZURE_LOADED_SCRIPTS: list[str] = []
 
 
+def _to_json(query: ex.Query):
+    q = query.copy()
+
+    if isinstance(q, ex.Select):
+        q.set("expressions", [ex.func("to_json", *q.expressions)])
+        return q
+    for sel in q.selects:
+        sel.set("expressions", [ex.func("to_json", *sel.expressions)])
+    return q
+
+
 def _get_temp_table_name():
     return "temp_" + str(uuid4()).replace("-", "")
 
@@ -122,12 +133,6 @@ class DuckDBResultData(ResultData):
     async def to_ndjson(self) -> str:
         query = get_sql(self.original_sql, dialect="duckdb")
 
-        def _to_json(query: ex.Query):
-            q = query.copy()
-            for sel in q.selects:
-                sel.set("expressions", ex.func("to_json", *sel.expressions))
-            return q
-
         query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
         await run_in_threadpool(self.con.execute, query)
         res = []
@@ -138,13 +143,6 @@ class DuckDBResultData(ResultData):
 
     async def write_nd_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-
-            def _to_json(query: ex.Query):
-                q = query.copy()
-                for sel in q.selects:
-                    sel.set("expressions", ex.func("to_json", *sel.expressions))
-                return q
-
             query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
             await run_in_threadpool(self.con.execute, query)
             with open(file_name, "w", encoding="utf-8") as f:
@@ -174,13 +172,6 @@ class DuckDBResultData(ResultData):
 
     async def write_json(self, file_name: str):
         if not ENABLE_COPY_TO:
-
-            def _to_json(query: ex.Query):
-                q = query.copy()
-                for sel in q.selects:
-                    sel.set("expressions", ex.func("to_json", *sel.expressions))
-                return q
-
             query = get_sql(self.original_sql, dialect="duckdb", modifier=_to_json)
             await run_in_threadpool(self.con.execute, query)
             with open(file_name, "w", encoding="utf-8") as f:
