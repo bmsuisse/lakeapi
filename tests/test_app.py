@@ -1,3 +1,4 @@
+import os
 from fastapi.testclient import TestClient
 import sys
 import polars as pl
@@ -468,6 +469,8 @@ def test_fake_arrow(client: TestClient):
 
 
 def test_all_metadata(client: TestClient):
+    no_sql = os.getenv("NO_SQL_SERVER", "0") == "1"
+
     response = client.get("/metadata")
     assert response.status_code == 200
     jsd = response.json()
@@ -476,6 +479,8 @@ def test_all_metadata(client: TestClient):
             name = item["name"]
             tag = item["tag"]
             route = item["route"]
+            if tag == "mssql" and no_sql:
+                continue
             meta_detail_route = route + f"/metadata_detail?%24engine={e}"
             print(meta_detail_route)
             response = client.get(meta_detail_route)
