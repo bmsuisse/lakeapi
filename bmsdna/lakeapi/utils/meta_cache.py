@@ -8,8 +8,6 @@ from deltalake2db import (
     DeltaTableMeta,
     duckdb_apply_storage_options,
 )
-from deltalake2db.duckdb import apply_storage_options_fsspec
-from deltalake2db.azure_helper import get_account_name_from_path
 from typing import Optional
 
 
@@ -18,11 +16,15 @@ _cached_meta: dict[SourceUri, DeltaTableMeta] = {}
 _global_duck_con: Optional[duckdb.DuckDBPyConnection] = None
 _global_duck_meta_engine: Optional[DuckDBMetaEngine] = None
 
+DELTA_META_ENGINE = os.getenv("DELTA_META_ENGINE")
+
 
 def get_deltalake_meta(use_polars: bool, uri: SourceUri):
     global _global_duck_con
     global _global_duck_meta_engine
-    if use_polars:
+    if (
+        use_polars and not DELTA_META_ENGINE == "duckdb"
+    ) or DELTA_META_ENGINE == "polars":
         ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
 
         meta_engine = PolarsMetaEngine()
