@@ -16,41 +16,27 @@ from typing import Optional
 _cached_meta: dict[SourceUri, DeltaTableMeta] = {}
 
 _global_duck_con: Optional[duckdb.DuckDBPyConnection] = None
+_global_duck_meta_engine: Optional[DuckDBMetaEngine] = None
 
 
 def get_deltalake_meta(use_polars: bool, uri: SourceUri):
     global _global_duck_con
+    global _global_duck_meta_engine
     if use_polars:
         ab_uri, ab_opts = uri.get_uri_options(flavor="object_store")
 
-        meta_engine = PolarsMetaEngine(ab_opts)
+        meta_engine = PolarsMetaEngine()
     else:
         if _global_duck_con is None:
             _global_duck_con = duckdb.connect(":memory:")
+            _global_duck_meta_engine = DuckDBMetaEngine(_global_duck_con)
         ab_uri, ab_opts = uri.get_uri_options(flavor="original")
-
-        if not uri.is_local():
-            if os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1" and "://" in ab_uri:
-                account_name_path = get_account_name_from_path(ab_uri)
-                fake_protocol = apply_storage_options_fsspec(
-                    _global_duck_con,
-                    ab_uri,
-                    ab_opts or {},
-                    account_name_path=account_name_path,
-                )
-                ab_uri = fake_protocol + "://" + ab_uri.split("://")[1]
-            else:
-                duckdb_apply_storage_options(
-                    _global_duck_con,
-                    ab_uri,
-                    ab_opts,
-                    use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
-                )
-        meta_engine = DuckDBMetaEngine(_global_duck_con)
+        assert _global_duck_meta_engine is not None
+        meta_engine = _global_duck_meta_engine
 
     if mt := _cached_meta.get(uri):
         mt.update_incremental(meta_engine)
         return mt
-    mt = _get_deltalake_meta(meta_engine, ab_uri)
+    mt = _get_deltalake_meta(meta_engine, ab_uri, ab_opts)
     _cached_meta[uri] = mt
     return mt

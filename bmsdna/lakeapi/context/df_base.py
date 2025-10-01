@@ -263,7 +263,7 @@ class ExecutionContext(ABC):
                 ab_uri, ab_opts = uri.get_uri_options(flavor="fsspec")
                 pd = pandas.read_json(
                     ab_uri,
-                    storage_options=ab_opts,
+                    storage_options=dict(ab_opts) if ab_opts else None,
                     orient="records",
                     lines=file_type == "ndjson",
                 )

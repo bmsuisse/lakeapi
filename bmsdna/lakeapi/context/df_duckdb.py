@@ -436,7 +436,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
                 self.con,
                 ab_uri,
                 target_name,
-                storage_options=uri_opts,
+                storage_options=dict(uri_opts) if uri_opts else None,
                 conditions=filters,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
                 limit=limit,
