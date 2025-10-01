@@ -29,7 +29,10 @@ def get_deltalake_meta(use_polars: bool, uri: SourceUri):
     else:
         if _global_duck_con is None:
             _global_duck_con = duckdb.connect(":memory:")
-            _global_duck_meta_engine = DuckDBMetaEngine(_global_duck_con)
+            _global_duck_meta_engine = DuckDBMetaEngine(
+                _global_duck_con,
+                use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+            )
         ab_uri, ab_opts = uri.get_uri_options(flavor="original")
         assert _global_duck_meta_engine is not None
         meta_engine = _global_duck_meta_engine

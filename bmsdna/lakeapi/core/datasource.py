@@ -174,18 +174,21 @@ class Datasource:
     def file_exists(self):
         if self.config.file_type in ["odbc", "sqlite"]:
             return True  # the uri is not really a file here
+        if self.config.file_type == "delta":
+            return self.get_execution_uri(meta_only=True).exists()
         if not self.source_uri.exists():
             return False
         return True
 
     def get_delta_table(self, schema_only: bool):
         if self.config.file_type == "delta":
-            if self.source_uri.exists():
+            if self.file_exists():
                 try:
                     from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 
                     meta = get_deltalake_meta(
-                        self.basic_config.default_engine == "polars", self.source_uri
+                        self.basic_config.default_engine == "polars",
+                        self.get_execution_uri(meta_only=True),
                     )
                     return meta
                 except FileNotFoundError:
