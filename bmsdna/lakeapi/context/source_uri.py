@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, Literal, TYPE_CHECKING, Union
+from typing import Any, Callable, Literal, TYPE_CHECKING, Mapping, Union
 import fsspec
 import adlfs
 import os
@@ -91,7 +91,7 @@ class SourceUri:
 
     def get_uri_options(
         self, *, flavor: Literal["fsspec", "object_store", "original"]
-    ) -> tuple[str, dict | None]:
+    ) -> tuple[str, Mapping[str, Any] | None]:
         return _convert_options(
             self.real_uri,
             self.accounts.get(self.account) if self.account else None,

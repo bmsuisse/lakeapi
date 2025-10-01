@@ -247,12 +247,14 @@ class PolarsExecutionContext(ExecutionContext):
                     from deltalake2db import polars_scan_delta, get_polars_schema
 
                     if meta_only or limit == 0:
-                        schema = get_polars_schema(db_uri, storage_options=db_opts)
+                        schema = get_polars_schema(
+                            db_uri, storage_options=dict(db_opts) if db_opts else None
+                        )
                         df = pl.DataFrame(schema=schema)
                     else:
                         df = polars_scan_delta(
                             db_uri,
-                            storage_options=db_opts,
+                            storage_options=dict(db_opts) if db_opts else None,
                             conditions=filters,
                             limit=limit,
                         )
@@ -261,9 +263,13 @@ class PolarsExecutionContext(ExecutionContext):
                         f"Delta table version {ab_uri} not supported"
                     ) from de
             case "parquet":
-                df = pl.scan_parquet(ab_uri, storage_options=uri_opts)
+                df = pl.scan_parquet(
+                    ab_uri, storage_options=dict(uri_opts) if uri_opts else None
+                )
             case "arrow":
-                df = pl.scan_ipc(ab_uri, storage_options=uri_opts)
+                df = pl.scan_ipc(
+                    ab_uri, storage_options=dict(uri_opts) if uri_opts else None
+                )
             case "csv" if uri_opts is None:
                 df = pl.scan_csv(ab_uri)
             case "csv" if uri_opts is not None:

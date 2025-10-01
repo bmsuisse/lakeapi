@@ -1,6 +1,6 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.27.1"
+version = "0.27.2"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
@@ -15,9 +15,9 @@ dependencies = [
     "expandvars >=0.12.0",
     "fsspec >=2024.2.0,<2025",
     "adlfs >=2024.2.0,<2025",
-    "deltalake2db >=1.1.4",
+    "deltalake2db >=1.2.0",
 ]
-requires-python = "~=3.10"
+requires-python = "~=3.11"
 
 [project.scripts]
 validate_lakeapi_schema = "bmsdna.lakeapi.tools.validateschema:validate_schema_cli"
