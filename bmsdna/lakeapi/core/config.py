@@ -53,6 +53,7 @@ class BasicConfig:
     token_retrieval_func: "Optional[Callable[[SourceUri, str], TokenCredential]]"
     should_hide_col_name: Callable[[str], bool]
     default_copy_local: bool = False
+    max_route_init_time: int = 200  # seconds
 
 
 def _should_hide_colname(name: str):
@@ -79,6 +80,7 @@ def get_default_config():
         schema_cache_ttl=5 * 60,  # 5 minutes
         token_retrieval_func=None,
         should_hide_col_name=_should_hide_colname,
+        max_route_init_time=200,
     )
 
 
