@@ -1,3 +1,4 @@
+from time import time
 from typing import Literal, Tuple, cast
 
 from fastapi import APIRouter
@@ -24,6 +25,7 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
     all_lake_api_routers.append((basic_config, configs))
     router = APIRouter()
     metadata = []
+    now_time = time()
     with ExecutionContextManager(
         basic_config.default_engine,
         basic_config.default_chunk_size,
@@ -34,59 +36,67 @@ def init_routes(configs: Configs, basic_config: BasicConfig):
                 if isinstance(config.api_method, str)
                 else config.api_method
             )
-            try:
-                from bmsdna.lakeapi.core.datasource import Datasource
-
-                assert config.datasource is not None
-                with Datasource(
-                    config.version_str,
-                    config.tag,
-                    config.name,
-                    config=config.datasource,
-                    sql_context=mgr.get_context(config.engine),
-                    basic_config=basic_config,
-                    accounts=configs.accounts,
-                ) as realdataframe:
-                    try:
-                        schema = get_schema_cached(
-                            basic_config,
-                            realdataframe,
-                            config.datasource.get_unique_hash(),
-                        )
-                        if schema is None:
-                            logger.warning(
-                                f"Could not get response type for {config.route}. Path does not exist:{realdataframe}"
-                            )
-                    except Exception as err:
-                        logger.warning(
-                            f"Could not get schema for {config.route}. Error:{err}",
-                            exc_info=err,
-                        )
-                        schema = None
-
-                metadata.append(
-                    {
-                        "name": config.name,
-                        "tag": config.tag,
-                        "route": config.route,
-                        "methods": methods,
-                        "file_type": config.datasource.file_type,
-                        "uri": config.datasource.uri,
-                        "version": config.version,
-                        "schema": {n: str(schema.field(n).type) for n in schema.names}
-                        if schema
-                        else None,
-                    }
-                )
-
-            except Exception as err:
-                import traceback
-
-                print(traceback.format_exc())
+            if time() - now_time > basic_config.max_route_init_time:
                 logger.warning(
-                    f"Could not get response type for f{config.route}. Error:{err}"
+                    f"Route initialization time exceeded {basic_config.max_route_init_time}s. Stopping further route initialization."
                 )
                 schema = None
+            else:
+                try:
+                    from bmsdna.lakeapi.core.datasource import Datasource
+
+                    assert config.datasource is not None
+                    with Datasource(
+                        config.version_str,
+                        config.tag,
+                        config.name,
+                        config=config.datasource,
+                        sql_context=mgr.get_context(config.engine),
+                        basic_config=basic_config,
+                        accounts=configs.accounts,
+                    ) as realdataframe:
+                        try:
+                            schema = get_schema_cached(
+                                basic_config,
+                                realdataframe,
+                                config.datasource.get_unique_hash(),
+                            )
+                            if schema is None:
+                                logger.warning(
+                                    f"Could not get response type for {config.route}. Path does not exist:{realdataframe}"
+                                )
+                        except Exception as err:
+                            logger.warning(
+                                f"Could not get schema for {config.route}. Error:{err}",
+                                exc_info=err,
+                            )
+                            schema = None
+
+                    metadata.append(
+                        {
+                            "name": config.name,
+                            "tag": config.tag,
+                            "route": config.route,
+                            "methods": methods,
+                            "file_type": config.datasource.file_type,
+                            "uri": config.datasource.uri,
+                            "version": config.version,
+                            "schema": {
+                                n: str(schema.field(n).type) for n in schema.names
+                            }
+                            if schema
+                            else None,
+                        }
+                    )
+
+                except Exception as err:
+                    import traceback
+
+                    print(traceback.format_exc())
+                    logger.warning(
+                        f"Could not get response type for f{config.route}. Error:{err}"
+                    )
+                    schema = None
 
             response_model = (
                 get_response_model(
