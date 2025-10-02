@@ -21,6 +21,8 @@ from uuid import uuid4
 
 from bmsdna.lakeapi.core.log import get_logger
 import multiprocessing
+
+from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
 from .source_uri import SourceUri
 import csv
 
@@ -434,9 +436,9 @@ class DuckDbExecutionContextBase(ExecutionContext):
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
             duckdb_create_view_for_delta(
                 self.con,
-                ab_uri,
+                get_deltalake_meta(False, uri),
                 target_name,
-                storage_options=dict(uri_opts) if uri_opts else None,
+                storage_options=uri_opts,  # type: ignore
                 conditions=filters,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
                 limit=limit,
