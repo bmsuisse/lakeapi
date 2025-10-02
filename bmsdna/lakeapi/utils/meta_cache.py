@@ -49,6 +49,7 @@ def get_deltalake_meta(use_polars: bool, uri: SourceUri):
                 mt.update_incremental(PolarsMetaEngine())
             else:
                 mt.update_incremental(duck_meta_engine())
-    mt = _get_deltalake_meta(meta_engine, ab_uri, ab_opts)
+    else:
+        mt = _get_deltalake_meta(meta_engine, ab_uri, ab_opts)
     _cached_meta[uri] = mt
     return mt
