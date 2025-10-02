@@ -8,6 +8,8 @@ from bmsdna.lakeapi.context.df_base import (
 import pyarrow as pa
 from typing import List, Optional, Tuple, Union, cast, Any, TYPE_CHECKING
 
+from bmsdna.lakeapi.utils.meta_cache import get_deltalake_meta
+
 if TYPE_CHECKING:
     import polars as pl
 from bmsdna.lakeapi.core.types import FileTypes, OperatorType
@@ -248,13 +250,14 @@ class PolarsExecutionContext(ExecutionContext):
 
                     if meta_only or limit == 0:
                         schema = get_polars_schema(
-                            db_uri, storage_options=dict(db_opts) if db_opts else None
+                            get_deltalake_meta(True, uri),
+                            storage_options=db_opts if db_opts else None,
                         )
                         df = pl.DataFrame(schema=schema)
                     else:
                         df = polars_scan_delta(
                             db_uri,
-                            storage_options=dict(db_opts) if db_opts else None,
+                            storage_options=db_opts if db_opts else None,
                             conditions=filters,
                             limit=limit,
                         )
