@@ -30,6 +30,8 @@ import csv
 logger = get_logger(__name__)
 
 ENABLE_COPY_TO = os.environ.get("ENABLE_COPY_TO", "0") == "1"
+USE_DELTA_EXT = os.getenv("DUCKDB_DELTA_USE_EXT", "0") == "1"
+USE_FSSPEC = os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1"
 
 DUCK_CONFIG = {}
 DUCK_INIT_SCRIPTS: list[str] = []
@@ -237,6 +239,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
     ):
         super().__init__(chunk_size=chunk_size, engine_name="duckdb")
         self.con = con.cursor()
+        self.con.execute("set azure_transport_option_type='curl'")
         for ins in DUCK_INIT_SCRIPTS:
             self.con.execute(ins)
         self.res_con = None
@@ -402,7 +405,7 @@ class DuckDbExecutionContextBase(ExecutionContext):
             self.con,
             remote_uri,
             remote_opts,
-            use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+            use_fsspec=USE_FSSPEC,
         )
 
         if file_type == "json":
@@ -436,12 +439,13 @@ class DuckDbExecutionContextBase(ExecutionContext):
             ab_uri, uri_opts = uri.get_uri_options(flavor="original")
             duckdb_create_view_for_delta(
                 self.con,
-                get_deltalake_meta(False, uri),
+                get_deltalake_meta(False, uri) if not USE_DELTA_EXT else ab_uri,
                 target_name,
                 storage_options=uri_opts,  # type: ignore
                 conditions=filters,
-                use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
+                use_fsspec=USE_FSSPEC,
                 limit=limit,
+                use_delta_ext=USE_DELTA_EXT,
             )
             return
         if file_type == "duckdb":

@@ -9,6 +9,8 @@ from deltalake2db import (
 )
 from typing import Optional
 
+from bmsdna.lakeapi.core.config import BasicConfig
+
 
 _cached_meta: dict[SourceUri, DeltaTableMeta] = {}
 
@@ -26,6 +28,7 @@ def get_deltalake_meta(use_polars: bool, uri: SourceUri):
         global _global_duck_meta_engine
         if _global_duck_con is None:
             _global_duck_con = duckdb.connect(":memory:")
+            _global_duck_con.execute("set azure_transport_option_type='curl'")
             _global_duck_meta_engine = DuckDBMetaEngine(
                 _global_duck_con,
                 use_fsspec=os.getenv("DUCKDB_DELTA_USE_FSSPEC", "0") == "1",
@@ -53,3 +56,15 @@ def get_deltalake_meta(use_polars: bool, uri: SourceUri):
         mt = _get_deltalake_meta(meta_engine, ab_uri, ab_opts)
     _cached_meta[uri] = mt
     return mt
+
+
+def clear_deltalake_meta_cache():
+    global _cached_meta
+    global _global_duck_meta_engine
+    global _global_duck_con
+    _cached_meta.clear()
+    if _global_duck_meta_engine is not None:
+        _global_duck_meta_engine = None
+    if _global_duck_con is not None:
+        _global_duck_con.close()
+        _global_duck_con = None

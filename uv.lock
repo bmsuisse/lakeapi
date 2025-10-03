@@ -368,7 +368,7 @@ wheels = [
 
 [[package]]
 name = "bmsdna-lakeapi"
-version = "0.27.3"
+version = "0.27.6"
 source = { editable = "." }
 dependencies = [
     { name = "adlfs" },
@@ -439,7 +439,7 @@ requires-dist = [
     { name = "argon2-cffi", marker = "extra == 'auth'" },
     { name = "arrow-odbc", specifier = ">=5.0.0" },
     { name = "arrow-odbc", marker = "extra == 'odbc'" },
-    { name = "deltalake2db", specifier = ">=1.2.0" },
+    { name = "deltalake2db", specifier = ">=1.2.2" },
     { name = "duckdb", specifier = ">=1.1.0,<2" },
     { name = "expandvars", specifier = ">=0.12.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
@@ -812,15 +812,15 @@ wheels = [
 
 [[package]]
 name = "deltalake2db"
-version = "1.2.0"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polars" },
     { name = "sqlglot" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/29/a84d78807dcb71890ba8c343d1af3d9d2955ac838c824fba697f808ce42f/deltalake2db-1.2.0.tar.gz", hash = "sha256:12e721d1e4c829525f109b932ae5320c72354c0b1734bb8db9b1622266ca9982", size = 247226, upload-time = "2025-10-01T07:17:55.281Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/81/af0d41aa9ee1be747b499bc7b2e29619f6c8f2902f46e53e25b2e2629e4f/deltalake2db-1.2.2.tar.gz", hash = "sha256:72bc5ce0720401ee2d3fb79dd84c3730be90fe5eaae821b6629180a8fd42b50c", size = 247592, upload-time = "2025-10-02T12:55:34.578Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/28/efcb5e6b5fddfcb591f936cf5d3153769acd9021d4ef5373338618931f88/deltalake2db-1.2.0-py3-none-any.whl", hash = "sha256:acb88980924bf4c7300943fb5b485a09909acc2bddf1eac3769172505cb38868", size = 19906, upload-time = "2025-10-01T07:17:53.85Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/12/9e2e080fe15e047131f5025725664f2532f662af9f7aa9cfc364e5935b2e/deltalake2db-1.2.2-py3-none-any.whl", hash = "sha256:5440f42bce34499c4c1e3fb2e8594d44436a577f95060f73d96fab7cca9e5c4b", size = 20059, upload-time = "2025-10-02T12:55:33.298Z" },
 ]
 
 [[package]]

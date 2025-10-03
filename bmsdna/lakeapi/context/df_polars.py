@@ -23,6 +23,9 @@ from uuid import uuid4
 import json
 from .source_uri import SourceUri
 from sqlglot.dialects.postgres import Postgres
+import os
+
+USE_NATIVE_POLARS = os.getenv("USE_NATIVE_POLARS", "0") == "1"
 
 
 class Polars(Postgres):
@@ -254,6 +257,12 @@ class PolarsExecutionContext(ExecutionContext):
                             storage_options=db_opts if db_opts else None,
                         )
                         df = pl.DataFrame(schema=schema)
+                    elif USE_NATIVE_POLARS:
+                        db_uri, db_ots = uri.get_uri_options(flavor="object_store")
+
+                        df = pl.scan_delta(
+                            ab_uri, storage_options=dict(db_ots) if db_ots else None
+                        )
                     else:
                         df = polars_scan_delta(
                             db_uri,
