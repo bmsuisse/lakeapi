@@ -1,6 +1,6 @@
 [project]
 name = "bmsdna-lakeapi"
-version = "0.27.5"
+version = "0.27.6"
 description = ""
 authors = [{ name = "DWH Team", email = "you@example.com" }]
 dependencies = [
